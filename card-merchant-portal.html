@@ -1,0 +1,2788 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayPaz 卡商后台 · 收放款卡与订单处理原型</title>
+<style>
+  :root{
+    --pp-primary:#435DDD; --pp-primary-soft:#EEF1FD;
+    --pp-success:#55D187; --pp-success-soft:#EAF9F0;
+    --pp-warning:#EFBD47; --pp-warning-soft:#FDF6E6;
+    --pp-danger:#ED6F6F; --pp-danger-soft:#FDEDED;
+    --pp-bg:#fafafa; --pp-surface:#ffffff;
+    --pp-ink:#1c2128; --pp-muted:#6b7280; --pp-border:#e7e9ee;
+    --pp-sider:#273352; --pp-sider-hover:#394664;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color:var(--pp-ink); background:var(--pp-bg); }
+  .app{ display:flex; min-height:100vh; }
+  .sidebar{ width:240px; background:var(--pp-sider); flex:none; display:flex; flex-direction:column; padding:0 0 16px; position:sticky; top:0; height:100vh; }
+  .side-brand{ height:72px; display:flex; align-items:center; gap:10px; padding:0 22px; color:#fff; font-size:15px; font-weight:700; }
+  .side-brand .mark{ width:28px; height:28px; border-radius:8px; background:var(--pp-primary); display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .nav-item{ display:flex; align-items:center; gap:10px; padding:12px 22px; font-size:13.5px; color:#aab3cc; cursor:pointer; user-select:none; }
+  .nav-item svg{ flex:none; }
+  .nav-item.active{ background:var(--pp-sider-hover); color:#fff; border-right:3px solid var(--pp-primary); }
+  .nav-badge{ margin-left:auto; background:var(--pp-danger); color:#fff; font-size:10px; font-weight:800; padding:1px 6px; border-radius:999px; }
+  .nav-group{ padding:16px 22px 6px; font-size:10.5px; font-weight:700; letter-spacing:.09em; color:#6f7a94; text-transform:uppercase; }
+  .main{ flex:1; display:flex; flex-direction:column; min-width:0; }
+  .topbar{ height:72px; background:#fff; border-bottom:1px solid var(--pp-border); display:flex; align-items:center; justify-content:space-between; padding:0 28px; flex:none; }
+  .breadcrumb{ font-size:13.5px; color:var(--pp-muted); }
+  .breadcrumb b{ color:var(--pp-ink); font-weight:600; }
+  .top-right{ display:flex; align-items:center; gap:12px; }
+  .kyc-pill{ font-size:12px; color:var(--pp-muted); background:var(--pp-bg); border:1px solid var(--pp-border); border-radius:999px; padding:5px 12px; }
+  .avatar{ width:34px; height:34px; border-radius:50%; background:var(--pp-primary-soft); color:var(--pp-primary); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
+  .page{ flex:1; padding:24px 28px; }
+  .panel{ display:none; }
+  .panel.show{ display:block; }
+  .col{ max-width:600px; }
+  .row{ display:flex; gap:16px; flex-wrap:wrap; }
+  .row > *{ min-width:320px; }
+  .card{ background:#fff; border:1px solid var(--pp-border); border-radius:10px; padding:22px; display:flex; flex-direction:column; gap:16px; margin-bottom:16px; }
+  .card-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .field-label{ font-size:13px; font-weight:600; }
+  .hint{ font-size:12px; color:var(--pp-muted); margin-top:-6px; line-height:1.6; }
+  .hint.block{ margin-top:0; }
+  .hint-toggle{ font-size:12px; color:var(--pp-primary); cursor:pointer; display:inline-flex; align-items:center; gap:3px; margin:2px 0 8px; user-select:none; font-weight:600; }
+  .hint-toggle .car{ display:inline-block; transition:transform .15s; font-size:10px; }
+  .hint-toggle.open .car{ transform:rotate(90deg); }
+  input[type=number], input[type=text], input[type=time], select{ width:100%; padding:11px 14px; border:1px solid var(--pp-border); border-radius:8px; font-size:14px; font-family:inherit; background:#fff; color:var(--pp-ink); }
+  input:focus, select:focus{ outline:2px solid var(--pp-primary); outline-offset:-1px; }
+  input.bad{ border-color:var(--pp-danger); background:var(--pp-danger-soft); }
+  .quote-box{ background:var(--pp-bg); border:1px solid var(--pp-border); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:8px; }
+  .quote-row{ display:flex; justify-content:space-between; font-size:13.5px; gap:12px; }
+  .quote-row .k{ color:var(--pp-muted); flex:1 1 auto; min-width:0; }
+  .quote-row .v{ font-weight:700; font-variant-numeric:tabular-nums; flex:none; text-align:right; }
+  .quote-amt{ font-size:26px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .frozen{ color:var(--pp-danger); }
+  .select-box{ display:flex; gap:8px; flex-wrap:wrap; }
+  .select-opt{ padding:9px 14px; border:1px solid var(--pp-border); border-radius:8px; font-size:13px; cursor:pointer; background:#fff; }
+  .select-opt.active{ background:var(--pp-primary); color:#fff; border-color:var(--pp-primary); }
+  .select-opt.blocked{ border-color:var(--pp-danger); color:var(--pp-danger); background:var(--pp-danger-soft); }
+  .select-opt.blocked.active{ background:var(--pp-danger); color:#fff; }
+  .primary-btn{ padding:13px 0; border-radius:8px; text-align:center; font-size:14.5px; font-weight:700; border:none; cursor:pointer; background:var(--pp-primary); color:#fff; width:100%; font-family:inherit; }
+  .primary-btn:disabled{ background:var(--pp-border); color:var(--pp-muted); cursor:not-allowed; }
+  .ghost-btn{ padding:13px 0; border-radius:8px; text-align:center; font-size:14.5px; font-weight:700; cursor:pointer; background:#fff; color:var(--pp-primary); border:1px solid var(--pp-primary); width:100%; font-family:inherit; }
+  .danger-btn{ padding:13px 0; border-radius:8px; text-align:center; font-size:14.5px; font-weight:700; border:none; cursor:pointer; background:var(--pp-danger); color:#fff; width:100%; font-family:inherit; }
+  .mini-btn{ padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; border:1px solid var(--pp-border); background:#fff; color:var(--pp-ink); cursor:pointer; font-family:inherit; }
+  .mini-btn.primary{ background:var(--pp-primary); border-color:var(--pp-primary); color:#fff; }
+  .mini-btn:disabled{ opacity:.5; cursor:not-allowed; }
+  textarea.qm-input{ width:100%; min-height:126px; padding:11px 14px; border:1px solid var(--pp-border); border-radius:8px;
+    font-size:13px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; line-height:1.75;
+    background:#fff; color:var(--pp-ink); resize:vertical; }
+  textarea.qm-input:focus{ outline:2px solid var(--pp-primary); outline-offset:-1px; }
+  input[type=file].qm-file{ width:100%; padding:14px; border:1px dashed var(--pp-border); border-radius:8px; font-size:12.5px;
+    font-family:inherit; background:#fff; color:var(--pp-muted); cursor:pointer; }
+  input[type=file].qm-file:hover{ border-color:var(--pp-primary); color:var(--pp-primary); }
+  .qm-raw{ font-size:12px; color:var(--pp-muted); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    word-break:break-all; line-height:1.6; }
+  .status-badge{ font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; white-space:nowrap; }
+  .kv-row{ display:flex; justify-content:space-between; font-size:13.5px; padding:10px 0; border-top:1px solid var(--pp-border); gap:12px; }
+  .kv-row:first-child{ border-top:none; }
+  .kv-row .k{ color:var(--pp-muted); flex:none; }
+  .kv-row .v{ font-weight:600; text-align:right; }
+  .countdown{ font-variant-numeric:tabular-nums; font-weight:700; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; background:#fff; }
+  thead th{ text-align:left; padding:10px 12px; color:var(--pp-muted); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; border-bottom:1px solid var(--pp-border); background:#fafbfc; white-space:nowrap; }
+  tbody td{ padding:12px 12px; border-bottom:1px solid var(--pp-border); vertical-align:middle; }
+  tbody tr:hover{ background:#fafcff; }
+  .tbl-wrap{ background:#fff; border:1px solid var(--pp-border); border-radius:10px; overflow:auto; }
+  .tag{ font-size:11px; font-weight:600; padding:3px 8px; border-radius:4px; display:inline-block; }
+  .tag+.tag{ margin-left:4px; }
+  .tag-chan{ background:var(--pp-primary-soft); color:var(--pp-primary); }
+  .tag-ok{ background:var(--pp-success-soft); color:#1f7a43; }
+  .tag-warn{ background:var(--pp-warning-soft); color:#8a6212; }
+  .tag-info{ background:var(--pp-primary-soft); color:var(--pp-primary); }
+  .tag-err{ background:var(--pp-danger-soft); color:#a33; }
+  .tag-off{ background:#f1f2f5; color:var(--pp-muted); }
+  .filters{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .filter-chip{ padding:8px 16px; border-radius:16px; font-size:12.5px; border:1px solid var(--pp-border); color:var(--pp-muted); cursor:pointer; background:#fff; font-family:inherit; }
+  .filter-chip.active{ background:var(--pp-primary); color:#fff; border-color:var(--pp-primary); }
+  .filter-chip .cnt{ font-weight:800; margin-left:4px; }
+  .link-btn{ color:var(--pp-primary); font-size:12.5px; cursor:pointer; }
+  .link-btn.danger{ color:var(--pp-danger); }
+  .link-sep{ color:var(--pp-border); margin:0 6px; }
+  .tiles{ display:flex; gap:16px; margin-bottom:16px; }
+  .tile{ flex:1; background:#fff; border:1px solid var(--pp-border); border-radius:10px; padding:18px 20px; cursor:pointer; display:flex; flex-direction:column; gap:6px; transition:box-shadow .15s ease, transform .15s ease; }
+  .tile:hover{ box-shadow:0 4px 14px rgba(28,33,40,.08); transform:translateY(-1px); }
+  .tile-k{ font-size:12.5px; color:var(--pp-muted); display:flex; align-items:center; gap:6px; }
+  .tile-dot{ width:8px; height:8px; border-radius:50%; flex:none; }
+  .tile-v{ font-size:28px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .tile-sub{ font-size:11.5px; color:var(--pp-muted); }
+  .banner{ border-radius:8px; padding:12px 14px; font-size:12.5px; line-height:1.65; display:flex; gap:10px; align-items:flex-start; }
+  .banner b{ display:block; margin-bottom:2px; }
+  .banner-info{ background:var(--pp-primary-soft); color:#2b3c9c; }
+  .banner-warn{ background:var(--pp-warning-soft); color:#8a6212; }
+  .banner-err{ background:var(--pp-danger-soft); color:#a33; }
+  .banner-ok{ background:var(--pp-success-soft); color:#1f7a43; }
+  .err-text{ font-size:12px; color:var(--pp-danger); margin-top:-8px; }
+  .gate{ border:1px solid var(--pp-border); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:12px; }
+  .gate.pass{ border-color:var(--pp-success); background:var(--pp-success-soft); }
+  .gate.fail{ border-color:var(--pp-danger); background:var(--pp-danger-soft); }
+  .gate.dim{ opacity:.45; pointer-events:none; }
+  .gate-head{ display:flex; align-items:center; gap:10px; }
+  .gate-no{ width:22px; height:22px; border-radius:50%; background:var(--pp-border); color:var(--pp-muted); font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex:none; }
+  .gate.pass .gate-no{ background:var(--pp-success); color:#fff; }
+  .gate.fail .gate-no{ background:var(--pp-danger); color:#fff; }
+  .gate-title{ font-size:13px; font-weight:700; }
+  .gate-state{ margin-left:auto; font-size:11.5px; font-weight:700; }
+  .gate .card-inner{ background:#fff; border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:10px; }
+  .upload{ border:1px dashed var(--pp-border); border-radius:8px; padding:16px; text-align:center; font-size:12.5px; color:var(--pp-muted); cursor:pointer; background:#fff; }
+  .upload:hover{ border-color:var(--pp-primary); color:var(--pp-primary); }
+  .upload.has{ border-style:solid; border-color:var(--pp-success); color:#1f7a43; background:var(--pp-success-soft); }
+  .proof-row{ display:flex; gap:12px; align-items:flex-start; }
+  .proof-thumb{ width:118px; flex:none; border:1px solid var(--pp-border); border-radius:8px; overflow:hidden; line-height:0; cursor:zoom-in; background:#fff; }
+  .proof-thumb:hover{ border-color:var(--pp-primary); box-shadow:0 2px 10px rgba(67,93,221,.14); }
+  .proof-meta{ flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; font-size:12px; color:var(--pp-muted); line-height:1.7; }
+  .proof-meta b{ color:var(--pp-ink); word-break:break-all; }
+  .proof-none{ border:1px dashed var(--pp-border); border-radius:8px; padding:16px; text-align:center; font-size:12.5px; color:var(--pp-muted); background:var(--pp-bg); line-height:1.7; }
+  .lightbox{ position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:70; display:none; align-items:center; justify-content:center; padding:28px; }
+  .lightbox.show{ display:flex; }
+  .lightbox-inner{ width:420px; max-width:94vw; max-height:92vh; overflow-y:auto; background:#fff; border-radius:12px; padding:18px; display:flex; flex-direction:column; gap:14px; }
+  .toggle-row{ display:flex; align-items:center; gap:10px; font-size:13px; cursor:pointer; user-select:none; }
+  .switch{ width:38px; height:22px; border-radius:999px; background:var(--pp-border); position:relative; flex:none; transition:background .15s ease; }
+  .switch::after{ content:''; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:#fff; transition:left .15s ease; }
+  .switch.on{ background:var(--pp-danger); }
+  .switch.on::after{ left:19px; }
+  .switch.on.okcolor{ background:var(--pp-primary); }
+  .cbox{ width:16px; height:16px; border-radius:4px; border:1.5px solid var(--pp-border); flex:none; display:flex; align-items:center; justify-content:center; background:#fff; }
+  .cbox.on{ background:var(--pp-primary); border-color:var(--pp-primary); }
+  .cbox.on::after{ content:'✓'; color:#fff; font-size:11px; font-weight:900; }
+  .drawer-mask{ position:fixed; inset:0; background:rgba(0,0,0,.28); z-index:40; display:none; }
+  .drawer-mask.show{ display:block; }
+  .drawer{ position:fixed; top:0; right:0; bottom:0; width:520px; max-width:96vw; background:#fff; box-shadow:-8px 0 24px rgba(0,0,0,.12); z-index:41; display:flex; flex-direction:column; transform:translateX(100%); transition:transform .2s ease; }
+  .drawer.show{ transform:translateX(0); }
+  .drawer-head{ display:flex; align-items:flex-start; justify-content:space-between; padding:20px 22px; border-bottom:1px solid var(--pp-border); }
+  .drawer-title{ font-size:15px; font-weight:700; }
+  .drawer-sub{ font-size:12px; color:var(--pp-muted); margin-top:4px; }
+  .close-x{ width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; color:var(--pp-muted); cursor:pointer; background:none; border:none; font-size:16px; }
+  .drawer-body{ flex:1; overflow-y:auto; padding:18px 22px; display:flex; flex-direction:column; gap:16px; }
+  .drawer-foot{ padding:16px 22px; border-top:1px solid var(--pp-border); display:flex; flex-direction:column; gap:10px; }
+  .section-title{ font-size:12.5px; font-weight:700; color:var(--pp-muted); text-transform:uppercase; letter-spacing:.03em; }
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .form-item{ display:flex; flex-direction:column; gap:7px; }
+  .form-item.full{ grid-column:1 / -1; }
+  .toast{ position:fixed; left:50%; top:24px; transform:translateX(-50%) translateY(-16px); background:var(--pp-ink); color:#fff; font-size:13px; padding:11px 18px; border-radius:8px; z-index:60; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .bar{ height:10px; border-radius:999px; background:var(--pp-border); overflow:hidden; display:flex; }
+  .bar-fill{ height:100%; background:var(--pp-primary); border-radius:999px; transition:width .2s ease; }
+  .bar-fill.warn{ background:var(--pp-warning); }
+  .bar-fill.danger{ background:var(--pp-danger); }
+  .bar-legend{ display:flex; justify-content:space-between; gap:12px; font-size:11.5px; color:var(--pp-muted); margin-top:6px; }
+  .empty{ padding:36px; text-align:center; color:var(--pp-muted); font-size:13px; }
+  .nowrap{ white-space:nowrap; }
+  .mono{ font-variant-numeric:tabular-nums; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="side-brand"><div class="mark">P</div>PayPaz 卡商后台</div>
+    <div class="nav-item" data-nav="dash" onclick="showPanel('dash')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</div>
+    <div class="nav-group">资产</div>
+    <div class="nav-item" data-nav="deposit" onclick="showPanel('deposit')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v12"/><path d="M7 11l5 5 5-5"/><path d="M4 20h16"/></svg>链上充值</div>
+    <div class="nav-item" data-nav="withdraw" onclick="showPanel('withdraw')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V8"/><path d="M7 13l5-5 5 5"/><path d="M4 4h16"/></svg>链上提现</div>
+    <div class="nav-item" data-nav="pledge" onclick="showPanel('pledge')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>质押管理</div>
+    <div class="nav-group">业务</div>
+    <div class="nav-item" data-nav="cards" onclick="showPanel('cards')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>收款卡 / 放款卡</div>
+    <div class="nav-item" data-nav="orders" onclick="showPanel('orders')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>订单处理<span class="nav-badge" id="nav-order-badge">0</span></div>
+    <div class="nav-item" data-nav="ledger" onclick="showPanel('ledger')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/><path d="M8 3v18"/></svg>银行卡往来明细</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="breadcrumb" id="breadcrumb">卡商 / <b>Dashboard</b></div>
+      <div class="top-right">
+        <div class="kyc-pill">实名主体：<b id="kyc-name-pill">李江川</b> · 已认证</div>
+        <div class="avatar">恒信</div>
+      </div>
+    </div>
+    <div class="page">
+
+      <!-- ============ Dashboard（账户总览 + 待处理队列 + 冻结明细 + 快速入口） ============ -->
+      <div class="panel show" id="panel-dash">
+        <div class="field-label" style="margin:4px 0 12px;">我的账户（两条业务线由平台分别开通）</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; align-items:stretch;">
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-head">
+              <div>
+                <div class="field-label">稳定币账户 · USDT</div>
+                <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+                <div class="hint block" style="display:none;">用于 <b>On Ramp / Off Ramp</b> 业务，同时是<b>法币信用额度的担保来源</b>：接 On Ramp 订单时冻结，确认收款后结算扣减；Off Ramp 履约登记后回补；质押给平台的部分单独锁定，不可动用。</div>
+              </div>
+              <div class="status-badge" id="acct-stable-badge">已开通</div>
+            </div>
+            <div class="quote-amt"><span id="dash-total">89,420.00</span> <span style="font-size:14px; color:var(--pp-muted); font-weight:600;">USDT</span></div>
+            <div class="quote-box">
+              <div class="quote-row"><div class="k">可用</div><div class="v" id="dash-avail">86,420.00 USDT</div></div>
+              <div class="quote-row"><div class="k">冻结（待履约 On Ramp 订单占用）</div><div class="v frozen" id="dash-frozen">3,000.00 USDT</div></div>
+              <div class="quote-row"><div class="k">质押锁定（法币信用额度担保）</div><div class="v frozen" id="dash-pledged">300,000.00 USDT</div></div>
+              <div class="quote-row"><div class="k">总额</div><div class="v" id="dash-total2">389,420.00 USDT</div></div>
+            </div>
+            <div class="hint block" id="acct-stable-note" style="display:none;"></div>
+            <div style="display:flex; gap:10px; margin-top:auto;">
+              <button class="primary-btn" style="width:auto; padding:11px 22px;" onclick="showPanel('deposit')">链上充值</button>
+              <button class="ghost-btn" style="width:auto; padding:11px 22px;" onclick="showPanel('withdraw')">链上提现</button>
+            </div>
+          </div>
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-head">
+              <div>
+                <div class="field-label">法币账户 · CNY</div>
+                <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+                <div class="hint block" style="display:none;">用于 <b>法币直存 / 法币直取</b> 业务。真实人民币始终在卡商自有银行账户中，平台不托管；卡商<b>质押稳定币</b>换取等值<b>法币信用额度</b>，账户可用余额 = 信用额度上限 − 当前敞口。</div>
+              </div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+                <div class="status-badge" id="dash-fiat-state" style="background:var(--pp-success-soft); color:#1f7a43;">额度充足</div>
+                <div class="status-badge" id="acct-fiat-badge">已开通</div>
+              </div>
+            </div>
+            <div class="quote-amt" id="dash-fiat-room">¥813,350.00</div>
+            <div class="hint" style="margin-top:-10px;">剩余可用额度 · 可继续承接法币直存的上限</div>
+            <div>
+              <div class="bar"><div class="bar-fill" id="dash-fiat-bar" style="width:0%;"></div></div>
+              <div class="bar-legend"><span id="dash-fiat-bar-l">已用 —</span><span id="dash-fiat-bar-r">额度上限 —</span></div>
+            </div>
+            <div class="quote-box">
+              <div class="quote-row"><div class="k">信用额度上限（质押数量 × 质押汇率）</div><div class="v" id="dash-fiat-ceiling">—</div></div>
+              <div class="quote-row"><div class="k">当前敞口（已用额度）</div><div class="v frozen" id="dash-fiat-float">—</div></div>
+              <div class="quote-row"><div class="k">剩余可用额度</div><div class="v" id="dash-fiat-room2">—</div></div>
+            </div>
+            <div class="hint block" id="acct-fiat-note" style="display:none;"></div>
+            <div style="display:flex; gap:10px; margin-top:auto;">
+              <button class="primary-btn" style="width:auto; padding:11px 22px;" onclick="showPanel('pledge')">管理质押</button>
+              <button class="ghost-btn" style="width:auto; padding:11px 22px;" onclick="showPanel('ledger')">银行卡往来明细</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-label" style="margin:4px 0 12px;">待处理队列</div>
+        <div class="tiles" id="dash-tiles"></div>
+
+        <div class="card">
+          <div class="field-label">冻结明细</div>
+          <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+          <div class="hint block" style="display:none;">每接一笔 On Ramp 订单，系统按订单稳定币数量冻结相应保证金；确认收款后该部分结算给商户，冻结与总额同步扣减。法币直存 / 法币直取 不逐笔冻结稳定币，而是占用 / 释放由<b>质押</b>换来的<b>法币信用额度</b>（见「质押管理」）。</div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr><th>订单号</th><th>类型</th><th>冻结数量</th><th>对应法币</th><th>状态</th></tr>
+              </thead>
+              <tbody id="freeze-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="field-label">快速入口</div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <button class="primary-btn" style="width:auto; padding:10px 20px;" onclick="showPanel('orders')">进入订单处理</button>
+            <button class="ghost-btn" style="width:auto; padding:10px 20px;" onclick="showPanel('cards')">管理收款卡 / 放款卡</button>
+            <button class="ghost-btn" style="width:auto; padding:10px 20px;" onclick="showPanel('pledge')">管理质押与信用额度</button>
+            <button class="ghost-btn" style="width:auto; padding:10px 20px;" onclick="showPanel('ledger')">银行卡往来明细</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 链上充值（稳定币账户） ============ -->
+      <div class="panel" id="panel-deposit">
+        <div class="card" style="max-width:660px;">
+          <div class="card-head">
+            <div>
+              <div class="field-label">链上充值 · 稳定币账户</div>
+              <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+              <div class="hint block" style="display:none;">卡商的稳定币账户是自有营运资金：接 On Ramp 订单需要占用保证金，额度不足时可从自有链上钱包充值补充。法币账户不提供链上充提——人民币的进出已完全由「法币直存 / 法币直取」订单流覆盖。</div>
+            </div>
+            <div class="status-badge" id="dep-acct-badge">账户可用 —</div>
+          </div>
+
+          <div class="gate" id="dep-step1">
+            <div class="gate-head"><div class="gate-no">1</div><div class="gate-title">选择代币</div><div class="gate-state" id="dep-step1-state"></div></div>
+            <div class="hint block">卡商稳定币账户当前开通的代币。</div>
+            <div class="select-box" id="dep-token-box"></div>
+          </div>
+
+          <div class="gate" id="dep-step2">
+            <div class="gate-head"><div class="gate-no">2</div><div class="gate-title">选择网络</div><div class="gate-state" id="dep-step2-state"></div></div>
+            <div class="hint block">充值地址与网络一一对应，请务必按所选网络转入；跨网络转入的资产无法找回。</div>
+            <div class="select-box" id="dep-chain-box"></div>
+          </div>
+
+          <div class="gate" id="dep-step3">
+            <div class="gate-head"><div class="gate-no">3</div><div class="gate-title">充值详情</div><div class="gate-state" id="dep-step3-state"></div></div>
+            <div id="dep-detail"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 链上提现（稳定币账户） ============ -->
+      <div class="panel" id="panel-withdraw">
+        <div class="card" style="max-width:660px;">
+          <div class="card-head">
+            <div>
+              <div class="field-label">链上提现 · 稳定币账户</div>
+              <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+              <div class="hint block" style="display:none;">将稳定币账户的<b>可用余额</b>提至卡商自有链上地址。冻结中的保证金（待履约 On Ramp 订单占用）不可提现；服务费在提现数量中一并扣除。</div>
+            </div>
+            <div class="status-badge" id="wd-acct-badge">账户可用 —</div>
+          </div>
+
+          <div class="gate" id="wd-step1">
+            <div class="gate-head"><div class="gate-no">1</div><div class="gate-title">选择代币</div><div class="gate-state" id="wd-step1-state"></div></div>
+            <div class="select-box" id="wd-token-box"></div>
+          </div>
+
+          <div class="gate" id="wd-step2">
+            <div class="gate-head"><div class="gate-no">2</div><div class="gate-title">设置目的地</div><div class="gate-state" id="wd-step2-state"></div></div>
+            <div class="card-inner">
+              <div class="field-label">网络</div>
+              <div class="select-box" id="wd-chain-box"></div>
+              <div class="field-label">提现地址</div>
+              <input type="text" id="wd-address" placeholder="请先选择网络" disabled oninput="wdOnAddress()">
+              <div class="err-text" id="wd-address-err" style="display:none;"></div>
+            </div>
+          </div>
+
+          <div class="gate" id="wd-step3">
+            <div class="gate-head"><div class="gate-no">3</div><div class="gate-title">设置提现金额</div><div class="gate-state" id="wd-step3-state"></div></div>
+            <div class="card-inner">
+              <div class="field-label">到账金额（<span id="wd-sym">USDT</span>）</div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="number" step="0.01" id="wd-amount" placeholder="请输入金额" oninput="wdOnAmount()">
+                <button class="mini-btn" onclick="wdFillAll()">全部</button>
+              </div>
+              <div class="err-text" id="wd-amount-err" style="display:none;"></div>
+            </div>
+            <div class="quote-box">
+              <div class="quote-row"><div class="k">可用余额</div><div class="v" id="wd-avail">—</div></div>
+              <div class="quote-row"><div class="k">服务费</div><div class="v" id="wd-fee">—</div></div>
+              <div class="quote-row"><div class="k">提现数量（到账金额 + 服务费）</div><div class="v" id="wd-total">—</div></div>
+            </div>
+            <button class="primary-btn" id="wd-next" disabled onclick="wdOpenConfirm()">下一步</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 质押管理（稳定币质押 → 法币信用额度） ============ -->
+      <div class="panel" id="panel-pledge">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="field-label">质押与法币信用额度</div>
+              <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+              <div class="hint block" style="display:none;">法币直存 / 法币直取 的真实人民币在<b>卡商自有银行账户</b>中流动，平台无法托管或直接核验，因此要求卡商先<b>质押自有稳定币</b>作为担保：系统冻结质押的稳定币，并按<b>平台设定的质押汇率</b>折算出等值的<b>法币信用额度</b>。<b>法币账户可用余额 = 信用额度上限 − 当前敞口</b>，除此之外没有其它法币余额来源。</div>
+            </div>
+            <div class="status-badge" id="pledge-badge">—</div>
+          </div>
+          <div id="pledge-alert"></div>
+          <div id="pledge-summary"></div>
+        </div>
+
+        <div class="row">
+          <div class="card" style="flex:1;">
+            <div class="field-label">追加质押</div>
+            <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+            <div class="hint block" style="display:none;">从<b>稳定币账户可用余额</b>中划出并锁定，按当前质押汇率即时提升信用额度上限。锁定期间该部分不可提现、不可用作 On Ramp 保证金。</div>
+            <div class="form-item">
+              <div class="field-label">质押数量（USDT）</div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="number" step="0.01" id="pledge-add-amt" placeholder="请输入质押数量" oninput="renderPledge()">
+                <button class="mini-btn" onclick="pledgeFillAll()">全部</button>
+              </div>
+              <div class="err-text" id="pledge-add-err" style="display:none;"></div>
+            </div>
+            <div id="pledge-add-preview"></div>
+            <button class="primary-btn" id="pledge-add-btn" disabled onclick="pledgeAddConfirm()">确认追加质押</button>
+          </div>
+
+          <div class="card" style="flex:1;">
+            <div class="field-label">申请释放质押</div>
+            <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+            <div class="hint block" style="display:none;">解锁质押的稳定币并退回可用余额，同时<b>下调</b>信用额度上限。正在支撑敞口的担保不可释放：<b>释放后的信用额度上限不得低于当前敞口</b>。</div>
+            <div class="form-item">
+              <div class="field-label">释放数量（USDT）</div>
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="number" step="0.01" id="pledge-rel-amt" placeholder="请输入释放数量" oninput="renderPledge()">
+                <button class="mini-btn" onclick="pledgeFillMaxRelease()">可释放上限</button>
+              </div>
+              <div class="err-text" id="pledge-rel-err" style="display:none;"></div>
+            </div>
+            <div id="pledge-rel-preview"></div>
+            <button class="primary-btn" id="pledge-rel-btn" disabled onclick="pledgeRelConfirm()">确认释放质押</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="field-label">质押流水</div>
+          <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+          <div class="hint block" style="display:none;">仅追加，永不修改或删除。每一行记录当时的质押汇率与变动后的信用额度上限，便于与平台侧账目逐条勾对。</div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr><th>时间</th><th>操作类型</th><th>数量（USDT）</th><th>当时质押汇率</th><th>变动后信用额度</th><th>操作人</th></tr>
+              </thead>
+              <tbody id="pledge-log-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="field-label">预警设置</div>
+          <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+          <div class="hint block" style="display:none;">额度即将见底时提前通知自己，避免法币直存派单突然中断。此处设置<b>仅是个人提醒</b>，不影响任何派单规则。</div>
+          <div class="form-item">
+            <div class="field-label">提醒阈值</div>
+            <div style="display:flex; gap:8px; align-items:center; font-size:13.5px;">
+              <span class="nowrap">剩余额度低于</span>
+              <input type="number" id="alert-th" step="1" min="1" max="90" style="max-width:110px;" placeholder="20" oninput="renderAlertCfg()">
+              <span class="nowrap">% 时提醒我</span>
+            </div>
+            <div class="err-text" id="alert-th-err" style="display:none;"></div>
+          </div>
+          <div id="alert-toggles"></div>
+          <div class="form-item">
+            <div class="field-label">企业微信机器人 Webhook 地址</div>
+            <input type="text" id="alert-webhook" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..." oninput="renderAlertCfg()">
+            <div class="err-text" id="alert-webhook-err" style="display:none;"></div>
+          </div>
+          <button class="primary-btn" style="width:auto; padding:11px 26px; align-self:flex-start;" onclick="alertSave()">保存预警设置</button>
+          <div class="banner banner-info"><div><b>平台侧另有最低安全额度</b>除你在此设置的个人提醒阈值外，平台还设有一条<b>不可调整、卡商侧不可见具体数值</b>的最低安全额度线，用于在极端情况下<b>自动暂停向本卡商派发法币直存订单</b>，以免敞口超出质押担保的覆盖范围。</div></div>
+        </div>
+      </div>
+
+      <!-- ============ 卡管理 ============ -->
+      <div class="panel" id="panel-cards">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="field-label">收款卡</div>
+              <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+              <div class="hint block" style="display:none;">用于「On Ramp」与「法币直存」两类订单的收款。系统按支付渠道、币种、工作时段与限额进行筛选后派单。</div>
+            </div>
+            <button class="mini-btn primary" onclick="openCardForm('in', null)">+ 新增收款卡</button>
+          </div>
+          <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>派单顺位规则</div>
+          <div class="banner banner-info" style="display:none;"><div>当多张收款卡同时满足全部匹配条件（在上线时段内、剩余限额充足、支持该支付渠道与币种等条件完全并列）时，系统按<b>编号从小到大</b>依次派单，编号小的先接单。</div></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr><th>编号</th><th>卡号</th><th>持卡人</th><th>开户行</th><th>支付渠道</th><th>币种</th><th>上线 / 下线</th><th>时段总额上限</th><th>单笔限额</th><th>状态</th><th>操作</th></tr>
+              </thead>
+              <tbody id="cards-in-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="field-label">放款卡</div>
+              <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+              <div class="hint block" style="display:none;">同一张放款卡同时服务两类业务：「Off Ramp」（向 C 端客户打款，订单含汇率）与「法币直取」（向商户打款，金额已在上游扣费、不涉及汇率）。因此放款卡的限额需同时覆盖两类出款。</div>
+            </div>
+            <button class="mini-btn primary" onclick="openCardForm('out', null)">+ 新增放款卡</button>
+          </div>
+          <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>派单顺位规则</div>
+          <div class="banner banner-info" style="display:none;"><div>当多张放款卡同时满足全部匹配条件（在上线时段内、剩余限额充足、支持该支付渠道与币种等条件完全并列）时，系统按<b>编号从小到大</b>依次派单，编号小的先接单。</div></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr><th>编号</th><th>卡号</th><th>持卡人</th><th>开户行</th><th>支付渠道</th><th>币种</th><th>上线 / 下线</th><th>时段总额上限</th><th>单笔限额</th><th>状态</th><th>操作</th></tr>
+              </thead>
+              <tbody id="cards-out-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ 订单处理 ============ -->
+      <div class="panel" id="panel-orders">
+        <!-- 快速核对：置于队列标签之上，切换任何队列都常驻（一次粘贴同时搜索 On Ramp + 法币直存 待处理订单） -->
+        <div id="quick-match"></div>
+        <div class="filters" id="order-tabs"></div>
+        <div id="order-queue"></div>
+      </div>
+
+      <!-- ============ 银行卡往来明细 ============ -->
+      <div class="panel" id="panel-ledger">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="field-label">银行卡往来明细</div>
+              <div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>
+              <div class="hint block" style="display:none;">按<b>单张已登记的收款卡 / 放款卡</b>查看往来流水。下表的每一行都来自「订单处理」中<b>已完成</b>的订单（已处理流水，以及已确认的法币直存收款与法币直取垫付），只是按卡片过滤后按时间先后排列——一张卡对应一个真实银行账户，可与该账户的银行流水逐条勾对。</div>
+            </div>
+            <button class="mini-btn" onclick="showPanel('orders')">前往订单处理</button>
+          </div>
+          <div class="filters" id="ledger-tabs"></div>
+          <div id="ledger-summary"></div>
+          <div class="tbl-wrap">
+            <table>
+              <thead>
+                <tr><th>时间</th><th>订单号</th><th>业务类型</th><th>方向</th><th>金额</th><th>备注</th></tr>
+              </thead>
+              <tbody id="ledger-tbody"></tbody>
+            </table>
+          </div>
+          <div class="hint block" id="ledger-foot"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="drawer-mask" id="mask" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div>
+      <div class="drawer-title" id="drawer-title">标题</div>
+      <div class="drawer-sub" id="drawer-sub">副标题</div>
+    </div>
+    <button class="close-x" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+  <div class="drawer-foot" id="drawer-foot"></div>
+</div>
+
+<!-- 客户上传凭证 · 放大查看（只读，卡商不产生该文件） -->
+<div class="lightbox" id="lightbox" onclick="closeProof()">
+  <div class="lightbox-inner" id="lightbox-inner" onclick="event.stopPropagation()"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================================
+ * PayPaz 卡商后台原型
+ * 与商户后台（broker-portal.html）共用同一套设计令牌与组件体系。
+ * 在商户后台的「账户体系」之上，新增：收款卡/放款卡管理、订单处理、银行卡往来明细；
+ * 稳定币账户与商户一样支持链上充值 / 链上提现。
+ * ========================================================================= */
+
+const KYC_NAME = '李江川';                 // 卡商实名主体，所有绑卡的持卡人姓名必须与之一致
+const MCH_CODE = 'MCH-10199';              // 恒信卡商，与商户后台演示数据中的卡商编号对应
+const CHANNELS = ['银行卡转账', '支付宝', '微信支付', '云闪付'];
+const PAYOUT_TOLERANCE = 1.00;             // Off Ramp 实付金额允许的绝对误差（元），超出则转异常上报
+
+/* ---------------- 账户体系 ----------------
+ * 卡商恰好有两个账户，由平台在管理后台分别开通 / 停用：
+ *   stable 稳定币账户 —— 履约 On Ramp / Off Ramp 订单时使用
+ *   fiat   法币账户   —— 履约 法币直存 / 法币直取 订单时使用
+ * 只做数据记账：平台不为卡商托管人民币现金，真实资金在卡商自有银行账户中流动。
+ * ------------------------------------------------------------------ */
+let ACCOUNTS = {
+  stable: { enabled:true, name:'稳定币账户', biz:'On Ramp / Off Ramp', ccy:'USDT' },
+  fiat:   { enabled:true, name:'法币账户',   biz:'法币直存 / 法币直取', ccy:'CNY' },
+};
+let usdt = { available: 86420.00, frozen: 3000.00 };
+
+/* ---------------- 链上充提（仅稳定币账户） ----------------
+ * 卡商的稳定币账户是自有营运资金，因此与商户一样需要链上充值 / 提现能力。
+ * 法币账户不设链上充提：人民币的进出已由「法币直存 / 法币直取」订单流完整覆盖。
+ * 结构与商户后台（broker-portal.html）的 Deposit / Withdraw 保持一致。
+ * ------------------------------------------------------------------ */
+const TOKENS = [
+  { id:'USDT', name:'USDT', full:'Tether USD',
+    chains:[
+      { id:'TRC20', name:'Tron (TRC20)', short:'TRC20', depositMin:10, withdrawMin:20, fee:1,
+        confirms:'1 个网络确认', address:'TQn9Y2khDD95J42FQtQTdwVVRnDpu4Xy8f' },
+      { id:'ERC20', name:'Ethereum (ERC20)', short:'ERC20', depositMin:20, withdrawMin:30, fee:5,
+        confirms:'12 个网络确认', address:'0x8f2A55949038A9610F50Fb23b5883Af3B4ecb3c4' },
+    ] },
+];
+function tokenById(id){ return TOKENS.find(t => t.id === id) || null; }
+function chainById(tokenId, chainId){
+  const t = tokenById(tokenId);
+  return t ? (t.chains.find(c => c.id === chainId) || null) : null;
+}
+let depSel = { token:'USDT', chain:null };
+let wdSel  = { token:'USDT', chain:null };
+let ws = null;             // 提现确认 / 结果抽屉状态
+let chainSeq = 8801;       // 演示用链上提现单号自增
+
+/* ---------------- 卡片数据 ----------------
+ * seq 为卡片「编号」：多张卡匹配条件完全并列时，系统按编号升序派单。
+ * ------------------------------------------------------------------ */
+let cardSeq = 100;
+let CARDS_IN = [
+  { id:'CIN-01', seq:'PC-01', no:'6225 8801 **** 3391', holder:KYC_NAME, bank:'招商银行 深圳分行', channels:['银行卡转账','支付宝'], ccy:'CNY', on:'09:00', off:'22:00', shiftLimit:300000, singleLimit:50000, enabled:true },
+  { id:'CIN-02', seq:'PC-02', no:'6217 0021 **** 8842', holder:KYC_NAME, bank:'中国银行 广州分行', channels:['银行卡转账','微信支付','云闪付'], ccy:'CNY', on:'08:30', off:'23:30', shiftLimit:200000, singleLimit:30000, enabled:true },
+  { id:'CIN-03', seq:'PC-03', no:'6222 0233 **** 1157', holder:KYC_NAME, bank:'工商银行 东莞分行', channels:['支付宝'], ccy:'CNY', on:'10:00', off:'18:00', shiftLimit:80000, singleLimit:20000, enabled:false },
+];
+let CARDS_OUT = [
+  { id:'COUT-01', seq:'PO-01', no:'6225 8801 **** 7720', holder:KYC_NAME, bank:'招商银行 深圳分行', channels:['银行卡转账'], ccy:'CNY', on:'09:00', off:'21:00', shiftLimit:500000, singleLimit:100000, enabled:true },
+  { id:'COUT-02', seq:'PO-02', no:'6217 0021 **** 4408', holder:KYC_NAME, bank:'中国银行 广州分行', channels:['银行卡转账','支付宝'], ccy:'CNY', on:'09:30', off:'20:30', shiftLimit:250000, singleLimit:60000, enabled:true },
+];
+/* 生成下一个编号：PC-0N（收款卡） / PO-0N（放款卡） */
+function nextCardSeq(kind){
+  const prefix = kind === 'in' ? 'PC-' : 'PO-';
+  const nums = listOf(kind).map(c => parseInt(String(c.seq).replace(prefix, ''), 10) || 0);
+  const n = (nums.length ? Math.max.apply(null, nums) : 0) + 1;
+  return prefix + String(n).padStart(2, '0');
+}
+
+/* ---------------- 订单数据 ----------------
+ * type: collect_otc On Ramp | collect_fiat 法币直存 | payout_otc Off Ramp | payout_fiat 法币直取
+ * ------------------------------------------------------------------ */
+let COLLECT = [
+  { no:'RC-93027', type:'collect_otc',  fiat:7251.95,  usdt:1000.00, customer:'王小明', cardId:'CIN-01', method:'银行卡转账', left:1440, status:'pending' },
+  { no:'RC-93044', type:'collect_otc',  fiat:3626.00,  usdt:500.00,  customer:'赵一鸣', cardId:'CIN-02', method:'微信支付',   left:2015, status:'pending' },
+  { no:'RC-93051', type:'collect_otc',  fiat:10878.00, usdt:1500.00, customer:'陈美玲', cardId:'CIN-01', method:'支付宝',     left:860,  status:'pending' },
+  { no:'FD-30081', type:'collect_fiat', fiat:2600.00,  usdt:0,       customer:'林志豪', cardId:'CIN-02', method:'银行卡转账', left:1720, status:'pending' },
+  { no:'FD-30092', type:'collect_fiat', fiat:1480.00,  usdt:0,       customer:'周若男', cardId:'CIN-01', method:'银行卡转账', left:2380, status:'pending' },
+  /* 演示「金额相近」用：银行到账 ¥5,003.00（跨行手续费差额）与本单应收 ¥5,000.00 相差 0.06%，落在快速核对的 1% 容差内 */
+  { no:'FD-30104', type:'collect_fiat', fiat:5000.00,  usdt:0,       customer:'黄雅琴', cardId:'CIN-01', method:'银行卡转账', left:2560, status:'pending' },
+  /* 本期已完成的 On Ramp（同时是「已处理」队列与「银行卡往来明细」的数据来源） */
+  { no:'RC-92880', type:'collect_otc',  fiat:5079.00,  usdt:700.00,  customer:'张海',   cardId:'CIN-01', method:'银行卡转账', left:0, status:'done' },
+  { no:'RC-92915', type:'collect_otc',  fiat:8702.34,  usdt:1200.00, customer:'吴敏',   cardId:'CIN-02', method:'支付宝',     left:0, status:'done' },
+];
+
+let PAYOUT = [
+  { no:'WD-77410', type:'payout_otc', expect:10705.38, usdt:1500.00, payee:'王小明', bank:'招商银行 6225 **** 3391', cardId:'COUT-01', rate:'1 USDT ≈ ¥7.1369', status:'pending' },
+  { no:'WD-77455', type:'payout_otc', expect:4281.00,  usdt:600.00,  payee:'林志豪', bank:'中国银行 6217 **** 9903', cardId:'COUT-02', rate:'1 USDT ≈ ¥7.1350', status:'pending' },
+  /* 本期已完成的 Off Ramp */
+  { no:'WD-77302', type:'payout_otc', expect:7136.92, usdt:1000.00, payee:'刘倩', bank:'招商银行 6225 **** 4417', cardId:'COUT-01', rate:'1 USDT ≈ ¥7.1369', status:'done' },
+  { no:'WD-77358', type:'payout_otc', expect:3568.46, usdt:500.00,  payee:'何伟', bank:'工商银行 6222 **** 6650', cardId:'COUT-02', rate:'1 USDT ≈ ¥7.1369', status:'done' },
+];
+
+let FIATWD = [
+  { no:'FW-20031', type:'payout_fiat', net:6480.00, broker:'汇通商户 · BRK-2201', bank:'招商银行 **** 8821', cardId:'COUT-01', status:'pending', time:'—' },
+  { no:'FW-20032', type:'payout_fiat', net:2150.00, broker:'星辰跨境 · BRK-2317', bank:'建设银行 **** 5106', cardId:'COUT-02', status:'pending', time:'—' },
+  { no:'FW-20014', type:'payout_fiat', net:1994.00, broker:'汇通商户 · BRK-2201', bank:'招商银行 **** 8821', cardId:'COUT-01', status:'done', time:'08-19 16:20' },
+  { no:'FW-20033', type:'payout_fiat', net:2806.00, broker:'恒达电商 · BRK-2408', bank:'工商银行 **** 3372', cardId:'COUT-02', status:'done', time:'08-22 11:07' },
+];
+
+/* 已确认的法币直存收款：每一笔在确认时即时入账给商户，并同额占用卡商的法币信用额度 */
+let COLLECTED_FIAT = [
+  { no:'FD-30020', amount:4000.00, cardId:'CIN-01', time:'08-18 10:22' },
+  { no:'FD-30032', amount:3200.00, cardId:'CIN-01', time:'08-21 11:40' },
+  { no:'FD-30061', amount:2400.00, cardId:'CIN-02', time:'08-22 15:03' },
+  { no:'FD-30070', amount:1850.00, cardId:'CIN-02', time:'08-23 09:47' },
+];
+
+/* =========================================================================
+ * 质押与法币信用额度（取代已下线的「法币净额对账」）
+ * ------------------------------------------------------------------------
+ * 真实人民币在卡商自有银行账户里，平台既无法托管也无法直接核验，存在交易对手风险。
+ * 因此要做法币直存 / 法币直取业务的卡商，必须先质押自有稳定币作为担保：
+ *   信用额度上限 = 已质押稳定币数量 × 平台设定的质押汇率（该汇率由平台在管理后台
+ *   设定，通常低于真实市场价，低出的部分即平台内建的安全垫，无需再额外打折）
+ *   当前敞口     = 已确认的法币直存累计 − 已确认的法币直取累计（不小于 0）
+ *   剩余可用额度 = 信用额度上限 − 当前敞口   ← 这就是「法币账户可用余额」
+ *
+ * 方向务必不要弄反：
+ *   法币直存 确认 → 敞口 ↑、剩余可用额度 ↓
+ *     卡商虽然刚收到真实现金，但确认动作意味着平台立刻把款项贷记给商户（正是有了
+ *     质押担保，才不必再等一轮慢速的银行归集结算），卡商对平台的在途义务随之上升。
+ *   法币直取 确认 → 敞口 ↓、剩余可用额度 ↑
+ *     卡商自掏现金付出去，冲销了在途义务，担保被释放出来。
+ * ------------------------------------------------------------------------ */
+let PLEDGE = {
+  pledged: 300000.00,   // 已质押稳定币数量（USDT），由稳定币账户可用余额划出并锁定
+  rate: 7.00,           // 质押汇率（CNY/USDT），平台设定，卡商侧只读
+};
+/* 历史周期结转的净敞口：本演示数据里 COLLECTED_FIAT / FIATWD 只保留最近几笔，
+ * 以此基数让额度使用率呈现真实业务下的水平，而不是接近 0 的空条。 */
+const FLOAT_CARRY = 1280000.00;
+
+let PLEDGE_LOG = [
+  { time:'08-26 09:12', kind:'add', amount:50000.00,  rate:7.00, ceiling:2100000.00, by:'卡商自助操作' },
+  { time:'08-12 15:40', kind:'add', amount:100000.00, rate:7.00, ceiling:1750000.00, by:'卡商自助操作' },
+  { time:'07-30 10:05', kind:'add', amount:150000.00, rate:7.00, ceiling:1050000.00, by:'卡商自助操作' },
+];
+
+/* 预警设置：纯个人提醒，不影响派单；平台侧另有不可调整的最低安全额度线 */
+let ALERT_CFG = {
+  threshold: 20,                                  // 剩余额度低于该百分比时提醒
+  email: true, contactEmail: 'lijiangchuan@hengxin-otc.com',   // 注册联系邮箱，只读
+  im: false, webhook: '',
+};
+
+/* 已处理订单流水：本期已完成 / 已上报的订单。
+ * 「银行卡往来明细」页直接读取本数组（并按订单号回查 COLLECT / PAYOUT / FIATWD 取得所用卡片），
+ * 不另建独立数据集，保证两处看到的是同一批订单。 */
+let DONE_LOG = [
+  { no:'WD-77358', type:'payout_otc',  amount:3568.46, ok:true, time:'08-23 10:05', note:'实付 ¥3,568.46（差异 ¥0.00，容差内）· 回补 500.00 USDT' },
+  { no:'WD-77302', type:'payout_otc',  amount:7136.92, ok:true, time:'08-20 17:48', note:'实付 ¥7,136.92（差异 ¥0.00，容差内）· 回补 1,000.00 USDT' },
+  { no:'RC-92915', type:'collect_otc', amount:8702.34, ok:true, time:'08-20 14:35', note:'三重核验通过 · 付款人 吴敏 · 渠道 支付宝 · 释放冻结 1,200.00 USDT' },
+  { no:'RC-92880', type:'collect_otc', amount:5079.00, ok:true, time:'08-19 09:12', note:'三重核验通过 · 付款人 张海 · 渠道 银行卡转账 · 释放冻结 700.00 USDT' },
+];
+/* ---------------- 客户上传的付款凭证 ----------------
+ * 客户在商户端（broker-portal.html）完成线下转账后自行上传的付款截图。
+ * 对卡商而言这是**只读的参考材料**：卡商不上传、不修改，只负责查看、与自己收款卡的
+ * 银行流水逐项比对，并独立判断这张图是否像伪造件（「标记为疑似伪造」开关）。
+ * 演示用图由 proofSvg() 现场画出，带「凭证示例 · 演示数据」水印，不是真实银行截图。
+ * ------------------------------------------------------------------ */
+let CUSTOMER_PROOFS = {
+  'RC-93027': { app:'招商银行', color:'#c2262e', amount:7251.95, payer:'王小明', payerAcct:'6214 **** 8832',
+    payee:KYC_NAME, payeeAcct:'6225 8801 **** 3391', channel:'银行卡转账', time:'08-27 10:12:36',
+    ref:'20260827-CMB-0093271', file:'客户上传_转账截图_RC-93027.png', up:'08-27 10:13' },
+  'RC-93044': { app:'微信支付', color:'#07C160', amount:3626.00, payer:'赵一鸣', payerAcct:'微信零钱 **** 4471',
+    payee:KYC_NAME, payeeAcct:'6217 0021 **** 8842', channel:'微信支付', time:'08-27 09:41:08',
+    ref:'20260827-WX-4410093044', file:'客户上传_付款截图_RC-93044.jpg', up:'08-27 09:42' },
+  'RC-93051': { app:'支付宝', color:'#1677FF', amount:10878.00, payer:'陈美玲', payerAcct:'支付宝 138****6620',
+    payee:KYC_NAME, payeeAcct:'6225 8801 **** 3391', channel:'支付宝', time:'08-27 11:05:52',
+    ref:'20260827-ALI-2093051', file:'客户上传_付款截图_RC-93051.png', up:'08-27 11:07' },
+  'FD-30081': { app:'中国银行', color:'#a5231f', amount:2600.00, payer:'林志豪', payerAcct:'6217 **** 5580',
+    payee:KYC_NAME, payeeAcct:'6217 0021 **** 8842', channel:'银行卡转账', time:'08-27 10:33:19',
+    ref:'20260827-BOC-0030081', file:'客户上传_转账回单_FD-30081.png', up:'08-27 10:35' },
+  'FD-30092': { app:'招商银行', color:'#c2262e', amount:1480.00, payer:'周若男', payerAcct:'6225 **** 1147',
+    payee:KYC_NAME, payeeAcct:'6225 8801 **** 3391', channel:'银行卡转账', time:'08-27 11:20:04',
+    ref:'20260827-CMB-0030092', file:'客户上传_转账回单_FD-30092.png', up:'08-27 11:21' },
+  'FD-30104': { app:'工商银行', color:'#b31f24', amount:5000.00, payer:'黄雅琴', payerAcct:'6222 **** 9038',
+    payee:KYC_NAME, payeeAcct:'6225 8801 **** 3391', channel:'银行卡转账', time:'08-27 11:34:41',
+    ref:'20260827-ICBC-0030104', file:'客户上传_转账回单_FD-30104.png', up:'08-27 11:36' },
+};
+function proofOf(no){ return CUSTOMER_PROOFS[no] || null; }
+
+/* 现场绘制一张「客户上传的付款截图」占位图（内联 SVG，无外部依赖） */
+function proofSvg(p){
+  const F = 'PingFang SC, Microsoft YaHei, sans-serif';
+  const rows = [
+    ['付款人', p.payer + '　' + p.payerAcct],
+    ['收款账户', p.payee + '　' + p.payeeAcct],
+    ['支付方式', p.channel],
+    ['转账时间', p.time],
+    ['交易流水号', p.ref],
+  ];
+  let y = 200, body = '';
+  rows.forEach(function(r){
+    body +=
+      '<text x="20" y="' + y + '" font-family="' + F + '" font-size="10.5" fill="#8b93a3">' + esc(r[0]) + '</text>' +
+      '<text x="280" y="' + y + '" text-anchor="end" font-family="' + F + '" font-size="10.5" fill="#1c2128">' + esc(r[1]) + '</text>' +
+      '<line x1="20" y1="' + (y + 12) + '" x2="280" y2="' + (y + 12) + '" stroke="#eceef3" stroke-width="1"/>';
+    y += 34;
+  });
+  return '<svg viewBox="0 0 300 420" width="100%" xmlns="http://www.w3.org/2000/svg" style="display:block;">' +
+    '<rect width="300" height="420" fill="#ffffff"/>' +
+    '<rect width="300" height="54" fill="' + p.color + '"/>' +
+    '<text x="150" y="33" text-anchor="middle" font-family="' + F + '" font-size="13" font-weight="700" fill="#ffffff">' + esc(p.app) + ' · 转账详情</text>' +
+    '<circle cx="150" cy="92" r="17" fill="none" stroke="#55D187" stroke-width="2.4"/>' +
+    '<path d="M142 92 l6 6 11 -12" fill="none" stroke="#55D187" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<text x="150" y="132" text-anchor="middle" font-family="' + F + '" font-size="12" fill="#6b7280">转账成功</text>' +
+    '<text x="150" y="166" text-anchor="middle" font-family="' + F + '" font-size="24" font-weight="800" fill="#1c2128">¥' + money(p.amount) + '</text>' +
+    body +
+    '<text x="150" y="' + (y + 12) + '" text-anchor="middle" font-family="' + F + '" font-size="10" fill="#b6bcc9">客户于 ' + esc(p.up) + ' 上传</text>' +
+    '<g transform="rotate(-21 150 250)" opacity="0.15">' +
+      '<text x="150" y="256" text-anchor="middle" font-family="' + F + '" font-size="25" font-weight="800" fill="#435DDD">凭证示例 · 演示数据</text>' +
+    '</g>' +
+  '</svg>';
+}
+
+/* 抽屉内的凭证查看区：缩略图 + 关键字段，点击放大 */
+function proofBlock(no){
+  const p = proofOf(no);
+  if(!p){
+    return '<div class="proof-none">客户尚未上传付款凭证。<br>卡商无需（也无法）代客户上传，请等待客户在商户端补交，或直接「上报异常」由平台联系客户。</div>';
+  }
+  return '<div class="proof-row">' +
+      '<div class="proof-thumb" title="点击放大查看" onclick="openProof(\'' + no + '\')">' + proofSvg(p) + '</div>' +
+      '<div class="proof-meta">' +
+        '<div><b>' + esc(p.file) + '</b></div>' +
+        '<div>上传时间：' + esc(p.up) + '</div>' +
+        '<div>凭证付款人：' + esc(p.payer) + '</div>' +
+        '<div>凭证金额：' + cny(p.amount) + '　渠道：' + esc(p.channel) + '</div>' +
+        '<div><span class="link-btn" onclick="openProof(\'' + no + '\')">点击放大查看原图</span></div>' +
+      '</div>' +
+    '</div>';
+}
+
+function openProof(no){
+  const p = proofOf(no);
+  if(!p) return;
+  document.getElementById('lightbox-inner').innerHTML =
+    '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">' +
+      '<div><div class="drawer-title">客户上传的付款凭证</div>' +
+        '<div class="drawer-sub">' + esc(no + ' · ' + p.file) + '</div></div>' +
+      '<button class="close-x" onclick="closeProof()">✕</button>' +
+    '</div>' +
+    '<div style="border:1px solid var(--pp-border); border-radius:10px; overflow:hidden; line-height:0;">' + proofSvg(p) + '</div>' +
+    '<div class="quote-box">' +
+      '<div class="quote-row"><div class="k">凭证金额</div><div class="v">' + cny(p.amount) + '</div></div>' +
+      '<div class="quote-row"><div class="k">凭证付款人</div><div class="v">' + esc(p.payer) + '</div></div>' +
+      '<div class="quote-row"><div class="k">付款账户</div><div class="v mono">' + esc(p.payerAcct) + '</div></div>' +
+      '<div class="quote-row"><div class="k">收款账户</div><div class="v mono">' + esc(p.payeeAcct) + '</div></div>' +
+      '<div class="quote-row"><div class="k">支付方式</div><div class="v">' + esc(p.channel) + '</div></div>' +
+      '<div class="quote-row"><div class="k">转账时间</div><div class="v mono">' + esc(p.time) + '</div></div>' +
+      '<div class="quote-row"><div class="k">交易流水号</div><div class="v mono">' + esc(p.ref) + '</div></div>' +
+      '<div class="quote-row"><div class="k">客户上传时间</div><div class="v mono">' + esc(p.up) + '</div></div>' +
+    '</div>' +
+    '<div class="hint block">该图由客户在完成线下转账后于商户端自行上传，卡商侧<b>只读</b>：不可编辑、不可替换。请与本卡的银行流水逐项比对；若判断为伪造，请回到订单抽屉打开「标记为疑似伪造」。</div>';
+  document.getElementById('lightbox').classList.add('show');
+}
+function closeProof(){
+  const lb = document.getElementById('lightbox');
+  if(lb) lb.classList.remove('show');
+}
+
+let orderTab = 'onramp';    // onramp | offramp | fiatin | fiatwd | done
+let ledgerCard = null;      // 银行卡往来明细当前选中的卡片 id
+
+/* ---------------- 工具 ---------------- */
+function money(n){ return n.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
+function cny(n){ return '¥' + money(n); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toggleHint(el){
+  var box = el.nextElementSibling;
+  var open = box.style.display !== 'none';
+  box.style.display = open ? 'none' : 'block';
+  el.classList.toggle('open', !open);
+}
+function mmss(s){ const m = Math.floor(s/60), r = s%60; return String(m).padStart(2,'0') + ':' + String(r).padStart(2,'0'); }
+function nowStamp(){ const d = new Date(); return String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+function allCards(){ return CARDS_IN.concat(CARDS_OUT); }
+function cardById(id){ return allCards().find(c => c.id === id) || null; }
+function cardLabel(id){ const c = cardById(id); return c ? (c.no + ' · ' + c.bank.split(' ')[0]) : '未分配'; }
+
+let toastTimer = null;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+const TYPE_META = {
+  collect_otc:  { label:'On Ramp',  cls:'tag-info' },
+  collect_fiat: { label:'法币直存', cls:'tag-warn' },
+  payout_otc:   { label:'Off Ramp', cls:'tag-info' },
+  payout_fiat:  { label:'法币直取', cls:'tag-err'  },
+};
+function typeBadge(t){ const m = TYPE_META[t]; return '<span class="tag ' + m.cls + '">' + m.label + '</span>'; }
+
+/* ---------------- 导航 ---------------- */
+function showPanel(name){
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('show'));
+  document.getElementById('panel-' + name).classList.add('show');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelector('.nav-item[data-nav="' + name + '"]').classList.add('active');
+  const labels = { dash:'Dashboard', deposit:'链上充值', withdraw:'链上提现', pledge:'质押管理', cards:'收款卡 / 放款卡', orders:'订单处理', ledger:'银行卡往来明细' };
+  document.getElementById('breadcrumb').innerHTML = '卡商 / <b>' + labels[name] + '</b>';
+  closeDrawer();
+  renderAll();
+}
+function gotoOrders(tab){ orderTab = tab; showPanel('orders'); }
+
+/* ---------------- Dashboard ---------------- */
+function pendingCollect(){ return COLLECT.filter(o => o.status === 'pending'); }
+function pendingOnramp(){ return COLLECT.filter(o => o.status === 'pending' && o.type === 'collect_otc'); }
+function pendingFiatIn(){ return COLLECT.filter(o => o.status === 'pending' && o.type === 'collect_fiat'); }
+function pendingPayout(){ return PAYOUT.filter(o => o.status === 'pending'); }
+function pendingFiatWd(){ return FIATWD.filter(o => o.status === 'pending'); }
+
+/* 账户开通状态徽标 */
+function acctBadge(elId, noteId, enabled, bizText){
+  const b = document.getElementById(elId);
+  b.textContent = enabled ? '已开通' : '未开通';
+  b.style.cssText = enabled
+    ? 'background:var(--pp-success-soft); color:#1f7a43;'
+    : 'background:#f1f2f5; color:var(--pp-muted);';
+  const n = document.getElementById(noteId);
+  n.style.display = enabled ? 'none' : '';
+  n.innerHTML = enabled ? '' : '该业务线尚未开通：平台尚未为本卡商启用' + bizText + '，相关订单不会派发到本后台。如需开通请联系平台运营。';
+}
+
+function renderDash(){
+  acctBadge('acct-stable-badge', 'acct-stable-note', ACCOUNTS.stable.enabled, '「' + ACCOUNTS.stable.biz + '」业务');
+  acctBadge('acct-fiat-badge', 'acct-fiat-note', ACCOUNTS.fiat.enabled, '「' + ACCOUNTS.fiat.biz + '」业务');
+
+  const total = usdt.available + usdt.frozen + PLEDGE.pledged;
+  document.getElementById('dash-total').textContent = money(total);
+  document.getElementById('dash-total2').textContent = money(total) + ' USDT';
+  document.getElementById('dash-avail').textContent = money(usdt.available) + ' USDT';
+  document.getElementById('dash-frozen').textContent = money(usdt.frozen) + ' USDT';
+  document.getElementById('dash-pledged').textContent = money(PLEDGE.pledged) + ' USDT';
+
+  /* 法币账户卡片：与「质押管理」页读取同一份状态，不另存一份数字 */
+  const ceiling = pledgeCeiling(), flt = outstandingFloat(), room = pledgeHeadroom();
+  const usePct = pledgeUsedPct();
+  document.getElementById('dash-fiat-room').textContent = cny(room);
+  document.getElementById('dash-fiat-room2').textContent = cny(room);
+  document.getElementById('dash-fiat-ceiling').textContent = cny(ceiling);
+  document.getElementById('dash-fiat-float').textContent = cny(flt);
+  const bar = document.getElementById('dash-fiat-bar');
+  bar.style.width = usePct.toFixed(2) + '%';
+  bar.className = 'bar-fill' + barToneClass();
+  document.getElementById('dash-fiat-bar-l').textContent = '已用 ' + cny(flt) + '（' + usePct.toFixed(1) + '%）';
+  document.getElementById('dash-fiat-bar-r').textContent = '额度上限 ' + cny(ceiling);
+  const fb = document.getElementById('dash-fiat-state');
+  if(pledgeLowAlert()){
+    fb.textContent = '额度紧张';
+    fb.style.cssText = 'background:var(--pp-danger-soft); color:#a33;';
+  } else {
+    fb.textContent = '额度充足';
+    fb.style.cssText = 'background:var(--pp-success-soft); color:#1f7a43;';
+  }
+
+  const tiles = [
+    { k:'待处理 On Ramp',  dot:'var(--pp-warning)', v:pendingOnramp().length, sub:'稳定币账户 · 三重核验后确认收款', tab:'onramp' },
+    { k:'待处理 Off Ramp', dot:'var(--pp-primary)', v:pendingPayout().length, sub:'稳定币账户 · 核对实付与应付金额差异', tab:'offramp' },
+    { k:'待处理 法币直存',  dot:'var(--pp-warning)', v:pendingFiatIn().length, sub:'法币账户 · 确认后即时入账并占用信用额度', tab:'fiatin' },
+    { k:'待处理 法币直取',  dot:'var(--pp-danger)',  v:pendingFiatWd().length, sub:'法币账户 · 垫付登记后释放信用额度', tab:'fiatwd' },
+  ];
+  document.getElementById('dash-tiles').innerHTML = tiles.map(t =>
+    '<div class="tile" onclick="gotoOrders(\'' + t.tab + '\')">' +
+      '<div class="tile-k"><span class="tile-dot" style="background:' + t.dot + ';"></span>' + t.k + '</div>' +
+      '<div class="tile-v">' + t.v + '</div>' +
+      '<div class="tile-sub">' + t.sub + '</div>' +
+    '</div>'
+  ).join('');
+
+  const badge = document.getElementById('nav-order-badge');
+  const n = pendingCollect().length + pendingPayout().length + pendingFiatWd().length;
+  badge.textContent = n;
+  badge.style.display = n ? '' : 'none';
+}
+
+/* ---------------- 冻结明细（Dashboard 内）----------------
+ * 「账户余额总览」表已删除：稳定币账户 / 法币账户两张卡片已经完整呈现同样的
+ * 币种 / 可用 / 冻结 / 总额数字，表格属于重复呈现。这里只保留两张卡片给不出的
+ * 信息——冻结「为什么」被占用的逐笔拆解。
+ * ------------------------------------------------------------------ */
+function renderFreeze(){
+  const fz = pendingCollect().filter(o => o.usdt > 0);
+  document.getElementById('freeze-tbody').innerHTML = fz.length ? fz.map(o =>
+    '<tr>' +
+      '<td><b>' + o.no + '</b></td>' +
+      '<td>' + typeBadge(o.type) + '</td>' +
+      '<td class="mono frozen">' + money(o.usdt) + ' USDT</td>' +
+      '<td class="mono">' + cny(o.fiat) + '</td>' +
+      '<td><span class="tag tag-warn">待收款</span></td>' +
+    '</tr>'
+  ).join('') : '<tr><td colspan="5" class="empty">暂无冻结中的订单</td></tr>';
+}
+
+/* ---------------- 卡管理 ---------------- */
+function renderCards(){
+  renderCardTable('in', CARDS_IN, 'cards-in-tbody');
+  renderCardTable('out', CARDS_OUT, 'cards-out-tbody');
+}
+function renderCardTable(kind, list, tbodyId){
+  const body = document.getElementById(tbodyId);
+  if(!list.length){ body.innerHTML = '<tr><td colspan="11" class="empty">尚未添加卡片</td></tr>'; return; }
+  const sorted = list.slice().sort((a, b) => String(a.seq).localeCompare(String(b.seq)));
+  body.innerHTML = sorted.map(c =>
+    '<tr>' +
+      '<td class="mono nowrap"><b>' + esc(c.seq) + '</b></td>' +
+      '<td class="mono nowrap"><b>' + esc(c.no) + '</b><div style="color:var(--pp-muted); font-size:11.5px;">' + c.id + '</div></td>' +
+      '<td class="nowrap">' + esc(c.holder) + '</td>' +
+      '<td class="nowrap">' + esc(c.bank) + '</td>' +
+      '<td style="min-width:150px;">' + c.channels.map(ch => '<span class="tag tag-chan">' + esc(ch) + '</span>').join('') + '</td>' +
+      '<td>' + esc(c.ccy) + '</td>' +
+      '<td class="mono nowrap">' + c.on + ' ~ ' + c.off + '</td>' +
+      '<td class="mono nowrap">' + cny(c.shiftLimit) + '</td>' +
+      '<td class="mono nowrap">' + cny(c.singleLimit) + '</td>' +
+      '<td>' + (c.enabled ? '<span class="tag tag-ok">已启用</span>' : '<span class="tag tag-off">已停用</span>') + '</td>' +
+      '<td class="nowrap">' +
+        '<span class="link-btn" onclick="openCardForm(\'' + kind + '\',\'' + c.id + '\')">编辑</span>' +
+        '<span class="link-sep">|</span>' +
+        '<span class="link-btn" onclick="toggleCard(\'' + kind + '\',\'' + c.id + '\')">' + (c.enabled ? '停用' : '启用') + '</span>' +
+        '<span class="link-sep">|</span>' +
+        '<span class="link-btn danger" onclick="deleteCard(\'' + kind + '\',\'' + c.id + '\')">删除</span>' +
+      '</td>' +
+    '</tr>'
+  ).join('');
+}
+function listOf(kind){ return kind === 'in' ? CARDS_IN : CARDS_OUT; }
+
+function toggleCard(kind, id){
+  const c = listOf(kind).find(x => x.id === id);
+  if(!c) return;
+  const usedBy = pendingCollect().concat(pendingPayout(), pendingFiatWd()).filter(o => o.cardId === id);
+  if(c.enabled && usedBy.length){ toast('该卡仍有 ' + usedBy.length + ' 笔待处理订单，停用后不再派新单'); }
+  c.enabled = !c.enabled;
+  renderAll();
+  toast(c.enabled ? '已启用 ' + c.no : '已停用 ' + c.no);
+}
+function deleteCard(kind, id){
+  const arr = listOf(kind);
+  const i = arr.findIndex(x => x.id === id);
+  if(i < 0) return;
+  const usedBy = pendingCollect().concat(pendingPayout(), pendingFiatWd()).filter(o => o.cardId === id);
+  if(usedBy.length){ toast('删除失败：该卡还有 ' + usedBy.length + ' 笔待处理订单'); return; }
+  const no = arr[i].no;
+  arr.splice(i, 1);
+  renderAll();
+  toast('已删除 ' + no);
+}
+
+/* --------- 卡片新增 / 编辑表单 --------- */
+let cardForm = null;   // { kind, id|null, no, holder, bank, channels[], ccy, on, off, shiftLimit, singleLimit }
+
+function openCardForm(kind, id){
+  const src = id ? listOf(kind).find(x => x.id === id) : null;
+  cardForm = src
+    ? { kind, id, seq:src.seq, no:src.no, holder:src.holder, bank:src.bank, channels:src.channels.slice(), ccy:src.ccy, on:src.on, off:src.off, shiftLimit:String(src.shiftLimit), singleLimit:String(src.singleLimit) }
+    : { kind, id:null, seq:nextCardSeq(kind), no:'', holder:'', bank:'', channels:[], ccy:'CNY', on:'09:00', off:'21:00', shiftLimit:'', singleLimit:'' };
+  const kindName = kind === 'in' ? '收款卡' : '放款卡';
+  openDrawer(
+    (id ? '编辑' : '新增') + kindName,
+    kind === 'in' ? '用于 On Ramp / 法币直存 的收款' : '用于 Off Ramp / 法币直取 的出款（一张放款卡同时服务两类业务）'
+  );
+  renderCardForm();
+}
+
+function cardFormErrors(){
+  const f = cardForm, e = {};
+  if(!f.no.trim()) e.no = '请填写卡号';
+  else if(f.no.replace(/\D/g,'').length < 12) e.no = '卡号长度不足，请填写完整卡号';
+  if(!f.holder.trim()) e.holder = '请填写持卡人姓名';
+  else if(f.holder.trim() !== KYC_NAME) e.holder = '持卡人姓名与实名认证主体「' + KYC_NAME + '」不一致，禁止绑定他人卡片';
+  if(!f.bank.trim()) e.bank = '请填写开户行';
+  if(!f.channels.length) e.channels = '请至少选择一个支付渠道';
+  if(!f.on || !f.off) e.time = '请填写上线与下线时间';
+  else if(f.on >= f.off) e.time = '上线时间必须早于下线时间';
+  const shift = parseFloat(f.shiftLimit), single = parseFloat(f.singleLimit);
+  if(!f.shiftLimit || isNaN(shift) || shift <= 0) e.shift = '工作时段收款总额上限必须大于 0';
+  if(!f.singleLimit || isNaN(single) || single <= 0) e.single = '单笔限额必须大于 0';
+  else if(!isNaN(shift) && shift > 0 && single > shift) e.single = '单笔限额不得超过时段总额上限（' + cny(shift) + '）';
+  return e;
+}
+
+function renderCardForm(){
+  const f = cardForm, e = cardFormErrors();
+  const err = k => e[k] ? '<div class="err-text">' + e[k] + '</div>' : '';
+  const bad = k => e[k] ? ' bad' : '';
+  const kycOk = f.holder.trim() === KYC_NAME;
+
+  document.getElementById('drawer-body').innerHTML =
+    '<div class="banner banner-info"><div><b>绑卡合规要求</b>持卡人姓名必须与卡商实名认证主体「' + KYC_NAME + '」完全一致；系统在保存时强制校验，不通过则无法提交。</div></div>' +
+    '<div class="form-grid">' +
+      '<div class="form-item full"><div class="field-label">编号</div>' +
+        '<input type="text" value="' + esc(f.seq) + '" readonly style="background:var(--pp-bg); color:var(--pp-muted);">' +
+        '<div class="hint block">系统自动分配，不可修改。多张卡匹配条件完全并列时，按编号从小到大依次派单。</div>' +
+      '</div>' +
+      '<div class="form-item full"><div class="field-label">卡号</div>' +
+        '<input type="text" class="' + bad('no') + '" value="' + esc(f.no) + '" placeholder="6225 8801 0000 0000" oninput="cardFieldSet(\'no\', this.value)">' + err('no') +
+      '</div>' +
+      '<div class="form-item"><div class="field-label">持卡人姓名</div>' +
+        '<input type="text" class="' + bad('holder') + '" value="' + esc(f.holder) + '" placeholder="' + KYC_NAME + '" oninput="cardFieldSet(\'holder\', this.value)">' + err('holder') +
+        (f.holder.trim() && kycOk ? '<div style="font-size:12px; color:#1f7a43;">✓ 与实名主体一致</div>' : '') +
+      '</div>' +
+      '<div class="form-item"><div class="field-label">开户行</div>' +
+        '<input type="text" class="' + bad('bank') + '" value="' + esc(f.bank) + '" placeholder="招商银行 深圳分行" oninput="cardFieldSet(\'bank\', this.value)">' + err('bank') +
+      '</div>' +
+      '<div class="form-item full"><div class="field-label">支持的支付渠道（可多选）</div>' +
+        '<div class="select-box">' + CHANNELS.map(ch =>
+          '<div class="select-opt' + (f.channels.indexOf(ch) >= 0 ? ' active' : '') + '" onclick="cardToggleChannel(\'' + ch + '\')">' + ch + '</div>'
+        ).join('') + '</div>' + err('channels') +
+      '</div>' +
+      '<div class="form-item"><div class="field-label">支持币种</div>' +
+        '<select onchange="cardFieldSet(\'ccy\', this.value)">' +
+          '<option value="CNY"' + (f.ccy === 'CNY' ? ' selected' : '') + '>CNY 人民币</option>' +
+          '<option value="HKD"' + (f.ccy === 'HKD' ? ' selected' : '') + '>HKD 港币</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="form-item"><div class="field-label">上线 / 下线时间</div>' +
+        '<div style="display:flex; gap:8px; align-items:center;">' +
+          '<input type="time" class="' + bad('time') + '" value="' + f.on + '" onchange="cardFieldSet(\'on\', this.value)">' +
+          '<span style="color:var(--pp-muted);">~</span>' +
+          '<input type="time" class="' + bad('time') + '" value="' + f.off + '" onchange="cardFieldSet(\'off\', this.value)">' +
+        '</div>' + err('time') +
+      '</div>' +
+      '<div class="form-item"><div class="field-label">工作时段收款总额上限</div>' +
+        '<input type="number" class="' + bad('shift') + '" value="' + esc(f.shiftLimit) + '" placeholder="300000" oninput="cardFieldSet(\'shiftLimit\', this.value)">' + err('shift') +
+      '</div>' +
+      '<div class="form-item"><div class="field-label">单笔限额</div>' +
+        '<input type="number" class="' + bad('single') + '" value="' + esc(f.singleLimit) + '" placeholder="50000" oninput="cardFieldSet(\'singleLimit\', this.value)">' + err('single') +
+      '</div>' +
+    '</div>';
+
+  const n = Object.keys(e).length;
+  document.getElementById('drawer-foot').innerHTML =
+    (n ? '<div class="banner banner-err"><div><b>还有 ' + n + ' 项未通过校验</b>修正后即可保存。</div></div>' : '') +
+    '<button class="primary-btn" ' + (n ? 'disabled' : '') + ' onclick="saveCard()">保存</button>';
+}
+function cardFieldSet(k, v){ cardForm[k] = v; renderCardForm(); }
+function cardToggleChannel(ch){
+  const i = cardForm.channels.indexOf(ch);
+  if(i >= 0) cardForm.channels.splice(i, 1); else cardForm.channels.push(ch);
+  renderCardForm();
+}
+function saveCard(){
+  const e = cardFormErrors();
+  if(Object.keys(e).length){ toast('校验未通过，无法保存'); renderCardForm(); return; }
+  const f = cardForm, arr = listOf(f.kind);
+  const payload = {
+    no:f.no.trim(), holder:f.holder.trim(), bank:f.bank.trim(),
+    channels:f.channels.slice(), ccy:f.ccy, on:f.on, off:f.off,
+    shiftLimit:parseFloat(f.shiftLimit), singleLimit:parseFloat(f.singleLimit),
+  };
+  if(f.id){
+    const c = arr.find(x => x.id === f.id);
+    Object.assign(c, payload);
+    toast('已保存 ' + c.no);
+  } else {
+    cardSeq += 1;
+    const seq = nextCardSeq(f.kind);
+    arr.push(Object.assign({ id:(f.kind === 'in' ? 'CIN-' : 'COUT-') + cardSeq, seq:seq, enabled:true }, payload));
+    toast('已新增' + (f.kind === 'in' ? '收款卡' : '放款卡') + ' · 编号 ' + seq);
+  }
+  closeDrawer();
+  renderAll();
+}
+
+/* ---------------- 订单处理 ---------------- */
+function renderOrders(){
+  renderQuickMatch();
+  const tabs = [
+    { k:'onramp',  label:'On Ramp 队列',  n:pendingOnramp().length },
+    { k:'offramp', label:'Off Ramp 队列', n:pendingPayout().length },
+    { k:'fiatin',  label:'法币直存队列',  n:pendingFiatIn().length },
+    { k:'fiatwd',  label:'法币直取队列',  n:pendingFiatWd().length },
+    { k:'done',    label:'已处理',        n:DONE_LOG.length },
+  ];
+  document.getElementById('order-tabs').innerHTML = tabs.map(t =>
+    '<button class="filter-chip' + (orderTab === t.k ? ' active' : '') + '" onclick="setOrderTab(\'' + t.k + '\')">' +
+      t.label + '<span class="cnt">' + t.n + '</span>' +
+    '</button>'
+  ).join('');
+
+  if(orderTab === 'onramp') renderOnrampQueue();
+  else if(orderTab === 'offramp') renderPayoutQueue();
+  else if(orderTab === 'fiatin') renderFiatInQueue();
+  else if(orderTab === 'fiatwd') renderFiatWdQueue();
+  else renderDoneQueue();
+}
+function setOrderTab(k){ orderTab = k; closeDrawer(); renderOrders(); }
+
+/* =========================================================================
+ * 快速核对（银行流水 → 待处理收款订单）
+ * ------------------------------------------------------------------------
+ * 解决的问题：一张收款卡上的进账流水是「On Ramp」与「法币直存」混在一起的，
+ * 卡商过去只能拿着网银里的一条条到账记录，用肉眼在队列里比金额找订单。
+ * 本工具把整段流水文本（或对账单 CSV）一次性解析成「金额 + 备注」，再在
+ * **全部待处理的 On Ramp + 法币直存订单**里搜索候选，按置信度排序：
+ *   强匹配   —— 流水文本里出现该订单的备注码（订单号，RC-93027 / RC93027 均可）
+ *   金额一致 —— 金额与应收金额完全相等
+ *   金额相近 —— 金额落在应收金额 ±1% 以内（跨行手续费、尾差等）
+ *   未匹配   —— 一条候选都没有，**显式列出**提示人工核实，绝不静默丢弃
+ * 边界：本工具只负责「更快找到订单」，点「去确认」仍旧走原有的确认抽屉
+ * （openCollect 的三重核验 / openFiatIn 的两关核验），不重复、不绕过任何一关。
+ * 明确不做：银行短信 / 银企直连自动导入（后续想法，本期不实现）。
+ * ========================================================================= */
+const QM_NEAR_PCT = 0.01;                 // 「金额相近」容差：应收金额的 ±1%
+const QM_TIER = {
+  strong: { rank:3, label:'强匹配',   cls:'tag-ok',   why:'流水备注命中订单备注码' },
+  exact:  { rank:2, label:'金额一致', cls:'tag-info', why:'金额与应收金额完全相等' },
+  near:   { rank:1, label:'金额相近', cls:'tag-warn', why:'金额落在应收金额 ±1% 内' },
+};
+const QM_SAMPLE = [
+  '2026-08-27 09:14  +7,251.95  备注：RC93027',
+  '2026-08-27 10:02  +3,626.00  微信转账',
+  '2026-08-27 11:36  +5,003.00  跨行汇入 尾号1147',
+  '2026-08-27 12:04  +888.00  网银汇入 无备注',
+].join('\n');
+
+let qm = { open:true, mode:'paste', text:'', file:'', rows:[], ran:false, skipped:0 };
+
+/* 备注码约定：直接用订单号本身，去掉分隔符后大小写不敏感比对，
+ * 因此 RC-93027 / RC93027 / rc 93027 都能命中同一张订单。 */
+function qmCode(no){ return String(no).replace(/[^0-9A-Za-z]/g, '').toUpperCase(); }
+function qmNorm(s){ return String(s).replace(/[^0-9A-Za-z]/g, '').toUpperCase(); }
+function qmPending(){ return pendingOnramp().concat(pendingFiatIn()); }
+
+/* 从一行流水文本里抽取金额：容忍 ¥7,251.95 / +7,251.95 / 7251.95 等写法。
+ * 先剔除货币符号、日期、时间与「字母+数字」的备注码，避免把 2026 / 09:14 /
+ * RC93027 里的数字误当成金额；再取第一个带小数点或千分位的数字（银行流水里
+ * 金额列总在余额列之前），没有则取第一个纯数字。 */
+function qmAmountOf(raw){
+  let s = String(raw);
+  s = s.replace(/[¥￥$]|CNY|RMB|人民币|元/gi, ' ');
+  s = s.replace(/\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/g, ' ');      // 日期
+  s = s.replace(/\d{1,2}:\d{2}(?::\d{2})?/g, ' ');            // 时间
+  s = s.replace(/[A-Za-z]{2,5}-?\d{3,}/g, ' ');               // 备注码 RC-93027 / RC93027
+  const hits = s.match(/[-+]?\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|[-+]?\d+\.\d{1,2}/g) || [];
+  let pick = hits.length ? hits[0] : null;                    // 带小数点 / 千分位的最先出现者即金额列
+  if(pick === null){
+    /* 退而求其次：整数金额。要求两侧是空白或分隔符，避免把「近30天」「尾号1147」
+     * 这类夹在文字中的数字误当成金额（宁可标记为「未识别金额」也不能给错数字）。 */
+    const m = s.match(/(?:^|[\s,;|(（])([-+]?\d+)(?=$|[\s,;|)）])/);
+    if(m) pick = m[1];
+  }
+  if(pick === null) return null;
+  const v = Math.abs(parseFloat(pick.replace(/,/g, '')));
+  return isNaN(v) ? null : v;
+}
+
+/* 极简 CSV 拆列：只处理双引号包裹（引号内的逗号不算分隔符，如 "7,251.95"），
+ * 演示数据无需支持转义引号、多行字段等完整 CSV 语法。 */
+function qmSplitCsv(line){
+  const out = [];
+  let cur = '', q = false;
+  for(let i = 0; i < line.length; i++){
+    const ch = line.charAt(i);
+    if(ch === '"'){ q = !q; continue; }
+    if(ch === ',' && !q){ out.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+
+/* 单个 CSV 字段是否本身就是一个金额（用于在「时间,金额,备注」这类列里定位金额列） */
+function qmFieldIsAmount(f){
+  const t = String(f).trim().replace(/^["']|["']$/g, '');
+  if(!t) return false;
+  if(/\d{1,2}:\d{2}/.test(t)) return false;
+  if(/\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/.test(t)) return false;
+  return /^[-+]?[¥￥]?\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?$/.test(t) || /^[-+]?[¥￥]?\d+(?:\.\d{1,2})?$/.test(t);
+}
+
+/* 匹配：对一行解析结果，在全部待处理收款订单里找候选并按置信度排序 */
+function qmCandidates(row){
+  const norm = qmNorm(row.raw);
+  const out = [];
+  qmPending().forEach(function(o){
+    const code = qmCode(o.no);
+    const hit = code.length >= 4 && norm.indexOf(code) >= 0;
+    const diff = (row.amount === null) ? null : (row.amount - o.fiat);
+    let tier = '';
+    if(hit) tier = 'strong';
+    else if(diff !== null && Math.abs(diff) < 0.005) tier = 'exact';
+    else if(diff !== null && o.fiat > 0 && Math.abs(diff) <= o.fiat * QM_NEAR_PCT) tier = 'near';
+    if(tier) out.push({ no:o.no, type:o.type, fiat:o.fiat, tier:tier, diff:diff });
+  });
+  out.sort(function(a, b){
+    const r = QM_TIER[b.tier].rank - QM_TIER[a.tier].rank;
+    if(r) return r;
+    const da = a.diff === null ? Infinity : Math.abs(a.diff);
+    const db = b.diff === null ? Infinity : Math.abs(b.diff);
+    if(da !== db) return da - db;
+    return a.no < b.no ? -1 : 1;
+  });
+  return out;
+}
+
+function qmBuildRows(lines, fromCsv){
+  const rows = [];
+  let skipped = 0;
+  lines.forEach(function(line, idx){
+    const raw = String(line).replace(/\r/g, '').trim();
+    if(!raw) return;                                   // 纯空行不计入（不是数据，不算丢弃）
+    let amount = null;
+    if(fromCsv){
+      const cells = qmSplitCsv(raw);
+      for(let i = 0; i < cells.length; i++){
+        if(qmFieldIsAmount(cells[i])){ amount = qmAmountOf(cells[i]); break; }
+      }
+      if(amount === null) amount = qmAmountOf(cells.join(' '));
+      if(amount === null && idx === 0 && /金额|amount|money/i.test(raw)){ skipped += 1; return; }  // 明确的表头行
+    } else {
+      amount = qmAmountOf(raw);
+    }
+    const row = { raw:raw, amount:amount };
+    row.cands = qmCandidates(row);
+    rows.push(row);
+  });
+  return { rows:rows, skipped:skipped };
+}
+
+function qmToggle(){ qm.open = !qm.open; renderQuickMatch(); }
+function qmSetMode(m){ qm.mode = m; renderQuickMatch(); }
+function qmSetText(v){ qm.text = v; }                  // 输入时不重绘，避免光标跳动
+function qmFillSample(){ qm.text = QM_SAMPLE; qm.mode = 'paste'; renderQuickMatch(); toast('已填入示例流水，点「解析并匹配」试试'); }
+function qmClear(){ qm.text = ''; qm.file = ''; qm.rows = []; qm.ran = false; qm.skipped = 0; renderQuickMatch(); }
+
+function qmRun(){
+  const el = document.getElementById('qm-text');
+  if(el) qm.text = el.value;
+  const lines = qm.text.split('\n');
+  const built = qmBuildRows(lines, false);
+  if(!built.rows.length){ toast('没有解析到任何流水行，请先粘贴银行到账记录'); return; }
+  qm.rows = built.rows; qm.skipped = built.skipped; qm.ran = true; qm.file = '';
+  renderQuickMatch();
+  toast('已解析 ' + built.rows.length + ' 行流水');
+}
+
+function qmCsvFile(input){
+  const f = input && input.files && input.files[0];
+  if(!f) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const text = String(ev.target.result || '');
+    const built = qmBuildRows(text.split('\n'), true);
+    qm.file = f.name; qm.rows = built.rows; qm.skipped = built.skipped; qm.ran = true; qm.mode = 'csv';
+    renderQuickMatch();
+    toast(built.rows.length ? ('已从 ' + f.name + ' 解析 ' + built.rows.length + ' 行') : (f.name + ' 中没有可解析的流水行'));
+  };
+  reader.onerror = function(){ toast('CSV 读取失败，请改用「粘贴流水」'); };
+  reader.readAsText(f);
+}
+
+/* 交回原有确认流程：只负责跳到正确的队列并打开该订单原本的确认抽屉 */
+function qmGo(no){
+  const o = COLLECT.find(x => x.no === no);
+  if(!o){ toast('订单 ' + no + ' 不存在'); return; }
+  if(o.status !== 'pending'){ toast('订单 ' + no + ' 已不在待处理队列'); renderOrders(); return; }
+  orderTab = (o.type === 'collect_fiat') ? 'fiatin' : 'onramp';
+  renderOrders();
+  if(o.type === 'collect_fiat') openFiatIn(no); else openCollect(no);
+}
+
+function qmMatchCell(r){
+  if(!r.cands.length){
+    return '<span class="tag tag-err">未匹配</span>' +
+      '<div style="color:var(--pp-muted); margin-top:4px;">未匹配到订单，请人工核实（可能是其它业务的进账，或客户未按提示备注）</div>';
+  }
+  const top = r.cands[0], meta = QM_TIER[top.tier];
+  const o = COLLECT.find(x => x.no === top.no);
+  const live = !!o && o.status === 'pending';
+  let html =
+    '<div><b>' + esc(top.no) + '</b> ' + typeBadge(top.type) + '<span class="tag ' + meta.cls + '">' + meta.label + '</span>' +
+      (live ? '' : '<span class="tag tag-off">已离开待处理队列</span>') + '</div>' +
+    '<div style="color:var(--pp-muted); margin-top:4px;">应收 ' + cny(top.fiat) + ' · ' + meta.why +
+      (top.diff !== null && Math.abs(top.diff) >= 0.005
+        ? '<span style="color:var(--pp-warning); font-weight:600;">（流水与应收相差 ' + (top.diff > 0 ? '+' : '−') + cny(Math.abs(top.diff)) + '）</span>'
+        : '') +
+    '</div>';
+  const rest = r.cands.slice(1, 3);
+  if(rest.length){
+    html += '<div style="color:var(--pp-muted); margin-top:4px;">另有候选：' +
+      rest.map(c => esc(c.no) + '（' + QM_TIER[c.tier].label + '）').join('、') +
+      (r.cands.length > 3 ? ' 等 ' + (r.cands.length - 1) + ' 笔' : '') + ' · 请人工判定后再确认</div>';
+  }
+  return html;
+}
+
+function renderQuickMatch(){
+  const host = document.getElementById('quick-match');
+  if(!host) return;
+  const pend = qmPending();
+
+  if(!qm.open){
+    host.innerHTML =
+      '<div class="card" style="margin-bottom:14px; padding:14px 18px; flex-direction:row; align-items:center; gap:12px;">' +
+        '<div class="field-label" style="flex:1; min-width:0;">快速核对 · 银行流水 → 待处理收款订单' +
+          '<span style="font-weight:400; color:var(--pp-muted);"> · 可匹配 ' + pend.length + ' 笔待处理收款订单' +
+          (qm.ran ? ' · 上次解析 ' + qm.rows.length + ' 行' : '') + '</span></div>' +
+        '<button class="mini-btn" onclick="qmToggle()">展开</button>' +
+      '</div>';
+    return;
+  }
+
+  const modeChips =
+    '<div class="filters" style="margin-bottom:0;">' +
+      '<button type="button" class="filter-chip' + (qm.mode === 'paste' ? ' active' : '') + '" onclick="qmSetMode(\'paste\')">粘贴流水</button>' +
+      '<button type="button" class="filter-chip' + (qm.mode === 'csv' ? ' active' : '') + '" onclick="qmSetMode(\'csv\')">上传对账单 CSV</button>' +
+    '</div>';
+
+  const input = qm.mode === 'paste'
+    ? '<div class="form-item">' +
+        '<div class="field-label">粘贴银行 App / 网银里复制出来的到账流水（一行一笔）</div>' +
+        '<textarea class="qm-input" id="qm-text" spellcheck="false" oninput="qmSetText(this.value)" placeholder="' +
+          esc(QM_SAMPLE).replace(/\n/g, '&#10;') + '">' + esc(qm.text) + '</textarea>' +
+        '<div class="hint block">格式不限：只要一行里含金额即可，备注里带订单号（备注码）时可直接强匹配。</div>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+          '<button class="mini-btn primary" onclick="qmRun()">解析并匹配</button>' +
+          '<button class="mini-btn" onclick="qmFillSample()">填入示例流水</button>' +
+          '<button class="mini-btn" onclick="qmClear()">清空</button>' +
+        '</div>' +
+      '</div>'
+    : '<div class="form-item">' +
+        '<div class="field-label">上传对账单 CSV（浏览器本地解析，不上传任何文件）</div>' +
+        '<input type="file" class="qm-file" accept=".csv" onchange="qmCsvFile(this)">' +
+        '<div class="hint block">按 <b>时间,金额,备注</b> 之类的简单列排布即可：系统取每行中第一个能解析为金额的字段作为金额，整行文本用于搜索备注码。' +
+          (qm.file ? '<br>当前文件：<b>' + esc(qm.file) + '</b>' : '') + '</div>' +
+        '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+          '<button class="mini-btn" onclick="qmClear()">清空结果</button>' +
+        '</div>' +
+      '</div>';
+
+  let results = '';
+  if(qm.ran){
+    const cnt = { strong:0, exact:0, near:0, none:0 };
+    qm.rows.forEach(function(r){ cnt[r.cands.length ? r.cands[0].tier : 'none'] += 1; });
+    results =
+      '<div class="banner ' + (cnt.none ? 'banner-warn' : 'banner-ok') + '"><div>' +
+        '<b>共解析 ' + qm.rows.length + ' 行' + (qm.skipped ? '（已跳过 ' + qm.skipped + ' 行表头）' : '') + '</b>' +
+        '强匹配 ' + cnt.strong + ' 行 · 金额一致 ' + cnt.exact + ' 行 · 金额相近 ' + cnt.near + ' 行 · 未匹配 ' + cnt.none + ' 行。' +
+        (cnt.none ? '未匹配的行已<b>原样列出</b>（不会被丢弃），请逐条人工核实来源。' : '每一行都找到了候选订单，仍需打开确认抽屉逐关核验后再确认收款。') +
+      '</div></div>' +
+      '<div class="tbl-wrap"><table>' +
+        '<thead><tr><th style="width:44px;">#</th><th>解析出的金额</th><th>原始流水文本</th><th>匹配结果</th><th>操作</th></tr></thead>' +
+        '<tbody>' + qm.rows.map(function(r, i){
+          const top = r.cands[0] || null;
+          const o = top ? COLLECT.find(x => x.no === top.no) : null;
+          const live = !!o && o.status === 'pending';
+          return '<tr>' +
+            '<td class="mono" style="color:var(--pp-muted);">' + (i + 1) + '</td>' +
+            '<td class="mono nowrap">' + (r.amount === null
+              ? '<span class="tag tag-off">未识别金额</span>'
+              : '<b>' + cny(r.amount) + '</b>') + '</td>' +
+            '<td class="qm-raw" style="min-width:230px;">' + esc(r.raw) + '</td>' +
+            '<td style="min-width:260px; line-height:1.6;">' + qmMatchCell(r) + '</td>' +
+            '<td class="nowrap">' + (live
+              ? '<button class="mini-btn primary" onclick="qmGo(\'' + top.no + '\')">去确认</button>'
+              : '<button class="mini-btn" disabled>去确认</button>') + '</td>' +
+          '</tr>';
+        }).join('') + '</tbody>' +
+      '</table></div>';
+  }
+
+  host.innerHTML =
+    '<div class="card" style="margin-bottom:14px;">' +
+      '<div class="card-head">' +
+        '<div>' +
+          '<div class="field-label">快速核对 · 银行流水 → 待处理收款订单' +
+            '<span style="font-weight:400; color:var(--pp-muted);"> · 当前可匹配 ' + pend.length + ' 笔（On Ramp ' + pendingOnramp().length + ' · 法币直存 ' + pendingFiatIn().length + '）</span></div>' +
+          '<div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>' +
+          '<div class="hint block" style="display:none;">把网银 / 银行 App 里的到账流水整段粘贴进来（或上传对账单 CSV），系统逐行解析出金额与备注，并在<b>本卡商全部待处理的 On Ramp 与 法币直存订单</b>里一次性搜索候选——同一张收款卡上两类进账本来就是混在一起的，因此这里一次搜两类队列。本工具<b>只帮你更快找到对应订单</b>：点「去确认」打开的仍是该订单原本的确认抽屉，三重核验 / 到账金额与客户凭证核验一关都不会少。</div>' +
+        '</div>' +
+        '<button class="mini-btn" onclick="qmToggle()">收起</button>' +
+      '</div>' +
+      '<div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>备注码匹配规则</div>' +
+      '<div class="banner banner-info" style="display:none;"><div>下单页会提示客户把订单号写进转账备注，例如 <b>RC-93027</b>（写成 <b>RC93027</b> 同样识别）。流水备注里出现该码即判定为<b>强匹配</b>，可直接锁定订单；没有备注码时退回按金额匹配：完全相等为「金额一致」，落在应收 ±1% 内为「金额相近」（跨行手续费、尾差等），都对不上则显式列为「未匹配」。</div></div>' +
+      modeChips + input + results +
+    '</div>';
+}
+
+function renderOnrampQueue(){
+  const list = pendingOnramp();
+  document.getElementById('order-queue').innerHTML =
+    '<div class="card">' +
+      '<div class="card-head"><div>' +
+        '<div class="field-label">On Ramp 队列（收款履约）</div>' +
+        '<div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>' +
+        '<div class="hint block" style="display:none;">客户付法币、商户收稳定币。走<b>稳定币账户</b>：接单时冻结保证金，确认收款后结算扣减。确认前必须依次通过三重核验：支付方式合规 → 疑似代付/第三方付款人 → 客户上传凭证的核验与伪造判断（凭证由客户自行上传，卡商只做查看与判断）。此处的「确认已收款」是登记款项已到卡商自有账户，系统不代收任何资金。</div>' +
+      '</div></div>' +
+      '<div class="tbl-wrap"><table>' +
+        '<thead><tr><th>订单号</th><th>类型</th><th>应收金额</th><th>客户申报付款人</th><th>指派收款卡</th><th>客户声称支付方式</th><th>剩余时间</th><th>操作</th></tr></thead>' +
+        '<tbody>' + (list.length ? list.map(o =>
+          '<tr>' +
+            '<td><b>' + o.no + '</b></td>' +
+            '<td>' + typeBadge(o.type) + '</td>' +
+            '<td class="mono"><b>' + cny(o.fiat) + '</b>' + (o.usdt > 0 ? '<div style="color:var(--pp-muted); font-size:11.5px;">冻结 ' + money(o.usdt) + ' USDT</div>' : '') + '</td>' +
+            '<td>' + esc(o.customer) +
+              '<div style="margin-top:4px;">' + (proofOf(o.no) ? '<span class="tag tag-ok">客户凭证已上传</span>' : '<span class="tag tag-off">待客户上传凭证</span>') + '</div></td>' +
+            '<td class="mono nowrap">' + cardLabel(o.cardId) + '</td>' +
+            '<td><span class="tag tag-chan">' + esc(o.method) + '</span></td>' +
+            '<td><span class="countdown" data-cd="' + o.no + '" style="color:' + (o.left < 900 ? 'var(--pp-danger)' : 'var(--pp-ink)') + ';">' + mmss(o.left) + '</span></td>' +
+            '<td><button class="mini-btn primary" onclick="openCollect(\'' + o.no + '\')">处理</button></td>' +
+          '</tr>'
+        ).join('') : '<tr><td colspan="8" class="empty">On Ramp 队列已清空</td></tr>') + '</tbody>' +
+      '</table></div>' +
+    '</div>';
+}
+
+function renderFiatInQueue(){
+  const list = pendingFiatIn();
+  const doneList = COLLECTED_FIAT.slice().reverse();
+  document.getElementById('order-queue').innerHTML =
+    '<div class="card">' +
+      '<div class="card-head"><div>' +
+        '<div class="field-label">法币直存队列（收款确认）</div>' +
+        '<div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>' +
+        '<div class="hint block" style="display:none;">客户直接向卡商<b>收款卡</b>存入法币，款项记入商户的法币账户。走<b>法币账户</b>：<b>不冻结稳定币保证金、不涉及汇率与折算</b>，卡商只需核对到账金额、查看客户上传的付款凭证后确认——凭证由客户在商户端自行上传，卡商侧只读。<b>确认即时生效、无后续结算步骤</b>：平台立刻把款项贷记给商户（由你的稳定币质押担保支撑，不必再等一轮银行归集），同额<b>占用法币信用额度</b>，剩余可用额度相应下降。</div>' +
+      '</div></div>' +
+      '<div class="banner ' + (pledgeLowAlert() ? 'banner-err' : 'banner-info') + '"><div>' +
+        '<b>当前剩余可用额度 ' + cny(pledgeHeadroom()) + '</b>' +
+        '信用额度上限 ' + cny(pledgeCeiling()) + ' · 当前敞口 ' + cny(outstandingFloat()) + '。每确认一笔法币直存，剩余可用额度按该笔金额下降；额度见底时平台会暂停向本卡商派发法币直存订单。' +
+        '<span class="link-btn" onclick="showPanel(\'pledge\')">前往质押管理 →</span>' +
+      '</div></div>' +
+      '<div class="tbl-wrap"><table>' +
+        '<thead><tr><th>订单号</th><th>类型</th><th>应收金额</th><th>存款客户</th><th>指派收款卡</th><th>支付方式</th><th>剩余时间</th><th>操作</th></tr></thead>' +
+        '<tbody>' + (list.length ? list.map(o =>
+          '<tr>' +
+            '<td><b>' + o.no + '</b></td>' +
+            '<td>' + typeBadge(o.type) + '</td>' +
+            '<td class="mono"><b>' + cny(o.fiat) + '</b><div style="color:var(--pp-muted); font-size:11.5px;">确认后占用额度 ' + cny(o.fiat) + ' · 无汇率</div></td>' +
+            '<td>' + esc(o.customer) +
+              '<div style="margin-top:4px;">' + (proofOf(o.no) ? '<span class="tag tag-ok">客户凭证已上传</span>' : '<span class="tag tag-off">待客户上传凭证</span>') + '</div></td>' +
+            '<td class="mono nowrap">' + cardLabel(o.cardId) + '</td>' +
+            '<td><span class="tag tag-chan">' + esc(o.method) + '</span></td>' +
+            '<td><span class="countdown" data-cd="' + o.no + '" style="color:' + (o.left < 900 ? 'var(--pp-danger)' : 'var(--pp-ink)') + ';">' + mmss(o.left) + '</span></td>' +
+            '<td><button class="mini-btn primary" onclick="openFiatIn(\'' + o.no + '\')">处理</button></td>' +
+          '</tr>'
+        ).join('') : '<tr><td colspan="8" class="empty">法币直存队列已清空</td></tr>') + '</tbody>' +
+      '</table></div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="card-head">' +
+        '<div>' +
+          '<div class="field-label">已确认的法币直存收款<span style="color:var(--pp-muted); font-weight:400;"> · 共 ' + doneList.length + ' 笔 · 合计 ' + cny(doneList.reduce((a, x) => a + x.amount, 0)) + '</span></div>' +
+          '<div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>' +
+          '<div class="hint block" style="display:none;">下列每一笔在确认当时即已入账给商户，<b>不存在待归集 / 待结算的中间状态</b>；其合计构成当前敞口的收款侧，确认法币直取时按笔释放。</div>' +
+        '</div>' +
+        '<button class="mini-btn" onclick="showPanel(\'pledge\')">查看额度占用</button>' +
+      '</div>' +
+      '<div class="tbl-wrap"><table>' +
+        '<thead><tr><th>订单号</th><th>收款金额</th><th>收款卡</th><th>确认时间</th><th>额度影响</th></tr></thead>' +
+        '<tbody>' + (doneList.length ? doneList.map(x =>
+          '<tr>' +
+            '<td><b>' + x.no + '</b></td>' +
+            '<td class="mono">' + cny(x.amount) + '</td>' +
+            '<td class="mono nowrap">' + cardLabel(x.cardId) + '</td>' +
+            '<td class="mono">' + x.time + '</td>' +
+            '<td class="mono nowrap frozen">敞口 +' + cny(x.amount) + '</td>' +
+          '</tr>'
+        ).join('') : '<tr><td colspan="5" class="empty">尚无已确认的法币直存收款</td></tr>') + '</tbody>' +
+      '</table></div>' +
+    '</div>';
+}
+
+function renderPayoutQueue(){
+  const list = pendingPayout();
+  document.getElementById('order-queue').innerHTML =
+    '<div class="card">' +
+      '<div class="card-head"><div>' +
+        '<div class="field-label">Off Ramp 队列（向客户打款）</div>' +
+        '<div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>' +
+        '<div class="hint block" style="display:none;">客户卖稳定币、收法币。走<b>稳定币账户</b>：卡商用自有银行卡按订单汇率折算出的应付金额向 C 端客户打款，完成后回填实付金额并登记。实付金额与应付金额偏差超过 ' + cny(PAYOUT_TOLERANCE) + ' 时不可直接登记，需走差异上报。</div>' +
+      '</div></div>' +
+      '<div class="tbl-wrap"><table>' +
+        '<thead><tr><th>订单号</th><th>类型</th><th>应付金额</th><th>对应稳定币</th><th>汇率</th><th>收款人</th><th>指派放款卡</th><th>操作</th></tr></thead>' +
+        '<tbody>' + (list.length ? list.map(o =>
+          '<tr>' +
+            '<td><b>' + o.no + '</b></td>' +
+            '<td>' + typeBadge(o.type) + '</td>' +
+            '<td class="mono"><b>' + cny(o.expect) + '</b></td>' +
+            '<td class="mono">' + money(o.usdt) + ' USDT</td>' +
+            '<td class="mono nowrap">' + o.rate + '</td>' +
+            '<td>' + esc(o.payee) + '<div style="color:var(--pp-muted); font-size:11.5px;">' + esc(o.bank) + '</div></td>' +
+            '<td class="mono nowrap">' + cardLabel(o.cardId) + '</td>' +
+            '<td><button class="mini-btn primary" onclick="openPayout(\'' + o.no + '\')">处理</button></td>' +
+          '</tr>'
+        ).join('') : '<tr><td colspan="8" class="empty">Off Ramp 队列已清空</td></tr>') + '</tbody>' +
+      '</table></div>' +
+    '</div>';
+}
+
+function renderFiatWdQueue(){
+  const list = pendingFiatWd();
+  const doneList = FIATWD.filter(o => o.status === 'done');
+  document.getElementById('order-queue').innerHTML =
+    '<div class="card">' +
+      '<div class="card-head"><div>' +
+        '<div class="field-label">法币直取队列（向商户垫付）</div>' +
+        '<div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>说明</div>' +
+        '<div class="hint block" style="display:none;">收款方是<b>商户</b>而非 C 端客户。走<b>法币账户</b>：金额已在上游按平台费率扣减完成，<b>不涉及任何汇率换算</b>。卡商先在自有网银按净额原样转账，再回本页回填实付金额、上传回单并登记该笔已打款。<b>登记即时释放同额法币信用额度</b>——自掏现金冲销了对平台的在途义务，敞口下降、剩余可用额度回升。</div>' +
+      '</div></div>' +
+      '<div class="banner banner-info"><div><b>当前剩余可用额度 ' + cny(pledgeHeadroom()) + '</b>' +
+        '当前敞口 ' + cny(outstandingFloat()) + ' · 信用额度上限 ' + cny(pledgeCeiling()) + '。本队列待处理合计 ' +
+        cny(list.reduce((a, o) => a + o.net, 0)) + '，全部登记完成后剩余可用额度将回升至 ' +
+        cny(Math.min(pledgeCeiling(), pledgeHeadroom() + list.reduce((a, o) => a + o.net, 0))) + '。' +
+        '<span class="link-btn" onclick="showPanel(\'pledge\')">前往质押管理 →</span></div></div>' +
+      '<div class="tbl-wrap"><table>' +
+        '<thead><tr><th>订单号</th><th>类型</th><th>收款商户</th><th>应付净额</th><th>收款银行账户</th><th>指派放款卡</th><th>操作</th></tr></thead>' +
+        '<tbody>' + (list.length ? list.map(o =>
+          '<tr>' +
+            '<td><b>' + o.no + '</b></td>' +
+            '<td>' + typeBadge(o.type) + '</td>' +
+            '<td>' + esc(o.broker) + '</td>' +
+            '<td class="mono"><b>' + cny(o.net) + '</b><div style="color:var(--pp-muted); font-size:11.5px;">已扣费净额 · 无汇率</div></td>' +
+            '<td class="mono nowrap">' + esc(o.bank) + '</td>' +
+            '<td class="mono nowrap">' + cardLabel(o.cardId) + '</td>' +
+            '<td><button class="mini-btn primary" onclick="openFiatWd(\'' + o.no + '\')">处理</button></td>' +
+          '</tr>'
+        ).join('') : '<tr><td colspan="7" class="empty">法币直取队列已清空</td></tr>') + '</tbody>' +
+      '</table></div>' +
+    '</div>' +
+    '<div class="card">' +
+      '<div class="field-label">已登记打款的法币直取<span style="color:var(--pp-muted); font-weight:400;"> · 已释放额度合计 ' + cny(doneList.reduce((a, o) => a + o.net, 0)) + '</span></div>' +
+      '<div class="tbl-wrap"><table>' +
+        '<thead><tr><th>订单号</th><th>收款商户</th><th>打款净额</th><th>放款卡</th><th>登记时间</th><th>额度影响</th></tr></thead>' +
+        '<tbody>' + (doneList.length ? doneList.map(o =>
+          '<tr><td><b>' + o.no + '</b></td><td>' + esc(o.broker) + '</td><td class="mono">' + cny(o.net) + '</td><td class="mono nowrap">' + cardLabel(o.cardId) + '</td><td class="mono">' + o.time + '</td>' +
+            '<td class="mono nowrap" style="color:#1f7a43;">敞口 −' + cny(o.net) + '</td></tr>'
+        ).join('') : '<tr><td colspan="6" class="empty">尚无已登记打款的法币直取</td></tr>') + '</tbody>' +
+      '</table></div>' +
+    '</div>';
+}
+
+let doneFilter = { type:'', result:'', from:'', to:'', q:'' };
+
+function doneFilterMatch(d){
+  if(doneFilter.type && d.type !== doneFilter.type) return false;
+  if(doneFilter.result === 'ok' && !d.ok) return false;
+  if(doneFilter.result === 'err' && d.ok) return false;
+  var day = d.time.slice(0,5); // 'MM-DD'
+  if(doneFilter.from && day < doneFilter.from) return false;
+  if(doneFilter.to && day > doneFilter.to) return false;
+  if(doneFilter.q){
+    var q = doneFilter.q.toLowerCase();
+    if(d.no.toLowerCase().indexOf(q) < 0 && (d.note||'').toLowerCase().indexOf(q) < 0) return false;
+  }
+  return true;
+}
+
+function doneFilterUpdate(field, val){
+  doneFilter[field] = val;
+  renderDoneQueue();
+}
+
+function doneFilterReset(){
+  doneFilter = { type:'', result:'', from:'', to:'', q:'' };
+  renderDoneQueue();
+}
+
+function renderDoneQueue(){
+  var rows = DONE_LOG.filter(doneFilterMatch);
+  var typeChips = '<div class="filters">' +
+    '<button type="button" class="filter-chip' + (doneFilter.type === '' ? ' active' : '') + '" onclick="doneFilterUpdate(\'type\', \'\')">全部类型</button>' +
+    Object.keys(TYPE_META).map(function(k){
+      return '<button type="button" class="filter-chip' + (doneFilter.type === k ? ' active' : '') + '" onclick="doneFilterUpdate(\'type\', \'' + k + '\')">' + TYPE_META[k].label + '</button>';
+    }).join('') +
+    '</div>';
+  var resultChips = '<div class="filters">' +
+    '<button type="button" class="filter-chip' + (doneFilter.result === '' ? ' active' : '') + '" onclick="doneFilterUpdate(\'result\', \'\')">全部结果</button>' +
+    '<button type="button" class="filter-chip' + (doneFilter.result === 'ok' ? ' active' : '') + '" onclick="doneFilterUpdate(\'result\', \'ok\')">已完成</button>' +
+    '<button type="button" class="filter-chip' + (doneFilter.result === 'err' ? ' active' : '') + '" onclick="doneFilterUpdate(\'result\', \'err\')">已上报异常</button>' +
+    '</div>';
+  var filterBar =
+    typeChips + resultChips +
+    '<div class="form-grid" style="grid-template-columns:1fr 1fr 1.6fr auto; align-items:end; margin-bottom:14px;">' +
+      '<div class="form-item"><div class="field-label">起始日期</div>' +
+        '<input type="text" placeholder="MM-DD" maxlength="5" value="' + esc(doneFilter.from) + '" oninput="doneFilterUpdate(\'from\', this.value)"></div>' +
+      '<div class="form-item"><div class="field-label">结束日期</div>' +
+        '<input type="text" placeholder="MM-DD" maxlength="5" value="' + esc(doneFilter.to) + '" oninput="doneFilterUpdate(\'to\', this.value)"></div>' +
+      '<div class="form-item"><div class="field-label">搜索订单号 / 说明</div>' +
+        '<input type="text" placeholder="例如 RC-92915" value="' + esc(doneFilter.q) + '" oninput="doneFilterUpdate(\'q\', this.value)"></div>' +
+      '<button type="button" class="ghost-btn" style="width:auto; padding:11px 22px; white-space:nowrap;" onclick="doneFilterReset()">重置</button>' +
+    '</div>';
+  document.getElementById('order-queue').innerHTML =
+    '<div class="card">' +
+      '<div class="field-label">已处理订单<span style="color:var(--pp-muted); font-weight:400;"> · 共 ' + rows.length + ' / ' + DONE_LOG.length + ' 笔</span></div>' +
+      '<div class="hint block">本次演示会话内已完成或已上报异常的订单流水，可按业务类型、处理结果、日期区间或关键字筛选。</div>' +
+      filterBar +
+      '<div class="tbl-wrap"><table>' +
+        '<thead><tr><th>订单号</th><th>类型</th><th>金额</th><th>处理结果</th><th>说明</th><th>时间</th></tr></thead>' +
+        '<tbody>' + (rows.length ? rows.map(d =>
+          '<tr>' +
+            '<td><b>' + d.no + '</b></td>' +
+            '<td>' + typeBadge(d.type) + '</td>' +
+            '<td class="mono">' + cny(d.amount) + '</td>' +
+            '<td><span class="tag ' + (d.ok ? 'tag-ok' : 'tag-err') + '">' + (d.ok ? '已完成' : '已上报异常') + '</span></td>' +
+            '<td style="color:var(--pp-muted);">' + esc(d.note) + '</td>' +
+            '<td class="mono">' + d.time + '</td>' +
+          '</tr>'
+        ).join('') : '<tr><td colspan="6" class="empty">没有符合筛选条件的订单</td></tr>') + '</tbody>' +
+      '</table></div>' +
+    '</div>';
+}
+
+/* --------- On Ramp：三重核验流程（逻辑不变） --------- */
+let cs = null;  // collect state
+
+function openCollect(no){
+  const o = COLLECT.find(x => x.no === no);
+  if(!o) return;
+  cs = { no, method:null, payer:'', payerAck:false, reviewed:false, forged:false };
+  openDrawer('处理 On Ramp 订单 ' + no, TYPE_META[o.type].label + ' · 应收 ' + cny(o.fiat) + ' · 指派卡 ' + cardLabel(o.cardId));
+  renderCollect();
+}
+
+function collectGates(){
+  const o = COLLECT.find(x => x.no === cs.no);
+  const card = cardById(o.cardId);
+  const allowed = card ? card.channels : [];
+  const g1 = cs.method ? (allowed.indexOf(cs.method) >= 0 ? 'pass' : 'fail') : 'idle';
+  let g2 = 'idle';
+  if(cs.payer.trim()){
+    g2 = (cs.payer.trim() === o.customer) ? 'pass' : (cs.payerAck ? 'pass' : 'fail');
+  }
+  /* 第三关＝「查看客户上传的凭证并核验」：凭证不是卡商产出的，卡商只做核对与真伪判断 */
+  const g3 = cs.forged ? 'fail' : (cs.reviewed ? 'pass' : 'idle');
+  return { o, card, allowed, g1, g2, g3, mismatch: cs.payer.trim() && cs.payer.trim() !== o.customer };
+}
+
+function renderCollect(){
+  const s = collectGates(), o = s.o;
+  const stateText = g => g === 'pass' ? '<span style="color:#1f7a43;">已通过</span>' : (g === 'fail' ? '<span style="color:var(--pp-danger);">未通过</span>' : '<span style="color:var(--pp-muted);">待核验</span>');
+  const gcls = g => g === 'pass' ? ' pass' : (g === 'fail' ? ' fail' : '');
+
+  const gate1 =
+    '<div class="gate' + gcls(s.g1) + '">' +
+      '<div class="gate-head"><div class="gate-no">1</div><div class="gate-title">支付方式合规核验</div><div class="gate-state">' + stateText(s.g1) + '</div></div>' +
+      '<div class="hint block">选择客户实际使用的支付方式。该收款卡仅开通：<b>' + s.allowed.join(' / ') + '</b>。使用未开通渠道收款将导致订单不可对账，系统禁止确认。</div>' +
+      '<div class="select-box">' + CHANNELS.map(ch => {
+        const ok = s.allowed.indexOf(ch) >= 0;
+        const active = cs.method === ch;
+        return '<div class="select-opt' + (ok ? '' : ' blocked') + (active ? ' active' : '') + '" onclick="collectSetMethod(\'' + ch + '\')">' + ch + (ok ? '' : ' ⚠') + '</div>';
+      }).join('') + '</div>' +
+      (s.g1 === 'fail' ? '<div class="banner banner-err"><div><b>渠道不匹配</b>「' + esc(cs.method) + '」不在该收款卡开通的渠道内，无法确认收款。请更换为已开通渠道，或点击底部「上报异常」交由平台处理。</div></div>' : '') +
+      (cs.method && cs.method !== o.method ? '<div class="banner banner-warn"><div><b>与客户下单时申报的方式不一致</b>下单申报为「' + esc(o.method) + '」，此处选择「' + esc(cs.method) + '」，请确认凭证与实际到账一致。</div></div>' : '') +
+    '</div>';
+
+  const gate2 =
+    '<div class="gate' + gcls(s.g2) + '">' +
+      '<div class="gate-head"><div class="gate-no">2</div><div class="gate-title">疑似代付 / 第三方付款人核验</div><div class="gate-state">' + stateText(s.g2) + '</div></div>' +
+      '<div class="hint block">填写银行流水中实际显示的付款人姓名。订单申报客户为 <b>' + esc(o.customer) + '</b>。付款人与下单人不一致属于第三方代付，存在洗钱与拒付风险。</div>' +
+      '<div class="card-inner">' +
+        '<div class="field-label">实际付款人姓名</div>' +
+        '<input type="text" value="' + esc(cs.payer) + '" placeholder="请照抄银行流水中的付款人姓名" oninput="collectSetPayer(this.value)">' +
+      '</div>' +
+      (s.mismatch ?
+        '<div class="banner banner-warn"><div><b>付款人与下单人不一致</b>流水付款人「' + esc(cs.payer.trim()) + '」≠ 下单客户「' + esc(o.customer) + '」，判定为疑似第三方代付。如需继续，必须勾选下方额外确认。</div></div>' +
+        '<div class="toggle-row" onclick="collectTogglePayerAck()"><div class="cbox' + (cs.payerAck ? ' on' : '') + '"></div>' +
+          '我已人工核实该笔为客户本人授权的第三方代付，并承担相应对账责任</div>'
+        : '') +
+      (cs.payer.trim() && !s.mismatch ? '<div style="font-size:12px; color:#1f7a43;">✓ 付款人与下单客户一致</div>' : '') +
+    '</div>';
+
+  const proof = proofOf(o.no);
+  const gate3 =
+    '<div class="gate' + gcls(s.g3) + '">' +
+      '<div class="gate-head"><div class="gate-no">3</div><div class="gate-title">客户付款凭证核验与伪造标记</div><div class="gate-state">' + stateText(s.g3) + '</div></div>' +
+      '<div class="hint block">下方凭证由<b>客户完成线下转账后在商户端自行上传</b>，卡商侧只读——无需也无法自行上传。请点击放大，与本收款卡的银行流水逐项比对（金额 / 付款人 / 时间 / 渠道）。</div>' +
+      '<div class="card-inner">' +
+        '<div class="field-label">客户上传的付款凭证</div>' +
+        proofBlock(o.no) +
+        (proof && Math.abs(proof.amount - o.fiat) >= 0.005
+          ? '<div class="banner banner-warn"><div><b>凭证金额与应收金额不一致</b>凭证显示 ' + cny(proof.amount) + '，订单应收 ' + cny(o.fiat) + '。请以银行实际到账为准，必要时上报异常。</div></div>'
+          : '') +
+        (proof && cs.payer.trim() && cs.payer.trim() !== proof.payer
+          ? '<div class="banner banner-warn"><div><b>凭证付款人与第 ② 关填写的不一致</b>凭证显示「' + esc(proof.payer) + '」，第 ② 关填写「' + esc(cs.payer.trim()) + '」。</div></div>'
+          : '') +
+      '</div>' +
+      (proof
+        ? '<div class="toggle-row" onclick="collectToggleReviewed()"><div class="cbox' + (cs.reviewed ? ' on' : '') + '"></div>我已查看该凭证，并与本收款卡的银行流水核对一致</div>'
+        : '<div class="hint block">客户凭证缺失，本关无法通过；请等待客户补交或上报异常。</div>') +
+      '<div class="hint block">以下是卡商<b>独立于凭证内容之外</b>的判断：若这张图存在 PS 痕迹、拼接、金额时间对不上等情况，请打开开关——此时不得确认收款，只能上报异常。</div>' +
+      '<div class="toggle-row" onclick="collectToggleForged()"><div class="switch' + (cs.forged ? ' on' : '') + '"></div>标记该凭证为疑似伪造</div>' +
+      (cs.forged ? '<div class="banner banner-err"><div><b>已标记疑似伪造</b>「确认已收款」已被锁定。请提交「上报异常」，由平台风控介入核查。</div></div>' : '') +
+    '</div>';
+
+  document.getElementById('drawer-body').innerHTML =
+    '<div class="quote-box">' +
+      '<div class="quote-row"><div class="k">订单类型</div><div class="v">' + typeBadge(o.type) + '</div></div>' +
+      '<div class="quote-row"><div class="k">应收金额</div><div class="v quote-amt" style="font-size:22px;">' + cny(o.fiat) + '</div></div>' +
+      (o.usdt > 0
+        ? '<div class="quote-row"><div class="k">冻结保证金</div><div class="v frozen">' + money(o.usdt) + ' USDT</div></div>'
+        : '<div class="quote-row"><div class="k">保证金占用</div><div class="v">无（法币直存不占用额度）</div></div>') +
+      '<div class="quote-row"><div class="k">指派收款卡</div><div class="v mono">' + cardLabel(o.cardId) + '</div></div>' +
+      '<div class="quote-row"><div class="k">剩余时间</div><div class="v countdown" data-cd="' + o.no + '">' + mmss(o.left) + '</div></div>' +
+    '</div>' +
+    '<div class="section-title">三重核验</div>' + gate1 + gate2 + gate3;
+
+  const allPass = s.g1 === 'pass' && s.g2 === 'pass' && s.g3 === 'pass';
+  const blockedByForge = cs.forged;
+  let footer = '';
+  if(blockedByForge){
+    footer =
+      '<div class="banner banner-err"><div><b>已锁定确认操作</b>凭证被标记为疑似伪造，只能上报异常。</div></div>' +
+      '<button class="primary-btn" disabled>确认已收款</button>' +
+      '<button class="danger-btn" onclick="collectReport(\'凭证疑似伪造\')">上报异常</button>';
+  } else if(allPass){
+    footer =
+      '<div class="banner banner-ok"><div><b>三重核验全部通过</b>确认后订单结算，冻结的保证金将同步扣减。</div></div>' +
+      '<button class="primary-btn" onclick="collectConfirm()">确认已收款</button>';
+  } else {
+    const missing = [];
+    if(s.g1 !== 'pass') missing.push('① 支付方式合规');
+    if(s.g2 !== 'pass') missing.push('② 付款人核验');
+    if(s.g3 !== 'pass') missing.push('③ 客户凭证核验');
+    footer =
+      '<div class="banner banner-warn"><div><b>尚未通过：' + missing.join('、') + '</b>全部通过后方可确认收款。</div></div>' +
+      '<button class="primary-btn" disabled>确认已收款</button>' +
+      '<button class="ghost-btn" onclick="collectReport(\'核验未通过，人工介入\')">上报异常</button>';
+  }
+  document.getElementById('drawer-foot').innerHTML = footer;
+}
+function collectSetMethod(ch){ cs.method = ch; renderCollect(); }
+function collectSetPayer(v){ cs.payer = v; if(v.trim() === (COLLECT.find(x => x.no === cs.no) || {}).customer) cs.payerAck = false; renderCollect(); }
+function collectTogglePayerAck(){ cs.payerAck = !cs.payerAck; renderCollect(); }
+function collectToggleReviewed(){ cs.reviewed = !cs.reviewed; renderCollect(); }
+function collectToggleForged(){ cs.forged = !cs.forged; renderCollect(); }
+
+function collectConfirm(){
+  const s = collectGates();
+  if(!(s.g1 === 'pass' && s.g2 === 'pass' && s.g3 === 'pass') || cs.forged){ toast('核验未全部通过，无法确认'); return; }
+  const o = s.o;
+  o.status = 'done';
+  if(o.usdt > 0){ usdt.frozen -= o.usdt; }                 // On Ramp：冻结的保证金结算给商户
+  if(o.type === 'collect_fiat'){                            // 法币直存：即时入账，同额占用法币信用额度
+    COLLECTED_FIAT.push({ no:o.no, amount:o.fiat, cardId:o.cardId, time:nowStamp() });
+  }
+  DONE_LOG.unshift({ no:o.no, type:o.type, amount:o.fiat, ok:true, time:nowStamp(),
+    note:'三重核验通过 · 付款人 ' + cs.payer.trim() + ' · 渠道 ' + cs.method +
+      (o.type === 'collect_fiat'
+        ? ' · 即时入账 · 占用法币信用额度 ' + cny(o.fiat) + '，剩余可用额度 ' + cny(pledgeHeadroom())
+        : ' · 释放冻结 ' + money(o.usdt) + ' USDT') });
+  closeDrawer();
+  renderAll();
+  toast('订单 ' + o.no + ' 已确认收款');
+}
+function collectReport(reason){
+  const o = COLLECT.find(x => x.no === cs.no);
+  o.status = 'exception';
+  if(o.usdt > 0){ usdt.frozen -= o.usdt; usdt.available += o.usdt; }   // 异常订单解冻回可用
+  DONE_LOG.unshift({ no:o.no, type:o.type, amount:o.fiat, ok:false, time:nowStamp(), note:reason + ' · 已解冻保证金，等待平台风控处理' });
+  closeDrawer();
+  renderAll();
+  toast('订单 ' + o.no + ' 已上报异常');
+}
+
+/* --------- 法币直存：到账金额确认 + 客户上传凭证核验 --------- */
+let fis = null;   // fiat-in state
+
+function openFiatIn(no){
+  const o = COLLECT.find(x => x.no === no);
+  if(!o) return;
+  fis = { no, received:'', reviewed:false };
+  openDrawer('处理法币直存 ' + no, '法币直存 · 应收 ' + cny(o.fiat) + ' · 指派卡 ' + cardLabel(o.cardId));
+  renderFiatIn();
+}
+function renderFiatIn(){
+  const o = COLLECT.find(x => x.no === fis.no);
+  const got = parseFloat(fis.received);
+  const filled = fis.received !== '' && !isNaN(got);
+  const exact = filled && Math.abs(got - o.fiat) < 0.005;
+  const proof = proofOf(o.no);   // 客户在商户端上传的付款凭证（卡商只读）
+
+  document.getElementById('drawer-body').innerHTML =
+    '<div class="banner banner-info"><div><b>与 On Ramp 的区别</b>法币直存的款项直接记入商户的<b>法币账户</b>，<b>不冻结稳定币保证金、不涉及汇率与折算</b>，因此无需做支付方式与第三方付款人风险核验，只需核对到账金额并查看客户上传的付款凭证。本步骤是<b>确认款项已到卡商自有银行账户</b>，系统不代收任何资金；确认后平台即时把款项贷记给商户，同额占用你的<b>法币信用额度</b>。</div></div>' +
+    '<div class="quote-box">' +
+      '<div class="quote-row"><div class="k">订单类型</div><div class="v">' + typeBadge(o.type) + '</div></div>' +
+      '<div class="quote-row"><div class="k">应收金额</div><div class="v quote-amt" style="font-size:22px;">' + cny(o.fiat) + '</div></div>' +
+      '<div class="quote-row"><div class="k">存款客户</div><div class="v">' + esc(o.customer) + '</div></div>' +
+      '<div class="quote-row"><div class="k">指派收款卡</div><div class="v mono">' + cardLabel(o.cardId) + '</div></div>' +
+      '<div class="quote-row"><div class="k">支付方式</div><div class="v">' + esc(o.method) + '</div></div>' +
+      '<div class="quote-row"><div class="k">保证金占用</div><div class="v">无（不冻结稳定币，改为占用法币信用额度）</div></div>' +
+      '<div class="quote-row"><div class="k">确认后占用信用额度</div><div class="v frozen">' + cny(o.fiat) + '</div></div>' +
+      '<div class="quote-row"><div class="k">剩余可用额度（确认前 → 确认后）</div><div class="v mono">' + cny(pledgeHeadroom()) + ' → ' + cny(Math.max(0, pledgeHeadroom() - o.fiat)) + '</div></div>' +
+      '<div class="quote-row"><div class="k">汇率 / 点差</div><div class="v" style="color:var(--pp-muted);">不适用</div></div>' +
+      '<div class="quote-row"><div class="k">剩余时间</div><div class="v countdown" data-cd="' + o.no + '">' + mmss(o.left) + '</div></div>' +
+    '</div>' +
+    '<div class="gate' + (exact ? ' pass' : (filled ? ' fail' : '')) + '">' +
+      '<div class="gate-head"><div class="gate-no">1</div><div class="gate-title">到账金额确认</div>' +
+        '<div class="gate-state">' + (exact ? '<span style="color:#1f7a43;">一致</span>' : (filled ? '<span style="color:var(--pp-danger);">不一致</span>' : '<span style="color:var(--pp-muted);">待填写</span>')) + '</div></div>' +
+      '<div class="hint block">回填收款卡银行流水中实际到账的金额，需与应收金额完全一致。</div>' +
+      '<div class="card-inner">' +
+        '<div class="field-label">实际到账金额（' + esc(o.type === 'collect_fiat' ? 'CNY' : 'CNY') + '）</div>' +
+        '<input type="number" step="0.01" class="' + (filled && !exact ? 'bad' : '') + '" value="' + esc(fis.received) + '" placeholder="' + o.fiat.toFixed(2) + '" oninput="fiSetReceived(this.value)">' +
+        '<div class="select-box"><div class="select-opt" onclick="fiSetReceived(' + o.fiat.toFixed(2) + ')">按应收金额填入 ' + cny(o.fiat) + '</div></div>' +
+      '</div>' +
+      (filled && !exact ? '<div class="banner banner-err"><div><b>金额不一致</b>实收 ' + cny(got) + ' ≠ 应收 ' + cny(o.fiat) + '，差额 ' + cny(Math.abs(got - o.fiat)) + '。金额不符不可登记收款，请提交上报由平台核账。</div></div>' : '') +
+    '</div>' +
+    '<div class="gate' + (fis.reviewed ? ' pass' : '') + '">' +
+      '<div class="gate-head"><div class="gate-no">2</div><div class="gate-title">客户付款凭证核验</div>' +
+        '<div class="gate-state">' + (fis.reviewed ? '<span style="color:#1f7a43;">已核验</span>' : '<span style="color:var(--pp-muted);">待核验</span>') + '</div></div>' +
+      '<div class="hint block">下方凭证由<b>客户完成线下转账后在商户端自行上传</b>，卡商侧只读——无需也无法自行上传。请点击放大，与本收款卡的银行流水逐项比对后再确认收款；该图同时作为事后核账时的凭据留存。</div>' +
+      '<div class="card-inner">' +
+        '<div class="field-label">客户上传的付款凭证</div>' +
+        proofBlock(o.no) +
+        (proof && Math.abs(proof.amount - o.fiat) >= 0.005
+          ? '<div class="banner banner-warn"><div><b>凭证金额与应收金额不一致</b>凭证显示 ' + cny(proof.amount) + '，订单应收 ' + cny(o.fiat) + '。请以银行实际到账为准，必要时上报异常。</div></div>'
+          : '') +
+        (proof && proof.payer !== o.customer
+          ? '<div class="banner banner-warn"><div><b>凭证付款人与存款客户不一致</b>凭证显示「' + esc(proof.payer) + '」，订单存款客户为「' + esc(o.customer) + '」。</div></div>'
+          : '') +
+      '</div>' +
+      (proof
+        ? '<div class="toggle-row" onclick="fiToggleReviewed()"><div class="cbox' + (fis.reviewed ? ' on' : '') + '"></div>我已查看该凭证，并与本收款卡的银行流水核对一致</div>'
+        : '<div class="hint block">客户凭证缺失，本关无法通过；请等待客户补交或上报异常。</div>') +
+    '</div>';
+
+  const ready = exact && fis.reviewed;
+  document.getElementById('drawer-foot').innerHTML =
+    (ready
+      ? '<div class="banner ' + (o.fiat > pledgeHeadroom() ? 'banner-warn' : 'banner-ok') + '"><div><b>确认后即时生效，无后续结算步骤</b>本笔 ' + cny(o.fiat) +
+          ' 立刻入账给商户，并占用你的法币信用额度，剩余可用额度将从 ' + cny(pledgeHeadroom()) + ' 降至 ' + cny(Math.max(0, pledgeHeadroom() - o.fiat)) + '。' +
+          (o.fiat > pledgeHeadroom() ? '<b>本笔金额已超出当前剩余可用额度</b>，确认后敞口将顶满信用额度上限，请尽快追加质押或先处理法币直取以释放敞口。' : '') +
+        '</div></div>'
+      : '<div class="banner banner-warn"><div><b>尚未满足确认条件</b>需先回填与应收一致的到账金额，并查看、核验客户上传的付款凭证。</div></div>') +
+    '<button class="primary-btn" ' + (ready ? '' : 'disabled') + ' onclick="fiConfirm()">确认已收到该笔法币</button>' +
+    '<button class="ghost-btn" onclick="fiReport()">上报异常</button>';
+}
+function fiSetReceived(v){ fis.received = String(v); renderFiatIn(); }
+function fiToggleReviewed(){ fis.reviewed = !fis.reviewed; renderFiatIn(); }
+function fiConfirm(){
+  const o = COLLECT.find(x => x.no === fis.no);
+  const got = parseFloat(fis.received);
+  if(isNaN(got) || Math.abs(got - o.fiat) >= 0.005){ toast('实际到账金额与应收金额不一致'); return; }
+  if(!fis.reviewed){ toast('请先查看并核验客户上传的付款凭证'); return; }
+  o.status = 'done';
+  /* 法币直存确认 → 平台即时贷记给商户，卡商在途义务上升：敞口 +o.fiat，剩余可用额度 −o.fiat */
+  COLLECTED_FIAT.push({ no:o.no, amount:o.fiat, cardId:o.cardId, time:nowStamp() });
+  DONE_LOG.unshift({ no:o.no, type:o.type, amount:o.fiat, ok:true, time:nowStamp(),
+    note:'已确认到账 ' + cny(got) + ' · 收款卡 ' + cardLabel(o.cardId) +
+      ' · 即时入账 · 占用法币信用额度 ' + cny(o.fiat) + '，剩余可用额度 ' + cny(pledgeHeadroom()) });
+  closeDrawer();
+  renderAll();
+  toast('订单 ' + o.no + ' 已确认入账 · 占用额度 ' + cny(o.fiat) + ' · 剩余可用额度 ' + cny(pledgeHeadroom()));
+}
+function fiReport(){
+  const o = COLLECT.find(x => x.no === fis.no);
+  o.status = 'exception';
+  const got = parseFloat(fis.received);
+  DONE_LOG.unshift({ no:o.no, type:o.type, amount:o.fiat, ok:false, time:nowStamp(),
+    note:'法币直存到账异常' + (isNaN(got) ? '（未回填到账金额）' : '（实收 ' + cny(got) + ' ≠ 应收 ' + cny(o.fiat) + '）') + ' · 已转平台核账' });
+  closeDrawer();
+  renderAll();
+  toast('订单 ' + o.no + ' 已上报异常');
+}
+
+/* --------- Off Ramp --------- */
+let ps = null;
+
+function openPayout(no){
+  const o = PAYOUT.find(x => x.no === no);
+  if(!o) return;
+  ps = { no, actual:o.expect, evidence:null };
+  openDrawer('处理 Off Ramp 订单 ' + no, 'Off Ramp · 应付 ' + cny(o.expect) + ' · 收款人 ' + o.payee);
+  renderPayout();
+}
+function renderPayout(){
+  const o = PAYOUT.find(x => x.no === ps.no);
+  const diff = (ps.actual || 0) - o.expect;
+  const within = Math.abs(diff) <= PAYOUT_TOLERANCE;
+
+  let diffBanner = '';
+  if(Math.abs(diff) > 0.004){
+    diffBanner = within
+      ? '<div class="banner banner-warn"><div><b>存在差异 ' + (diff > 0 ? '+' : '−') + cny(Math.abs(diff)) + '</b>在允许容差 ' + cny(PAYOUT_TOLERANCE) + ' 以内，可继续登记本笔打款，差额进入尾差池。</div></div>'
+      : '<div class="banner banner-err"><div><b>差异 ' + (diff > 0 ? '+' : '−') + cny(Math.abs(diff)) + ' 超出容差 ' + cny(PAYOUT_TOLERANCE) + '</b>实付金额与应付金额不符，禁止直接登记，请提交差异上报由平台核账。</div></div>';
+  }
+
+  const presets = [o.expect, o.expect - 0.50, o.expect + 100, o.expect - 200];
+  document.getElementById('drawer-body').innerHTML =
+    '<div class="quote-box">' +
+      '<div class="quote-row"><div class="k">订单类型</div><div class="v">' + typeBadge(o.type) + '</div></div>' +
+      '<div class="quote-row"><div class="k">应付法币金额</div><div class="v quote-amt" style="font-size:22px;">' + cny(o.expect) + '</div></div>' +
+      '<div class="quote-row"><div class="k">订单汇率</div><div class="v mono">' + o.rate + '</div></div>' +
+      '<div class="quote-row"><div class="k">对应稳定币</div><div class="v mono">' + money(o.usdt) + ' USDT（完成后回补可用额度）</div></div>' +
+      '<div class="quote-row"><div class="k">收款人</div><div class="v">' + esc(o.payee) + '</div></div>' +
+      '<div class="quote-row"><div class="k">收款账户</div><div class="v mono">' + esc(o.bank) + '</div></div>' +
+      '<div class="quote-row"><div class="k">指派放款卡</div><div class="v mono">' + cardLabel(o.cardId) + '</div></div>' +
+    '</div>' +
+    '<div class="gate">' +
+      '<div class="gate-head"><div class="gate-no">1</div><div class="gate-title">实付金额确认</div></div>' +
+      '<div class="hint block">请先在自有网银 / 支付工具向该收款人完成转账，再回填银行实际扣款金额。可用步进按钮微调，或直接输入。</div>' +
+      '<div style="display:flex; gap:8px; align-items:center;">' +
+        '<button class="mini-btn" onclick="payoutStep(-1)">−1.00</button>' +
+        '<input type="number" step="0.01" value="' + (ps.actual === '' ? '' : Number(ps.actual).toFixed(2)) + '" class="' + (within ? '' : 'bad') + '" oninput="payoutSetActual(this.value)">' +
+        '<button class="mini-btn" onclick="payoutStep(1)">+1.00</button>' +
+      '</div>' +
+      '<div class="select-box">' + presets.map(p =>
+        '<div class="select-opt' + (Math.abs((ps.actual || 0) - p) < 0.005 ? ' active' : '') + '" onclick="payoutSetActual(' + p.toFixed(2) + ')">' + cny(p) + '</div>'
+      ).join('') + '</div>' +
+      diffBanner +
+    '</div>' +
+    '<div class="gate">' +
+      '<div class="gate-head"><div class="gate-no">2</div><div class="gate-title">打款凭证</div></div>' +
+      '<div class="upload' + (ps.evidence ? ' has' : '') + '" onclick="payoutUpload()">' +
+        (ps.evidence ? '✓ 已上传：' + esc(ps.evidence) + '（点击重新上传）' : '点击上传打款回单（演示：模拟选择文件）') +
+      '</div>' +
+    '</div>';
+
+  const ready = ps.evidence && within && ps.actual !== '' && !isNaN(parseFloat(ps.actual));
+  document.getElementById('drawer-foot').innerHTML = within
+    ? '<button class="primary-btn" ' + (ready ? '' : 'disabled') + ' onclick="payoutConfirm()">登记已完成打款</button>' +
+      (ps.evidence ? '' : '<div class="hint" style="text-align:center; margin:0;">请先上传打款回单</div>')
+    : '<button class="primary-btn" disabled>登记已完成打款</button>' +
+      '<button class="danger-btn" onclick="payoutReport()">提交差异上报</button>';
+}
+function payoutSetActual(v){ ps.actual = (v === '' ? '' : parseFloat(v)); renderPayout(); }
+function payoutStep(d){ ps.actual = Math.max(0, (parseFloat(ps.actual) || 0) + d); renderPayout(); }
+function payoutUpload(){ ps.evidence = '打款回单_' + ps.no + '.pdf'; renderPayout(); toast('已上传打款回单（演示文件）'); }
+function payoutConfirm(){
+  const o = PAYOUT.find(x => x.no === ps.no);
+  const diff = (parseFloat(ps.actual) || 0) - o.expect;
+  if(Math.abs(diff) > PAYOUT_TOLERANCE){ toast('差异超出容差，无法确认'); return; }
+  if(!ps.evidence){ toast('请先上传打款回单'); return; }
+  o.status = 'done';
+  usdt.available += o.usdt;   // Off Ramp 履约登记完成，平台按订单稳定币数量结算给卡商
+  DONE_LOG.unshift({ no:o.no, type:o.type, amount:parseFloat(ps.actual), ok:true, time:nowStamp(),
+    note:'实付 ' + cny(parseFloat(ps.actual)) + '（差异 ' + cny(Math.abs(diff)) + '，容差内）· 回补 ' + money(o.usdt) + ' USDT' });
+  closeDrawer();
+  renderAll();
+  toast('订单 ' + o.no + ' 打款已登记');
+}
+function payoutReport(){
+  const o = PAYOUT.find(x => x.no === ps.no);
+  const diff = (parseFloat(ps.actual) || 0) - o.expect;
+  o.status = 'exception';
+  DONE_LOG.unshift({ no:o.no, type:o.type, amount:o.expect, ok:false, time:nowStamp(),
+    note:'实付 ' + cny(parseFloat(ps.actual) || 0) + ' 与应付偏差 ' + cny(Math.abs(diff)) + '，超出容差，已转平台核账' });
+  closeDrawer();
+  renderAll();
+  toast('订单 ' + o.no + ' 已提交差异上报');
+}
+
+/* --------- 法币直取 --------- */
+let fs = null;
+
+function openFiatWd(no){
+  const o = FIATWD.find(x => x.no === no);
+  if(!o) return;
+  fs = { no, paid:'', evidence:null };
+  openDrawer('处理法币直取 ' + no, '向商户垫付 · 应付净额 ' + cny(o.net) + ' · 不涉及汇率 · 打款后登记');
+  renderFiatWd();
+}
+function renderFiatWd(){
+  const o = FIATWD.find(x => x.no === fs.no);
+  const paid = parseFloat(fs.paid);
+  const filled = fs.paid !== '' && !isNaN(paid);
+  const exact = filled && Math.abs(paid - o.net) < 0.005;
+
+  document.getElementById('drawer-body').innerHTML =
+    '<div class="banner banner-info"><div><b>与 Off Ramp 的区别</b>本笔收款方是<b>商户</b>，金额为平台上游已扣费后的净额，<b>没有汇率、没有折算、没有点差</b>。请先在自有网银按净额原样完成转账，再回填实付金额进行一致性校验并登记；本页只记录这笔打款已经发生，不代为发起转账。</div></div>' +
+    '<div class="quote-box">' +
+      '<div class="quote-row"><div class="k">订单类型</div><div class="v">' + typeBadge(o.type) + '</div></div>' +
+      '<div class="quote-row"><div class="k">收款商户</div><div class="v">' + esc(o.broker) + '</div></div>' +
+      '<div class="quote-row"><div class="k">应付净额</div><div class="v quote-amt" style="font-size:22px;">' + cny(o.net) + '</div></div>' +
+      '<div class="quote-row"><div class="k">收款银行账户</div><div class="v mono">' + esc(o.bank) + '</div></div>' +
+      '<div class="quote-row"><div class="k">指派放款卡</div><div class="v mono">' + cardLabel(o.cardId) + '</div></div>' +
+      '<div class="quote-row"><div class="k">登记后释放信用额度</div><div class="v" style="color:#1f7a43;">+' + cny(o.net) + '</div></div>' +
+      '<div class="quote-row"><div class="k">剩余可用额度（登记前 → 登记后）</div><div class="v mono">' + cny(pledgeHeadroom()) + ' → ' + cny(Math.min(pledgeCeiling(), pledgeHeadroom() + o.net)) + '</div></div>' +
+      '<div class="quote-row"><div class="k">汇率 / 点差</div><div class="v" style="color:var(--pp-muted);">不适用</div></div>' +
+    '</div>' +
+    '<div class="gate' + (exact ? ' pass' : (filled ? ' fail' : '')) + '">' +
+      '<div class="gate-head"><div class="gate-no">1</div><div class="gate-title">实付金额一致性校验</div>' +
+        '<div class="gate-state">' + (exact ? '<span style="color:#1f7a43;">一致</span>' : (filled ? '<span style="color:var(--pp-danger);">不一致</span>' : '<span style="color:var(--pp-muted);">待填写</span>')) + '</div></div>' +
+      '<div class="hint block">法币直取必须<b>足额原样打款</b>，回填的实付金额需与应付净额完全一致，不接受任何差额。</div>' +
+      '<div class="card-inner">' +
+        '<div class="field-label">已打款金额（CNY，按银行回单填写）</div>' +
+        '<input type="number" step="0.01" class="' + (filled && !exact ? 'bad' : '') + '" value="' + esc(fs.paid) + '" placeholder="' + o.net.toFixed(2) + '" oninput="fwSetPaid(this.value)">' +
+        '<div class="select-box"><div class="select-opt" onclick="fwSetPaid(' + o.net.toFixed(2) + ')">按应付净额填入 ' + cny(o.net) + '</div></div>' +
+      '</div>' +
+      (filled && !exact ? '<div class="banner banner-err"><div><b>金额不一致</b>实付 ' + cny(paid) + ' ≠ 应付净额 ' + cny(o.net) + '，差额 ' + cny(Math.abs(paid - o.net)) + '。请在银行侧补足或撤回后重新打款，再回本页登记。</div></div>' : '') +
+    '</div>' +
+    '<div class="gate">' +
+      '<div class="gate-head"><div class="gate-no">2</div><div class="gate-title">打款凭证</div></div>' +
+      '<div class="upload' + (fs.evidence ? ' has' : '') + '" onclick="fwUpload()">' +
+        (fs.evidence ? '✓ 已上传：' + esc(fs.evidence) + '（点击重新上传）' : '点击上传打款回单（演示：模拟选择文件）') +
+      '</div>' +
+    '</div>';
+
+  const ready = exact && fs.evidence;
+  document.getElementById('drawer-foot').innerHTML =
+    '<div class="banner banner-ok"><div><b>登记后即时释放信用额度</b>本笔 ' + cny(o.net) + ' 是你自掏现金冲销对平台的在途义务，登记后<b>敞口下降 ' + cny(o.net) +
+      '</b>，剩余可用额度将从 ' + cny(pledgeHeadroom()) + ' 回升至 ' + cny(Math.min(pledgeCeiling(), pledgeHeadroom() + o.net)) + '；本页只记录这笔打款已经发生，不触发任何真实转账。</div></div>' +
+    '<button class="primary-btn" ' + (ready ? '' : 'disabled') + ' onclick="fwConfirm()">登记已完成打款</button>';
+}
+function fwSetPaid(v){ fs.paid = String(v); renderFiatWd(); }
+function fwUpload(){ fs.evidence = '直取回单_' + fs.no + '.pdf'; renderFiatWd(); toast('已上传打款回单（演示文件）'); }
+function fwConfirm(){
+  const o = FIATWD.find(x => x.no === fs.no);
+  const paid = parseFloat(fs.paid);
+  if(isNaN(paid) || Math.abs(paid - o.net) >= 0.005){ toast('实付金额与应付净额不一致'); return; }
+  if(!fs.evidence){ toast('请先上传打款回单'); return; }
+  o.status = 'done';
+  o.time = nowStamp();
+  /* 法币直取确认 → 卡商自掏现金冲销在途义务：敞口 −o.net，剩余可用额度 +o.net */
+  DONE_LOG.unshift({ no:o.no, type:o.type, amount:o.net, ok:true, time:o.time,
+    note:'已登记向 ' + o.broker + ' 足额垫付 · 释放法币信用额度 ' + cny(o.net) + '，剩余可用额度 ' + cny(pledgeHeadroom()) });
+  closeDrawer();
+  renderAll();
+  toast('已登记打款 · 释放额度 ' + cny(o.net) + ' · 剩余可用额度 ' + cny(pledgeHeadroom()));
+}
+
+/* =========================================================================
+ * 质押管理（原「法币净额对账」页已随本模块下线）
+ * ------------------------------------------------------------------------
+ * 为什么不再需要周期性轧差归集：平台手上握有卡商的稳定币质押，极端情况下可直接
+ * 处置担保，因此不必再靠「本期已收 / 已垫付 / 净差额 / 登记归集」这一轮慢速的
+ * 事后真账。取而代之的是敞口实时占用 / 实时释放的信用额度模型。
+ * 下列四个数字是整页（含 Dashboard 法币账户卡片）唯一的数据来源。
+ * ========================================================================= */
+function pledgeCeiling(){ return PLEDGE.pledged * PLEDGE.rate; }
+function outstandingFloat(){
+  const inTotal  = COLLECTED_FIAT.reduce((a, x) => a + x.amount, 0);          // 已确认法币直存
+  const outTotal = FIATWD.filter(x => x.status === 'done')
+                         .reduce((a, x) => a + x.net, 0);                     // 已确认法币直取
+  return Math.max(0, FLOAT_CARRY + inTotal - outTotal);                       // 敞口不为负
+}
+function pledgeHeadroom(){ return Math.max(0, pledgeCeiling() - outstandingFloat()); }
+function pledgeUsedPct(){
+  const c = pledgeCeiling();
+  return c > 0 ? Math.min(100, outstandingFloat() / c * 100) : 100;
+}
+function pledgeRoomPct(){ return Math.max(0, 100 - pledgeUsedPct()); }
+function pledgeLowAlert(){ return pledgeRoomPct() < (ALERT_CFG.threshold || 0); }
+function barToneClass(){
+  const room = pledgeRoomPct();
+  if(room < (ALERT_CFG.threshold || 0)) return ' danger';
+  if(room < (ALERT_CFG.threshold || 0) * 1.5) return ' warn';
+  return '';
+}
+/* 释放质押的上限：释放后信用额度上限仍需覆盖当前敞口（向下取到分） */
+function maxReleasable(){
+  if(PLEDGE.rate <= 0) return 0;
+  const keep = outstandingFloat() / PLEDGE.rate;         // 必须留住的质押数量
+  return Math.max(0, Math.floor((PLEDGE.pledged - keep) * 100) / 100);
+}
+
+function inputVal(id){ const el = document.getElementById(id); return el ? String(el.value).trim() : ''; }
+
+function pledgeAddCheck(){
+  const raw = inputVal('pledge-add-amt');
+  if(raw === '') return { err:'', v:NaN };
+  const v = parseFloat(raw);
+  if(isNaN(v) || v <= 0) return { err:'请输入有效的质押数量', v:NaN };
+  if(v > usdt.available) return { err:'稳定币账户可用余额不足：可用 ' + money(usdt.available) + ' USDT（冻结与已质押部分不可再次质押）', v:v };
+  return { err:'', v:v };
+}
+function pledgeRelCheck(){
+  const raw = inputVal('pledge-rel-amt');
+  if(raw === '') return { err:'', v:NaN };
+  const v = parseFloat(raw);
+  if(isNaN(v) || v <= 0) return { err:'请输入有效的释放数量', v:NaN };
+  if(v > PLEDGE.pledged) return { err:'释放数量不能超过已质押数量 ' + money(PLEDGE.pledged) + ' USDT', v:v };
+  const newCeiling = (PLEDGE.pledged - v) * PLEDGE.rate;
+  const flt = outstandingFloat();
+  if(newCeiling < flt - 0.005){
+    return { err:'释放后信用额度上限将降至 ' + cny(newCeiling) + '，低于当前敞口 ' + cny(flt) +
+      '。正在支撑敞口的质押不可释放，当前最多可释放 ' + money(maxReleasable()) + ' USDT。', v:v };
+  }
+  return { err:'', v:v };
+}
+
+function pledgeFillAll(){
+  const el = document.getElementById('pledge-add-amt');
+  if(el){ el.value = usdt.available > 0 ? usdt.available.toFixed(2) : ''; }
+  renderPledge();
+}
+function pledgeFillMaxRelease(){
+  const el = document.getElementById('pledge-rel-amt');
+  const m = maxReleasable();
+  if(el){ el.value = m > 0 ? m.toFixed(2) : ''; }
+  renderPledge();
+  if(m <= 0) toast('当前敞口已占满全部质押担保，暂无可释放数量');
+}
+
+function renderPledge(){
+  const ceiling = pledgeCeiling(), flt = outstandingFloat(), room = pledgeHeadroom();
+  const usePct = pledgeUsedPct(), roomPct = pledgeRoomPct();
+
+  const badge = document.getElementById('pledge-badge');
+  if(badge){
+    badge.textContent = '额度使用率 ' + usePct.toFixed(1) + '%';
+    badge.style.cssText = pledgeLowAlert()
+      ? 'background:var(--pp-danger-soft); color:#a33;'
+      : 'background:var(--pp-primary-soft); color:var(--pp-primary);';
+  }
+
+  const alertHost = document.getElementById('pledge-alert');
+  if(alertHost){
+    alertHost.innerHTML = pledgeLowAlert()
+      ? '<div class="banner banner-err"><div><b>剩余可用额度已低于你设置的提醒阈值 ' + ALERT_CFG.threshold + '%</b>当前剩余 ' +
+          cny(room) + '（占额度上限 ' + roomPct.toFixed(1) + '%）。请尽快追加质押，或先处理法币直取队列以释放敞口。</div></div>'
+      : '';
+  }
+
+  const sum = document.getElementById('pledge-summary');
+  if(sum){
+    sum.innerHTML =
+      '<div class="quote-amt">' + cny(room) + ' <span style="font-size:14px; color:var(--pp-muted); font-weight:600;">剩余可用额度</span></div>' +
+      '<div style="margin:12px 0 16px;">' +
+        '<div class="bar"><div class="bar-fill' + barToneClass() + '" style="width:' + usePct.toFixed(2) + '%;"></div></div>' +
+        '<div class="bar-legend"><span>已用敞口 ' + cny(flt) + '（' + usePct.toFixed(1) + '%）</span>' +
+          '<span>剩余 ' + cny(room) + '（' + roomPct.toFixed(1) + '%）· 上限 ' + cny(ceiling) + '</span></div>' +
+      '</div>' +
+      '<div class="tiles">' +
+        '<div class="tile" style="cursor:default;">' +
+          '<div class="tile-k"><span class="tile-dot" style="background:var(--pp-primary);"></span>已质押稳定币</div>' +
+          '<div class="tile-v" style="font-size:22px;">' + money(PLEDGE.pledged) + '</div>' +
+          '<div class="tile-sub">USDT · 已从稳定币账户可用余额锁定</div>' +
+        '</div>' +
+        '<div class="tile" style="cursor:default;">' +
+          '<div class="tile-k"><span class="tile-dot" style="background:var(--pp-muted);"></span>质押汇率（CNY / USDT）</div>' +
+          '<div class="tile-v" style="font-size:22px;">' + PLEDGE.rate.toFixed(2) + '</div>' +
+          '<div class="tile-sub">平台设定 · 卡商侧只读（通常低于市场价，差额即平台安全垫）</div>' +
+        '</div>' +
+        '<div class="tile" style="cursor:default;">' +
+          '<div class="tile-k"><span class="tile-dot" style="background:var(--pp-success);"></span>信用额度上限</div>' +
+          '<div class="tile-v" style="font-size:22px;">' + cny(ceiling) + '</div>' +
+          '<div class="tile-sub">' + money(PLEDGE.pledged) + ' USDT × ' + PLEDGE.rate.toFixed(2) + '</div>' +
+        '</div>' +
+        '<div class="tile" style="cursor:default;">' +
+          '<div class="tile-k"><span class="tile-dot" style="background:var(--pp-danger);"></span>当前敞口</div>' +
+          '<div class="tile-v frozen" style="font-size:22px;">' + cny(flt) + '</div>' +
+          '<div class="tile-sub">已确认法币直存 − 已确认法币直取</div>' +
+        '</div>' +
+        '<div class="tile" style="cursor:default;">' +
+          '<div class="tile-k"><span class="tile-dot" style="background:var(--pp-primary);"></span>剩余可用额度</div>' +
+          '<div class="tile-v" style="font-size:22px;">' + cny(room) + '</div>' +
+          '<div class="tile-sub">＝ 法币账户可用余额 · 上限 − 敞口</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span>额度如何变动</div>' +
+      '<div class="banner banner-info" style="display:none;"><div>确认一笔<b>法币直存</b>＝ 平台立刻把款项贷记给商户，卡商在途义务上升，<b>敞口 ↑ / 剩余可用额度 ↓</b>；确认一笔<b>法币直取</b>＝ 卡商自掏现金冲销义务，<b>敞口 ↓ / 剩余可用额度 ↑</b>。正因为有质押担保，确认才能即时生效，无需再等银行归集结算。</div></div>';
+  }
+
+  /* 追加质押 */
+  const a = pledgeAddCheck();
+  const aErrEl = document.getElementById('pledge-add-err');
+  const aInput = document.getElementById('pledge-add-amt');
+  if(aInput) aInput.classList.toggle('bad', !!a.err);
+  if(aErrEl){ aErrEl.textContent = a.err; aErrEl.style.display = a.err ? '' : 'none'; }
+  const aOk = !a.err && !isNaN(a.v) && a.v > 0;
+  const aPrev = document.getElementById('pledge-add-preview');
+  if(aPrev){
+    aPrev.innerHTML =
+      '<div class="quote-box">' +
+        '<div class="quote-row"><div class="k">稳定币账户可用余额</div><div class="v">' + money(usdt.available) + ' USDT</div></div>' +
+        '<div class="quote-row"><div class="k">质押汇率</div><div class="v">' + PLEDGE.rate.toFixed(2) + ' CNY / USDT</div></div>' +
+        '<div class="quote-row"><div class="k">新增信用额度</div><div class="v">' + (aOk ? '+' + cny(a.v * PLEDGE.rate) : '—') + '</div></div>' +
+        '<div class="quote-row"><div class="k">变动后信用额度上限</div><div class="v">' + (aOk ? cny(ceiling + a.v * PLEDGE.rate) : cny(ceiling)) + '</div></div>' +
+        '<div class="quote-row"><div class="k">变动后剩余可用额度</div><div class="v">' + (aOk ? cny(room + a.v * PLEDGE.rate) : cny(room)) + '</div></div>' +
+        '<div class="quote-row"><div class="k">变动后可用稳定币</div><div class="v frozen">' + (aOk ? money(usdt.available - a.v) : money(usdt.available)) + ' USDT</div></div>' +
+      '</div>';
+  }
+  const aBtn = document.getElementById('pledge-add-btn');
+  if(aBtn) aBtn.disabled = !aOk;
+
+  /* 释放质押 */
+  const r = pledgeRelCheck();
+  const rErrEl = document.getElementById('pledge-rel-err');
+  const rInput = document.getElementById('pledge-rel-amt');
+  if(rInput) rInput.classList.toggle('bad', !!r.err);
+  if(rErrEl){ rErrEl.textContent = r.err; rErrEl.style.display = r.err ? '' : 'none'; }
+  const rOk = !r.err && !isNaN(r.v) && r.v > 0;
+  const rPrev = document.getElementById('pledge-rel-preview');
+  if(rPrev){
+    rPrev.innerHTML =
+      '<div class="quote-box">' +
+        '<div class="quote-row"><div class="k">已质押数量</div><div class="v">' + money(PLEDGE.pledged) + ' USDT</div></div>' +
+        '<div class="quote-row"><div class="k">当前敞口（必须继续覆盖）</div><div class="v frozen">' + cny(flt) + '</div></div>' +
+        '<div class="quote-row"><div class="k">本次最多可释放</div><div class="v">' + money(maxReleasable()) + ' USDT</div></div>' +
+        '<div class="quote-row"><div class="k">变动后信用额度上限</div><div class="v">' + (rOk && !r.err ? cny(ceiling - r.v * PLEDGE.rate) : cny(ceiling)) + '</div></div>' +
+        '<div class="quote-row"><div class="k">变动后可用稳定币</div><div class="v">' + (rOk && !r.err ? money(usdt.available + r.v) : money(usdt.available)) + ' USDT</div></div>' +
+      '</div>';
+  }
+  const rBtn = document.getElementById('pledge-rel-btn');
+  if(rBtn) rBtn.disabled = !rOk;
+
+  renderPledgeLog();
+  renderAlertCfg();
+}
+
+function renderPledgeLog(){
+  const body = document.getElementById('pledge-log-tbody');
+  if(!body) return;
+  body.innerHTML = PLEDGE_LOG.length ? PLEDGE_LOG.map(function(x){
+    const add = x.kind === 'add';
+    return '<tr>' +
+      '<td class="mono nowrap">' + esc(x.time) + '</td>' +
+      '<td><span class="tag ' + (add ? 'tag-info' : 'tag-warn') + '">' + (add ? '追加质押' : '释放质押') + '</span></td>' +
+      '<td class="mono nowrap ' + (add ? '' : 'frozen') + '"><b>' + (add ? '+' : '−') + money(x.amount) + '</b></td>' +
+      '<td class="mono nowrap">' + x.rate.toFixed(2) + '</td>' +
+      '<td class="mono nowrap">' + cny(x.ceiling) + '</td>' +
+      '<td class="nowrap"><span class="tag tag-off">' + esc(x.by) + '</span></td>' +
+    '</tr>';
+  }).join('') : '<tr><td colspan="6" class="empty">尚无质押流水</td></tr>';
+}
+
+function pledgeAddConfirm(){
+  const a = pledgeAddCheck();
+  if(a.err || isNaN(a.v) || a.v <= 0){ toast('质押数量校验未通过'); renderPledge(); return; }
+  usdt.available -= a.v;                       // 从稳定币账户可用余额划出并锁定
+  PLEDGE.pledged += a.v;
+  PLEDGE_LOG.unshift({ time:nowStamp(), kind:'add', amount:a.v, rate:PLEDGE.rate, ceiling:pledgeCeiling(), by:'卡商自助操作' });
+  const el = document.getElementById('pledge-add-amt'); if(el) el.value = '';
+  renderAll();
+  toast('已追加质押 ' + money(a.v) + ' USDT · 信用额度上限提升至 ' + cny(pledgeCeiling()));
+}
+function pledgeRelConfirm(){
+  const r = pledgeRelCheck();
+  if(r.err || isNaN(r.v) || r.v <= 0){ toast(r.err || '释放数量校验未通过'); renderPledge(); return; }
+  PLEDGE.pledged -= r.v;
+  usdt.available += r.v;                       // 解锁回稳定币账户可用余额
+  PLEDGE_LOG.unshift({ time:nowStamp(), kind:'release', amount:r.v, rate:PLEDGE.rate, ceiling:pledgeCeiling(), by:'卡商自助操作' });
+  const el = document.getElementById('pledge-rel-amt'); if(el) el.value = '';
+  renderAll();
+  toast('已释放质押 ' + money(r.v) + ' USDT · 信用额度上限调整为 ' + cny(pledgeCeiling()));
+}
+
+/* --------- 预警设置（个人提醒，不影响派单） --------- */
+function alertToggle(k){ ALERT_CFG[k] = !ALERT_CFG[k]; renderAlertCfg(); }
+function alertCfgErrors(){
+  const e = {};
+  const raw = inputVal('alert-th');
+  if(raw !== ''){
+    const v = parseFloat(raw);
+    if(isNaN(v) || v <= 0 || v >= 100) e.th = '提醒阈值应为 1 ~ 90 之间的百分比';
+  }
+  if(ALERT_CFG.im){
+    const w = inputVal('alert-webhook');
+    if(!w) e.webhook = '已开启即时通讯通知，请填写企业微信机器人 Webhook 地址';
+    else if(!/^https:\/\//i.test(w)) e.webhook = 'Webhook 地址应以 https:// 开头';
+  }
+  return e;
+}
+function renderAlertCfg(){
+  const host = document.getElementById('alert-toggles');
+  if(!host) return;
+  const e = alertCfgErrors();
+  const thEl = document.getElementById('alert-th');
+  if(thEl && thEl.value === '' && document.activeElement !== thEl) thEl.value = String(ALERT_CFG.threshold);
+  if(thEl) thEl.classList.toggle('bad', !!e.th);
+  const thErr = document.getElementById('alert-th-err');
+  if(thErr){ thErr.textContent = e.th || ''; thErr.style.display = e.th ? '' : 'none'; }
+
+  host.innerHTML =
+    '<div class="quote-box">' +
+      '<div class="toggle-row" onclick="alertToggle(\'email\')">' +
+        '<div class="switch' + (ALERT_CFG.email ? ' on okcolor' : '') + '"></div>邮件通知</div>' +
+      '<div class="quote-row"><div class="k">注册联系邮箱（只读，如需变更请联系平台运营）</div>' +
+        '<div class="v mono">' + esc(ALERT_CFG.contactEmail) + '</div></div>' +
+      '<div class="toggle-row" onclick="alertToggle(\'im\')" style="border-top:1px solid var(--pp-border); padding-top:12px;">' +
+        '<div class="switch' + (ALERT_CFG.im ? ' on okcolor' : '') + '"></div>即时通讯通知（企业微信机器人）</div>' +
+    '</div>';
+
+  const wEl = document.getElementById('alert-webhook');
+  if(wEl){
+    if(wEl.value === '' && ALERT_CFG.webhook && document.activeElement !== wEl) wEl.value = ALERT_CFG.webhook;
+    wEl.disabled = !ALERT_CFG.im;
+    wEl.classList.toggle('bad', !!e.webhook);
+  }
+  const wErr = document.getElementById('alert-webhook-err');
+  if(wErr){ wErr.textContent = e.webhook || ''; wErr.style.display = e.webhook ? '' : 'none'; }
+}
+function alertSave(){
+  const e = alertCfgErrors();
+  if(Object.keys(e).length){ toast(e.th || e.webhook); renderAlertCfg(); return; }
+  const raw = inputVal('alert-th');
+  if(raw !== '') ALERT_CFG.threshold = parseFloat(raw);
+  ALERT_CFG.webhook = ALERT_CFG.im ? inputVal('alert-webhook') : '';
+  renderAll();
+  const ch = [ALERT_CFG.email ? '邮件' : '', ALERT_CFG.im ? '企业微信机器人' : ''].filter(Boolean).join(' / ');
+  toast('预警设置已保存 · 剩余额度低于 ' + ALERT_CFG.threshold + '% 时' +
+    (ch ? ('通过 ' + ch + ' 提醒') : '仅在本页提示（未开启任何通知渠道）'));
+}
+
+/* =========================================================================
+ * 银行卡往来明细（替代原「法币净额对账」页）
+ * 「订单处理 · 已处理」本身就是每一笔法币进出的完整明细，因此这里不再另做一张
+ * 抽象的净额汇总表，而是按「一张卡 = 一个真实银行账户 = 一份银行流水」的方式，
+ * 把同一批已完成订单按卡片过滤、按时间排列，方便与真实银行账单逐条勾对。
+ * 数据来源（不新建独立数据集）：
+ *   ① DONE_LOG（已处理队列本身），按订单号回查 COLLECT / PAYOUT / FIATWD 取所用卡片；
+ *   ② COLLECTED_FIAT（本期已登记的法币直存收款）；
+ *   ③ FIATWD 中 status === 'done' 的法币直取垫付。
+ * 三者按订单号去重，同一笔订单只会出现一行。
+ * ========================================================================= */
+function ledgerRows(cardId){
+  const rows = [], seen = {};
+
+  DONE_LOG.forEach(function(d){
+    if(seen[d.no]) return;
+    const src = COLLECT.find(x => x.no === d.no) || PAYOUT.find(x => x.no === d.no) || FIATWD.find(x => x.no === d.no);
+    if(!src || !src.cardId) return;
+    seen[d.no] = true;
+    if(!d.ok) return;                                  // 已上报异常的订单未形成有效银行流水
+    if(src.cardId !== cardId) return;
+    rows.push({ time:d.time, no:d.no, type:d.type, dir:(d.type.indexOf('collect') === 0 ? 'in' : 'out'),
+      amount:d.amount, note:d.note });
+  });
+
+  COLLECTED_FIAT.forEach(function(x){
+    if(seen[x.no]) return;
+    seen[x.no] = true;
+    if(x.cardId !== cardId) return;
+    rows.push({ time:x.time, no:x.no, type:'collect_fiat', dir:'in', amount:x.amount,
+      note:'客户存入法币 · 已确认并即时入账 · 占用法币信用额度 ' + cny(x.amount) });
+  });
+
+  FIATWD.forEach(function(o){
+    if(o.status !== 'done' || seen[o.no]) return;
+    seen[o.no] = true;
+    if(o.cardId !== cardId) return;
+    rows.push({ time:o.time, no:o.no, type:'payout_fiat', dir:'out', amount:o.net,
+      note:'向 ' + o.broker + ' 足额垫付净额 · 释放法币信用额度 ' + cny(o.net) });
+  });
+
+  rows.sort(function(a, b){
+    if(a.time !== b.time) return a.time < b.time ? -1 : 1;
+    return a.no < b.no ? -1 : 1;
+  });
+  return rows;
+}
+
+function ledgerCardList(){
+  return CARDS_IN.map(c => ({ card:c, kind:'收款卡' }))
+    .concat(CARDS_OUT.map(c => ({ card:c, kind:'放款卡' })));
+}
+
+function renderLedger(){
+  const list = ledgerCardList();
+  const tabs = document.getElementById('ledger-tabs');
+  const sum = document.getElementById('ledger-summary');
+  const body = document.getElementById('ledger-tbody');
+  const foot = document.getElementById('ledger-foot');
+
+  if(!list.length){
+    tabs.innerHTML = '';
+    sum.innerHTML = '';
+    foot.textContent = '';
+    body.innerHTML = '<tr><td colspan="6" class="empty">尚未登记任何收款卡 / 放款卡</td></tr>';
+    return;
+  }
+  if(!ledgerCard || !list.some(i => i.card.id === ledgerCard)) ledgerCard = list[0].card.id;
+
+  tabs.innerHTML = list.map(function(i){
+    const c = i.card;
+    return '<button class="filter-chip' + (ledgerCard === c.id ? ' active' : '') + '" onclick="setLedgerCard(\'' + c.id + '\')">' +
+      esc(i.kind + ' ' + c.seq + ' · ' + c.holder + ' · ' + c.bank.split(' ')[0]) +
+      '<span class="cnt">' + ledgerRows(c.id).length + '</span></button>';
+  }).join('');
+
+  const cur = cardById(ledgerCard);
+  const kind = CARDS_IN.some(c => c.id === ledgerCard) ? '收款卡' : '放款卡';
+  const rows = ledgerRows(ledgerCard);
+
+  /* 汇总条：三个数字全部由下表可见行直接相加得出，不另存一份独立数字 */
+  const inRows = rows.filter(r => r.dir === 'in');
+  const outRows = rows.filter(r => r.dir === 'out');
+  const inTotal = inRows.reduce((a, r) => a + r.amount, 0);
+  const outTotal = outRows.reduce((a, r) => a + r.amount, 0);
+  const net = inTotal - outTotal;
+  const range = rows.length ? (rows[0].time + ' ~ ' + rows[rows.length - 1].time) : '本期无流水';
+
+  sum.innerHTML =
+    '<div class="tiles">' +
+      '<div class="tile" style="cursor:default;">' +
+        '<div class="tile-k">选中卡片 · ' + kind + '</div>' +
+        '<div class="tile-v" style="font-size:22px;">' + esc(cur.seq) + '</div>' +
+        '<div class="tile-sub">' + esc(cur.holder + ' · ' + cur.bank) + '<br>' + esc(cur.no) + '</div>' +
+      '</div>' +
+      '<div class="tile" style="cursor:default;">' +
+        '<div class="tile-k"><span class="tile-dot" style="background:var(--pp-success);"></span>本期收入合计（收）</div>' +
+        '<div class="tile-v" style="font-size:22px;">' + cny(inTotal) + '</div>' +
+        '<div class="tile-sub">共 ' + inRows.length + ' 笔 · 由下表「收」向行相加得出</div>' +
+      '</div>' +
+      '<div class="tile" style="cursor:default;">' +
+        '<div class="tile-k"><span class="tile-dot" style="background:var(--pp-danger);"></span>本期支出合计（付）</div>' +
+        '<div class="tile-v frozen" style="font-size:22px;">' + cny(outTotal) + '</div>' +
+        '<div class="tile-sub">共 ' + outRows.length + ' 笔 · 由下表「付」向行相加得出</div>' +
+      '</div>' +
+      '<div class="tile" style="cursor:default;">' +
+        '<div class="tile-k"><span class="tile-dot" style="background:var(--pp-primary);"></span>净额（收 − 付）</div>' +
+        '<div class="tile-v ' + (net < 0 ? 'frozen' : '') + '" style="font-size:22px;">' + (net < 0 ? '−' : '+') + cny(Math.abs(net)) + '</div>' +
+        '<div class="tile-sub">期间 ' + esc(range) + '</div>' +
+      '</div>' +
+    '</div>';
+
+  body.innerHTML = rows.length ? rows.map(function(r){
+    return '<tr>' +
+      '<td class="mono nowrap">' + esc(r.time) + '</td>' +
+      '<td><b>' + esc(r.no) + '</b></td>' +
+      '<td>' + typeBadge(r.type) + '</td>' +
+      '<td>' + (r.dir === 'in' ? '<span class="tag tag-ok">收</span>' : '<span class="tag tag-err">付</span>') + '</td>' +
+      '<td class="mono nowrap ' + (r.dir === 'in' ? '' : 'frozen') + '"><b>' + (r.dir === 'in' ? '+' : '−') + cny(r.amount) + '</b></td>' +
+      '<td style="color:var(--pp-muted); line-height:1.6; min-width:280px;">' + esc(r.note) + '</td>' +
+    '</tr>';
+  }).join('') : '<tr><td colspan="6" class="empty">该卡本期尚无已完成订单的往来流水</td></tr>';
+
+  foot.innerHTML = '合计 ' + rows.length + ' 笔：收 ' + inRows.length + ' 笔 ' + cny(inTotal) +
+    '、付 ' + outRows.length + ' 笔 ' + cny(outTotal) + '，净额 ' + (net < 0 ? '−' : '+') + cny(Math.abs(net)) +
+    '。上方汇总条即由这些行直接相加得出，切换卡片会同步重算。已上报异常的订单不计入（未形成有效银行流水）。';
+}
+function setLedgerCard(id){ ledgerCard = id; renderLedger(); }
+
+/* =========================================================================
+ * 链上充值 / 链上提现（仅稳定币账户）
+ * 结构与商户后台一致：充值 选择代币 → 选择网络 → 展示充值地址；
+ * 提现 选择代币 → 设置目的地 → 设置金额 → 确认 → 结果。
+ * ========================================================================= */
+function qrSvg(text, size){
+  const N = 25;
+  let h = 0, i, x, y;
+  for(i = 0; i < text.length; i++){ h = ((h << 5) - h + text.charCodeAt(i)) | 0; }
+  let seed = Math.abs(h) || 12345;
+  function rnd(){ seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+  const cells = [];
+  for(y = 0; y < N; y++){ cells.push([]); for(x = 0; x < N; x++) cells[y].push(rnd() > 0.5 ? 1 : 0); }
+  function finder(ox, oy){
+    for(y = 0; y < 7; y++) for(x = 0; x < 7; x++){
+      const on = (x === 0 || x === 6 || y === 0 || y === 6) || (x >= 2 && x <= 4 && y >= 2 && y <= 4);
+      cells[oy + y][ox + x] = on ? 1 : 0;
+    }
+    for(y = -1; y < 8; y++) for(x = -1; x < 8; x++){
+      if(oy + y < 0 || ox + x < 0 || oy + y >= N || ox + x >= N) continue;
+      if(y === -1 || y === 7 || x === -1 || x === 7) cells[oy + y][ox + x] = 0;
+    }
+  }
+  finder(0, 0); finder(N - 7, 0); finder(0, N - 7);
+  let rects = '';
+  for(y = 0; y < N; y++) for(x = 0; x < N; x++){
+    if(cells[y][x]) rects += '<rect x="' + x + '" y="' + y + '" width="1" height="1"/>';
+  }
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + N + ' ' + N + '" ' +
+    'shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect width="' + N + '" height="' + N +
+    '" fill="#fff"/><g fill="#222">' + rects + '</g></svg>';
+}
+function copyText(text){
+  const done = () => toast('充值地址已复制');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, function(){ fallbackCopy(text); done(); });
+  } else { fallbackCopy(text); done(); }
+}
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch(e){ /* noop */ }
+  document.body.removeChild(ta);
+}
+function stateOk(txt){ return '<span style="color:#1f7a43;">' + txt + '</span>'; }
+function stateIdle(txt){ return '<span style="color:var(--pp-muted);">' + txt + '</span>'; }
+
+/* --------- 链上充值 --------- */
+function renderDeposit(){
+  const badge = document.getElementById('dep-acct-badge');
+  badge.textContent = '账户可用 ' + money(usdt.available) + ' USDT';
+  badge.style.cssText = 'background:var(--pp-primary-soft); color:var(--pp-primary);';
+
+  const tk = tokenById(depSel.token);
+  document.getElementById('dep-token-box').innerHTML = TOKENS.map(t =>
+    '<div class="select-opt' + (depSel.token === t.id ? ' active' : '') + '" onclick="depSetToken(\'' + t.id + '\')">' +
+      t.name + ' · ' + t.full + '</div>').join('');
+  document.getElementById('dep-step1').classList.toggle('pass', !!tk);
+  document.getElementById('dep-step1-state').innerHTML = tk ? stateOk('已选 ' + tk.name) : stateIdle('待选择');
+
+  const s2 = document.getElementById('dep-step2');
+  s2.classList.toggle('dim', !tk);
+  const ch = tk ? chainById(depSel.token, depSel.chain) : null;
+  s2.classList.toggle('pass', !!ch);
+  document.getElementById('dep-chain-box').innerHTML = tk ? tk.chains.map(c =>
+    '<div class="select-opt' + (depSel.chain === c.id ? ' active' : '') + '" onclick="depSetChain(\'' + c.id + '\')">' +
+      c.name + '</div>').join('') : '';
+  document.getElementById('dep-step2-state').innerHTML = ch ? stateOk('已选 ' + ch.short) : stateIdle('待选择');
+
+  const s3 = document.getElementById('dep-step3');
+  s3.classList.toggle('dim', !ch);
+  s3.classList.toggle('pass', !!ch);
+  document.getElementById('dep-step3-state').innerHTML = ch ? stateOk('地址已生成') : stateIdle('待生成');
+  document.getElementById('dep-detail').innerHTML = ch
+    ? '<div class="card-inner" style="flex-direction:row; align-items:center; gap:14px;">' +
+        '<div style="background:#fff; border:1px solid var(--pp-border); border-radius:8px; padding:6px; line-height:0; flex:none;">' + qrSvg(ch.address, 88) + '</div>' +
+        '<div style="flex:1; min-width:0;">' +
+          '<div class="field-label">' + tk.name + ' · ' + ch.short + ' 充值地址</div>' +
+          '<div class="mono" style="font-size:12.5px; word-break:break-all; line-height:1.7;">' + esc(ch.address) + '</div>' +
+        '</div>' +
+        '<button class="mini-btn" style="flex:none;" onclick="copyText(\'' + ch.address + '\')">复制地址</button>' +
+      '</div>' +
+      '<div class="quote-box">' +
+        '<div class="quote-row"><div class="k">网络</div><div class="v">' + ch.name + '</div></div>' +
+        '<div class="quote-row"><div class="k">最小充值</div><div class="v">' + money(ch.depositMin) + ' ' + tk.name + '</div></div>' +
+        '<div class="quote-row"><div class="k">预计到账</div><div class="v">' + ch.confirms + '</div></div>' +
+        '<div class="quote-row"><div class="k">入账账户</div><div class="v">稳定币账户 · 可用余额</div></div>' +
+      '</div>' +
+      '<div class="banner banner-warn"><div><b>请只向本地址转入 ' + tk.name + '（' + ch.short + '）</b>转入其它代币或使用其它网络，资产将无法找回。到账需等待网络确认，确认后自动计入稳定币账户可用余额。</div></div>'
+    : '';
+}
+function depSetToken(id){ depSel.token = id; depSel.chain = null; renderDeposit(); }
+function depSetChain(id){ depSel.chain = id; renderDeposit(); }
+
+/* --------- 链上提现 --------- */
+function wdChain(){ return chainById(wdSel.token, wdSel.chain); }
+function wdAddrValue(){ const el = document.getElementById('wd-address'); return el ? el.value.trim() : ''; }
+function wdAddrError(){
+  const ch = wdChain(), a = wdAddrValue();
+  if(!ch || !a) return '';
+  if(ch.id === 'TRC20' && !(a[0] === 'T' && a.length === 34)) return 'TRC20 地址应以 T 开头且长度为 34 位';
+  if(ch.id === 'ERC20' && !(/^0x[0-9a-fA-F]{40}$/.test(a))) return 'ERC20 地址应为 0x 开头的 42 位十六进制字符串';
+  return '';
+}
+function wdAmountError(){
+  const ch = wdChain();
+  const el = document.getElementById('wd-amount');
+  const raw = el ? el.value.trim() : '';
+  if(!ch || raw === '') return { err:'', v:NaN };
+  const v = parseFloat(raw);
+  if(isNaN(v) || v <= 0) return { err:'请输入有效的提现金额', v:NaN };
+  if(v < ch.withdrawMin) return { err:'提现金额不能小于该网络的最小提现金额 ' + money(ch.withdrawMin) + ' USDT', v:v };
+  if(v + ch.fee > usdt.available) return { err:'可用余额不足（可用 ' + money(usdt.available) + ' USDT，另需支付服务费 ' + money(ch.fee) + ' USDT）', v:v };
+  return { err:'', v:v };
+}
+function renderWithdraw(){
+  const badge = document.getElementById('wd-acct-badge');
+  badge.textContent = '账户可用 ' + money(usdt.available) + ' USDT';
+  badge.style.cssText = 'background:var(--pp-primary-soft); color:var(--pp-primary);';
+
+  const tk = tokenById(wdSel.token);
+  document.getElementById('wd-token-box').innerHTML = TOKENS.map(t =>
+    '<div class="select-opt' + (wdSel.token === t.id ? ' active' : '') + '" onclick="wdSetToken(\'' + t.id + '\')">' +
+      t.name + ' · 可用 ' + money(usdt.available) + '</div>').join('');
+  document.getElementById('wd-step1').classList.toggle('pass', !!tk);
+  document.getElementById('wd-step1-state').innerHTML = tk ? stateOk('已选 ' + tk.name) : stateIdle('待选择');
+  document.getElementById('wd-sym').textContent = tk ? tk.name : 'USDT';
+
+  const ch = wdChain();
+  const s2 = document.getElementById('wd-step2');
+  s2.classList.toggle('dim', !tk);
+  document.getElementById('wd-chain-box').innerHTML = tk ? tk.chains.map(c =>
+    '<div class="select-opt' + (wdSel.chain === c.id ? ' active' : '') + '" onclick="wdSetChain(\'' + c.id + '\')">' +
+      c.name + ' · 费 ' + money(c.fee) + '</div>').join('') : '';
+
+  const addrEl = document.getElementById('wd-address');
+  addrEl.disabled = !ch;
+  addrEl.placeholder = ch ? ('请输入 ' + ch.short + ' 提现地址') : '请先选择网络';
+  const aErr = wdAddrError();
+  const addr = wdAddrValue();
+  addrEl.classList.toggle('bad', !!aErr);
+  const aErrEl = document.getElementById('wd-address-err');
+  aErrEl.textContent = aErr;
+  aErrEl.style.display = aErr ? '' : 'none';
+  const destOk = !!ch && !!addr && !aErr;
+  s2.classList.toggle('pass', destOk);
+  document.getElementById('wd-step2-state').innerHTML = destOk ? stateOk('目的地已确认') : stateIdle('待设置');
+
+  const s3 = document.getElementById('wd-step3');
+  s3.classList.toggle('dim', !destOk);
+  document.getElementById('wd-avail').textContent = money(usdt.available) + ' USDT';
+  const amt = wdAmountError();
+  const amtEl = document.getElementById('wd-amount');
+  const raw = amtEl.value.trim();
+  amtEl.classList.toggle('bad', !!amt.err);
+  const amtErrEl = document.getElementById('wd-amount-err');
+  amtErrEl.textContent = amt.err;
+  amtErrEl.style.display = amt.err ? '' : 'none';
+  const ready = destOk && raw !== '' && !amt.err && !isNaN(amt.v);
+  document.getElementById('wd-fee').textContent = ch ? money(ch.fee) + ' USDT' : '—';
+  document.getElementById('wd-total').textContent = (ch && ready) ? money(amt.v + ch.fee) + ' USDT' : '—';
+  document.getElementById('wd-next').disabled = !ready;
+  s3.classList.toggle('pass', ready);
+  document.getElementById('wd-step3-state').innerHTML = ready ? stateOk('可提交') : stateIdle('待填写');
+}
+function wdSetToken(id){
+  wdSel.token = id; wdSel.chain = null;
+  document.getElementById('wd-address').value = '';
+  document.getElementById('wd-amount').value = '';
+  renderWithdraw();
+}
+function wdSetChain(id){
+  wdSel.chain = id;
+  document.getElementById('wd-address').value = '';
+  document.getElementById('wd-amount').value = '';
+  renderWithdraw();
+}
+function wdOnAddress(){ renderWithdraw(); }
+function wdOnAmount(){ renderWithdraw(); }
+function wdFillAll(){
+  const ch = wdChain();
+  if(!ch) return;
+  const max = Math.max(0, usdt.available - ch.fee);
+  document.getElementById('wd-amount').value = max.toFixed(2);
+  renderWithdraw();
+}
+function wdReset(){
+  wdSel.chain = null;
+  const a = document.getElementById('wd-address'); if(a) a.value = '';
+  const m = document.getElementById('wd-amount'); if(m) m.value = '';
+  renderWithdraw();
+}
+
+/* 确认 / 结果：复用本页统一的抽屉组件（本文件没有独立 modal 组件） */
+function wdOpenConfirm(){
+  const ch = wdChain(), tk = tokenById(wdSel.token), amt = wdAmountError();
+  if(!ch || !tk || amt.err || isNaN(amt.v)) return;
+  ws = { token:tk.id, chain:ch.id, addr:wdAddrValue(), received:amt.v, fee:ch.fee, total:amt.v + ch.fee, no:null };
+  openDrawer('确认提现', '链上提现 · ' + tk.name + ' · ' + ch.name);
+  renderWdConfirm();
+}
+function wdDetailBox(){
+  const ch = chainById(ws.token, ws.chain), tk = tokenById(ws.token);
+  return '<div class="quote-box">' +
+      '<div class="quote-row"><div class="k">网络</div><div class="v">' + ch.name + '</div></div>' +
+      '<div class="quote-row"><div class="k">提现地址</div><div class="v mono" style="word-break:break-all;">' + esc(ws.addr) + '</div></div>' +
+      '<div class="quote-row"><div class="k">到账金额</div><div class="v">' + money(ws.received) + ' ' + tk.name + '</div></div>' +
+      '<div class="quote-row"><div class="k">服务费</div><div class="v">' + money(ws.fee) + ' ' + tk.name + '</div></div>' +
+      '<div class="quote-row"><div class="k">提现数量</div><div class="v frozen">−' + money(ws.total) + ' ' + tk.name + '</div></div>' +
+      '<div class="quote-row"><div class="k">时间</div><div class="v mono">' + nowStamp() + '</div></div>' +
+    '</div>';
+}
+function renderWdConfirm(){
+  const tk = tokenById(ws.token);
+  document.getElementById('drawer-body').innerHTML =
+    '<div class="quote-box" style="align-items:center; text-align:center;">' +
+      '<div class="field-label" style="color:var(--pp-muted);">提现数量</div>' +
+      '<div class="quote-amt frozen">−' + money(ws.total) + ' <span style="font-size:14px; color:var(--pp-muted); font-weight:600;">' + tk.name + '</span></div>' +
+    '</div>' +
+    wdDetailBox() +
+    '<div class="banner banner-warn"><div><b>请再次核对提现地址</b>链上转账一经广播不可撤销；地址或网络填错将导致资产永久丢失。提交后从稳定币账户可用余额中扣减。</div></div>';
+  document.getElementById('drawer-foot').innerHTML =
+    '<button class="primary-btn" onclick="wdSubmit()">确认提现</button>' +
+    '<button class="ghost-btn" onclick="closeDrawer()">上一步</button>';
+}
+function wdSubmit(){
+  const ch = chainById(ws.token, ws.chain);
+  if(!ch) return;
+  if(ws.total > usdt.available){ toast('可用余额不足，无法提交'); return; }
+  usdt.available -= ws.total;
+  chainSeq += 1;
+  ws.no = 'W-' + chainSeq;
+  const tk = tokenById(ws.token);
+  document.getElementById('drawer-title').textContent = '提现已提交';
+  document.getElementById('drawer-sub').textContent = '链上提现 · ' + tk.name + ' · ' + ch.name;
+  document.getElementById('drawer-body').innerHTML =
+    '<div class="quote-box" style="align-items:center; text-align:center;">' +
+      '<div class="field-label" style="color:var(--pp-muted);">提现数量</div>' +
+      '<div class="quote-amt frozen">−' + money(ws.total) + ' <span style="font-size:14px; color:var(--pp-muted); font-weight:600;">' + tk.name + '</span></div>' +
+      '<div class="status-badge" style="background:var(--pp-primary-soft); color:var(--pp-primary);">转账中</div>' +
+    '</div>' +
+    '<div class="quote-box"><div class="quote-row"><div class="k">提现单号</div><div class="v mono">' + ws.no + '</div></div></div>' +
+    wdDetailBox() +
+    '<div class="banner banner-ok"><div><b>已从稳定币账户可用余额扣减</b>当前可用余额 ' + money(usdt.available) + ' USDT。上链广播完成后状态将更新为「已完成」。</div></div>';
+  document.getElementById('drawer-foot').innerHTML =
+    '<button class="primary-btn" onclick="wdDone()">完成</button>';
+  renderDash();
+  renderFreeze();
+}
+function wdDone(){
+  const t = ws ? ws.total : 0;
+  closeDrawer();
+  wdReset();
+  renderAll();
+  toast('提现已提交 · −' + money(t) + ' USDT · 状态：转账中');
+}
+
+/* ---------------- 抽屉 ---------------- */
+function openDrawer(title, sub){
+  document.getElementById('drawer-title').textContent = title;
+  document.getElementById('drawer-sub').textContent = sub || '';
+  document.getElementById('drawer').classList.add('show');
+  document.getElementById('mask').classList.add('show');
+}
+function closeDrawer(){
+  closeProof();
+  document.getElementById('drawer').classList.remove('show');
+  document.getElementById('mask').classList.remove('show');
+  cardForm = null; cs = null; ps = null; fs = null; fis = null; ws = null;
+}
+/* Esc：凭证放大层浮在抽屉之上，先关它，再按一次才关抽屉 */
+document.addEventListener('keydown', function(ev){
+  if(ev.key !== 'Escape') return;
+  const lb = document.getElementById('lightbox');
+  if(lb && lb.classList.contains('show')){ closeProof(); return; }
+  closeDrawer();
+});
+
+/* ---------------- 倒计时 ---------------- */
+setInterval(function(){
+  let dirty = false;
+  COLLECT.forEach(function(o){
+    if(o.status === 'pending' && o.left > 0){ o.left -= 1; dirty = true; }
+  });
+  if(dirty){
+    document.querySelectorAll('[data-cd]').forEach(function(el){
+      const o = COLLECT.find(x => x.no === el.getAttribute('data-cd'));
+      if(o){
+        el.textContent = mmss(o.left);
+        if(o.left < 900) el.style.color = 'var(--pp-danger)';
+      }
+    });
+  }
+}, 1000);
+
+/* ---------------- 渲染入口 ---------------- */
+function renderAll(){
+  renderDash();
+  renderFreeze();
+  renderDeposit();
+  renderWithdraw();
+  renderPledge();
+  renderCards();
+  renderOrders();
+  renderLedger();
+}
+document.getElementById('kyc-name-pill').textContent = KYC_NAME;
+showPanel('dash');
+</script>
+</body>
+</html>

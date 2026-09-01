@@ -1,0 +1,2849 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayPaz 商户后台</title>
+<style>
+:root{
+  --text-color:#222;
+  --primary-color:#435ddd;
+  --border-color:#f4f4f4;
+  --header-bg-color:#394664;
+  --header-bg-hover-color:#273352;
+  --sider-dark-bg-color:#273352;
+  --component-background-color:#fff;
+  --app-content-background-color:#fafafa;
+  --error-color:#ff4d4f;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;
+  font-size:14px;color:var(--text-color);background:var(--app-content-background-color);
+  -webkit-font-smoothing:antialiased;
+}
+p{margin:0;}
+a{color:var(--primary-color);text-decoration:none;}
+button{font-family:inherit;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:#00000020;border-radius:8px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+/* ============ shell ============ */
+.topbar{
+  position:fixed;top:0;left:0;right:0;height:72px;z-index:60;
+  background:var(--header-bg-color);display:flex;align-items:center;
+  padding:0 24px 0 0;color:#fff;
+}
+.brand{
+  width:220px;height:72px;flex:none;display:flex;align-items:center;gap:10px;
+  padding-left:24px;transition:width .2s;
+}
+.brand.collapsed{width:64px;padding-left:16px;}
+.brand-logo{
+  width:32px;height:32px;flex:none;border-radius:9px;background:var(--primary-color);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;
+}
+.brand-name{font-size:17px;font-weight:600;letter-spacing:.3px;white-space:nowrap;}
+.brand.collapsed .brand-name{display:none;}
+.topbar-collapse{
+  width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:#c7cede;flex:none;
+}
+.topbar-collapse:hover{background:var(--header-bg-hover-color);color:#fff;}
+.topbar-crumb{margin-left:12px;font-size:13px;color:#a9b2c7;white-space:nowrap;}
+.topbar-spacer{flex:1;}
+.topbar-item{
+  height:44px;padding:0 12px;border-radius:8px;display:flex;align-items:center;gap:8px;
+  cursor:pointer;color:#dfe3ec;font-size:13px;
+}
+.topbar-item:hover{background:var(--header-bg-hover-color);color:#fff;}
+.avatar{
+  width:28px;height:28px;border-radius:50%;background:var(--primary-color);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex:none;
+}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:#52c41a;}
+
+.sider{
+  position:fixed;top:72px;left:0;bottom:0;width:220px;z-index:50;
+  background:var(--sider-dark-bg-color);overflow-y:auto;overflow-x:hidden;
+  padding:12px 0 40px;transition:width .2s;
+}
+.sider.collapsed{width:64px;}
+.nav-item{
+  display:flex;align-items:center;gap:12px;height:44px;padding:0 20px;margin:2px 0;
+  color:#b6bed4;cursor:pointer;font-size:14px;white-space:nowrap;position:relative;user-select:none;
+}
+.nav-item:hover{background:#31406b;color:#fff;}
+.nav-item.active{background:#435ddd;color:#fff;}
+.nav-item .ni-ico{width:18px;height:18px;flex:none;display:flex;align-items:center;justify-content:center;}
+.nav-item .ni-txt{flex:1;overflow:hidden;text-overflow:ellipsis;}
+.nav-item .ni-arrow{transition:transform .18s;flex:none;opacity:.7;}
+.nav-item.open .ni-arrow{transform:rotate(90deg);}
+.sider.collapsed .ni-txt,.sider.collapsed .ni-arrow{display:none;}
+.sider.collapsed .nav-item{justify-content:center;padding:0;}
+.nav-sub{display:none;}
+.nav-sub.open{display:block;}
+.sider.collapsed .nav-sub{display:none !important;}
+.nav-sub .nav-item{padding-left:50px;height:40px;font-size:13.5px;}
+.nav-tagnew{
+  font-size:10px;line-height:14px;padding:0 5px;border-radius:7px;background:#ff4d4f;color:#fff;
+  font-weight:600;flex:none;
+}
+
+.app-main{
+  margin-left:220px;margin-top:72px;min-height:calc(100vh - 72px);
+  padding:28px 24px 40px;transition:margin-left .2s;
+}
+.app-main.collapsed{margin-left:64px;}
+.page{display:none;}
+.page.active{display:block;}
+.page-title{font-size:32px;font-weight:500;color:#000;line-height:1.25;margin-bottom:4px;}
+.page-desc{font-size:13px;color:#999;margin-bottom:18px;}
+
+/* ============ surfaces ============ */
+.panel{background:#fff;border-radius:10px;padding:24px;min-width:0;}
+.card{background:#fff;border-radius:12px;padding:24px;margin-bottom:24px;}
+.card-title{font-size:16px;font-weight:500;line-height:normal;}
+.sec-title{font-size:14px;font-weight:500;margin-bottom:8px;}
+.muted{color:#999;}
+.muted6{color:#666;}
+.err{color:var(--error-color);}
+.ok{color:#52c41a;}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;}
+.hr{height:1px;background:var(--border-color);margin:20px 0;}
+
+/* ============ buttons ============ */
+.btn{
+  height:32px;padding:0 16px;border-radius:8px;border:1px solid #d9d9d9;background:#fff;
+  color:var(--text-color);font-size:14px;cursor:pointer;display:inline-flex;align-items:center;
+  justify-content:center;gap:6px;transition:all .15s;white-space:nowrap;
+}
+.btn:hover{border-color:var(--primary-color);color:var(--primary-color);}
+.btn.primary{background:var(--primary-color);border-color:var(--primary-color);color:#fff;}
+.btn.primary:hover{background:#3950c4;border-color:#3950c4;color:#fff;}
+.btn.lg{height:40px;padding:0 20px;font-size:15px;}
+.btn.block{width:100%;}
+.btn.w450{width:450px;}
+.btn.w104{width:104px;}
+.btn[disabled],.btn.disabled{
+  background:#f5f5f5;border-color:#d9d9d9;color:#00000040;cursor:not-allowed;
+}
+.btn[disabled]:hover,.btn.disabled:hover{background:#f5f5f5;border-color:#d9d9d9;color:#00000040;}
+.btn-link{
+  background:none;border:none;padding:0;color:var(--primary-color);cursor:pointer;font-size:14px;
+}
+.btn-link:hover{color:#3950c4;text-decoration:underline;}
+.btn-link[disabled]{color:#00000040;cursor:not-allowed;text-decoration:none;}
+
+/* ============ step form ============ */
+.step{margin-bottom:32px;}
+.step.disabled{opacity:.5;pointer-events:none;}
+.step-title{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
+.step-label{
+  width:20px;height:20px;flex:none;display:flex;align-items:center;justify-content:center;
+  color:#fff;background:#222;border-radius:16px;font-size:12px;line-height:1;
+}
+.step-text{font-size:16px;font-weight:500;}
+.step .label{display:block;margin:16px 0 8px;color:#222;}
+
+/* ============ custom select (450x44 #f8f8f8) ============ */
+.pp-select{position:relative;width:450px;max-width:100%;user-select:none;}
+.pp-select-ctl{
+  height:44px;background:#f8f8f8;border-radius:8px;display:flex;align-items:center;gap:8px;
+  padding:0 12px;cursor:pointer;border:1px solid transparent;
+}
+.pp-select.open .pp-select-ctl{border-color:var(--primary-color);}
+.pp-select-ctl .ph{color:#bfbfbf;flex:1;}
+.pp-select-ctl .val{flex:1;display:flex;align-items:center;gap:8px;min-width:0;}
+.pp-arrow{transition:transform .18s;flex:none;color:#999;}
+.pp-select.open .pp-arrow{transform:rotate(180deg);}
+.pp-dropdown{
+  display:none;position:absolute;top:48px;left:0;right:0;z-index:30;background:#fff;
+  border-radius:8px;box-shadow:0 6px 16px #0000001f,0 3px 6px -4px #0000001a;overflow:hidden;
+}
+.pp-select.open .pp-dropdown{display:block;}
+.pp-search{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid #f0f0f0;}
+.pp-search input{border:none;outline:none;flex:1;font-size:14px;background:transparent;color:#222;}
+.pp-list{max-height:300px;padding:8px;overflow-y:auto;}
+.pp-list .item{
+  display:flex;gap:8px;align-items:center;width:100%;padding:8px;cursor:pointer;border-radius:8px;
+}
+.pp-list .item:hover{background:#f8f8f8;}
+.pp-list .item.active{color:var(--primary-color);background:#435ddd1a;}
+.pp-list .item.disabled{cursor:not-allowed;opacity:.35;}
+.pp-list .item.disabled:hover{background:#f0f0f0;}
+.pp-list .empty{padding:24px;text-align:center;color:#bfbfbf;font-size:13px;}
+.pp-list .amount{margin-left:auto;color:#999;font-size:13px;}
+.coin{
+  width:24px;height:24px;flex:none;border-radius:50%;color:#fff;display:flex;align-items:center;
+  justify-content:center;font-size:12px;font-weight:700;
+}
+.coin.sm{width:20px;height:20px;font-size:10px;}
+.names{display:flex;flex-direction:column;line-height:1.25;min-width:0;}
+.names .name{color:#222;}
+.names .other-name{color:#999;font-size:12px;}
+
+/* ============ inputs ============ */
+.pp-input{
+  width:450px;max-width:100%;height:44px;background:#f8f8f8;border-radius:8px;
+  display:flex;align-items:center;gap:6px;padding:0 12px;border:1px solid transparent;
+}
+.pp-input:focus-within{border-color:var(--primary-color);}
+.pp-input.error{border-color:var(--error-color);}
+.pp-input input{border:none;outline:none;background:transparent;flex:1;font-size:14px;color:#222;min-width:0;}
+.pp-input input:disabled{cursor:not-allowed;color:#00000040;}
+.pp-input .suffix{color:#666;font-size:13px;display:flex;align-items:center;gap:8px;flex:none;}
+.field-err{color:var(--error-color);font-size:12px;margin-top:8px;width:450px;max-width:100%;}
+
+.detail-info{width:450px;max-width:100%;margin-top:14px;}
+.detail-info p{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:16px;}
+.detail-info p span:first-child{color:#999;}
+.detail-info p span:last-child{font-weight:500;line-height:22px;color:#222;text-align:right;}
+
+/* ============ tabs ============ */
+.tabs{display:flex;gap:28px;border-bottom:1px solid #f0f0f0;margin-bottom:20px;overflow-x:auto;}
+.tab{
+  padding:10px 0 12px;font-size:14px;color:#666;cursor:pointer;position:relative;white-space:nowrap;
+}
+.tab:hover{color:var(--primary-color);}
+.tab.active{color:var(--primary-color);font-weight:500;}
+.tab.active::after{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--primary-color);
+}
+.tabpane{display:none;}
+.tabpane.active{display:block;}
+
+/* ============ filter form ============ */
+.header-form{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;}
+.hf-row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;}
+.form-item{display:flex;align-items:center;}
+.form-item .label{margin-right:8px;white-space:nowrap;color:#222;font-size:13px;}
+.fi{
+  width:160px;height:32px;background:#fff;border:1px solid #d3d2d2;border-radius:8px;
+  padding:0 10px;font-size:13px;color:#222;outline:none;font-family:inherit;
+}
+.fi:focus{border-color:var(--primary-color);}
+.fi.large{width:200px;}
+.fi.date{width:140px;}
+select.fi{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23999' d='M0 0h10L5 6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:24px;}
+
+/* ============ table ============ */
+.table-wrap{overflow-x:auto;border-radius:8px;}
+table.pp-table{width:100%;border-collapse:collapse;font-size:13px;white-space:nowrap;}
+table.pp-table th{
+  background:#fafafa;color:#222;font-weight:500;text-align:left;padding:12px 14px;
+  border-bottom:1px solid #f0f0f0;position:sticky;top:0;
+}
+table.pp-table td{padding:13px 14px;border-bottom:1px solid #f0f0f0;color:#333;vertical-align:middle;}
+table.pp-table tbody tr{cursor:pointer;}
+table.pp-table tbody tr:hover td{background:#fafcff;}
+table.pp-table .ellip{max-width:180px;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle;}
+.table-empty{padding:48px;text-align:center;color:#bfbfbf;font-size:13px;}
+.table-foot{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:14px;color:#999;font-size:13px;}
+
+/* ============ tags ============ */
+.tag{
+  display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;
+  font-size:12px;line-height:20px;border:1px solid;white-space:nowrap;
+}
+.tag-success{color:#52c41a;background:#f6ffed;border-color:#b7eb8f;}
+.tag-warning{color:#faad14;background:#fffbe6;border-color:#ffe58f;}
+.tag-processing{color:#1677ff;background:#e6f4ff;border-color:#91caff;}
+.tag-error{color:#ff4d4f;background:#fff2f0;border-color:#ffccc7;}
+.tag-default{color:#00000073;background:#fafafa;border-color:#d9d9d9;}
+.tag-purple{color:#722ed1;background:#f9f0ff;border-color:#d3adf7;}
+.tag.mini{height:18px;font-size:11px;padding:0 5px;line-height:16px;}
+
+/* ============ modal ============ */
+.modal-mask{
+  display:none;position:fixed;inset:0;z-index:200;background:#00000073;
+  align-items:center;justify-content:center;padding:24px;
+}
+.modal-mask.open{display:flex;}
+.modal{
+  width:450px;max-width:100%;max-height:88vh;overflow:auto;background:#fff;border-radius:10px;
+  box-shadow:0 6px 16px #00000014;
+}
+.modal.w500{width:500px;}
+.modal-hd{
+  display:flex;align-items:center;justify-content:space-between;padding:18px 22px 6px;
+  font-size:16px;font-weight:600;
+}
+.modal-x{cursor:pointer;color:#00000040;font-size:18px;line-height:1;background:none;border:none;}
+.modal-x:hover{color:#00000073;}
+.modal-bd{padding:10px 22px 20px;}
+.modal-ft{display:flex;justify-content:flex-end;gap:10px;padding:0 22px 20px;}
+.kv-grid{display:grid;grid-template-columns:130px 1fr;gap:10px 14px;font-size:13px;align-items:start;}
+.kv-grid .k{color:#999;}
+.kv-grid .v{color:#222;font-weight:500;word-break:break-all;text-align:right;}
+.info-content div{
+  display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid #f7f7f7;
+}
+.info-content div:last-child{border-bottom:none;}
+.info-content .label{color:#999;font-size:13px;flex:none;}
+.info-content .value{color:#222;font-size:13px;font-weight:500;text-align:right;word-break:break-all;}
+.detail-total{
+  display:flex;align-items:center;justify-content:center;gap:6px;font-size:24px;font-weight:600;
+  padding:6px 0 16px;
+}
+.big-ico{
+  width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  margin:8px auto 12px;
+}
+
+/* ============ dashboard ============ */
+.head-assets{display:flex;gap:100px;}
+.head-assets .lbl{font-size:14px;color:#666;}
+.head-assets .big{margin-top:12px;font-size:32px;font-weight:500;line-height:1.15;}
+.head-assets .big span{font-size:14px;color:#666;}
+.assets-items{display:flex;gap:16px;flex-wrap:wrap;}
+.assets-items>div{display:flex;align-items:center;gap:4px;margin-top:8px;}
+.assets-items>div span,.assets-items>div p{margin:0;font-size:12px;}
+.wd-list{display:flex;gap:20px;flex-wrap:wrap;}
+.wd-list>div{
+  flex:1;min-width:200px;min-height:96px;padding:16px 18px;cursor:pointer;border-radius:10px;
+  transition:transform .12s;
+}
+.wd-list>div:hover{transform:translateY(-2px);}
+.wd-list>div p{margin-bottom:8px;color:#666;font-size:13px;}
+.wd-list .count{display:block;font-size:22px;font-weight:600;}
+.wd-list .amount{margin-top:8px;color:#999;font-size:12px;display:block;}
+.wd-1{color:#faad14;background:#fff9e8;}
+.wd-2{color:#2f80ed;background:#eef6ff;}
+.wd-3{color:#f5222d;background:#fff1f1;}
+.two-col{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:24px;}
+.two-col>div{flex:1;min-width:340px;background:#fff;border-radius:12px;padding:24px;}
+.chart-legend{display:flex;gap:16px;font-size:12px;color:#666;margin-top:10px;}
+.lg-dot{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px;}
+
+/* ============ misc blocks ============ */
+.qr-parent{
+  display:flex;align-items:center;gap:8px;width:450px;max-width:100%;min-height:92px;padding:12px;
+  overflow:hidden;background:#f8f8f8;border-radius:8px;
+}
+.qr-parent .qr-box{width:65px;height:65px;flex:none;background:#fff;border-radius:4px;padding:3px;}
+.qr-parent .title{font-size:12px;line-height:20px;color:#666;}
+.qr-parent .address{
+  width:270px;font-size:12px;line-height:18px;color:#000;word-break:break-all;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+.copy-btn{margin-left:auto;cursor:pointer;color:#666;flex:none;background:none;border:none;padding:4px;}
+.copy-btn:hover{color:var(--primary-color);}
+.min-tips{display:flex;justify-content:space-between;width:450px;max-width:100%;margin-top:8px;font-size:13px;}
+.min-tips span:first-child{color:#666;}
+.min-tips span:last-child{font-size:12px;color:#222;}
+
+.entry-row{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px;}
+.entry-card{
+  flex:1;min-width:230px;background:#fff;border:1px solid #eef0f4;border-radius:12px;padding:18px 20px;
+  cursor:pointer;transition:all .15s;
+}
+.entry-card:hover{border-color:var(--primary-color);box-shadow:0 4px 14px #435ddd1a;}
+.entry-card.active{border-color:var(--primary-color);background:#f7f8ff;}
+.entry-card .ec-ico{
+  width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  margin-bottom:12px;
+}
+.entry-card .ec-t{font-size:15px;font-weight:600;margin-bottom:6px;}
+.entry-card .ec-d{font-size:12px;color:#999;line-height:1.5;}
+
+.seg{display:inline-flex;background:#f2f3f5;border-radius:8px;padding:3px;gap:2px;}
+.seg button{
+  border:none;background:transparent;padding:7px 16px;border-radius:6px;font-size:13px;color:#666;
+  cursor:pointer;white-space:nowrap;
+}
+.seg button.active{background:#fff;color:var(--primary-color);font-weight:500;box-shadow:0 1px 3px #0000000f;}
+
+.quote-box{
+  width:450px;max-width:100%;background:#f8f8f8;border-radius:8px;padding:14px 16px;margin-top:14px;
+}
+.quote-box .row{display:flex;justify-content:space-between;gap:14px;padding:6px 0;font-size:13px;}
+.quote-box .row .k{color:#999;}
+.quote-box .row .v{font-weight:500;color:#222;text-align:right;}
+.quote-box .row.total{border-top:1px dashed #dcdcdc;margin-top:6px;padding-top:12px;}
+.quote-box .row.total .v{font-size:17px;color:var(--primary-color);font-weight:600;}
+.quote-arrow{color:#bfbfbf;font-size:12px;text-align:center;padding:2px 0;}
+
+.status-card{
+  width:560px;max-width:100%;background:#fff;border:1px solid #eef0f4;border-radius:12px;
+  padding:20px;margin-top:20px;
+}
+.status-card .sc-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.status-card .sc-no{font-size:13px;color:#999;font-family:ui-monospace,Menlo,monospace;}
+
+.stepper{display:flex;align-items:flex-start;margin:20px 0 4px;}
+.stepper .sp{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;text-align:center;}
+.stepper .sp .dot{
+  width:26px;height:26px;border-radius:50%;background:#e8e8e8;color:#999;display:flex;
+  align-items:center;justify-content:center;font-size:12px;font-weight:600;z-index:2;
+}
+.stepper .sp.done .dot{background:#52c41a;color:#fff;}
+.stepper .sp.cur .dot{background:var(--primary-color);color:#fff;box-shadow:0 0 0 4px #435ddd22;}
+.stepper .sp .txt{margin-top:8px;font-size:12px;color:#999;max-width:130px;line-height:1.4;}
+.stepper .sp.done .txt,.stepper .sp.cur .txt{color:#222;}
+.stepper .sp::before{
+  content:"";position:absolute;top:13px;left:-50%;width:100%;height:2px;background:#e8e8e8;z-index:1;
+}
+.stepper .sp:first-child::before{display:none;}
+.stepper .sp.done::before,.stepper .sp.cur::before{background:#52c41a;}
+
+.checkout{
+  width:420px;max-width:100%;border:1px solid #eef0f4;border-radius:12px;overflow:hidden;margin-top:16px;
+}
+.checkout .co-hd{background:#273352;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;}
+.checkout .co-bd{padding:18px;}
+.checkout .co-amt{font-size:28px;font-weight:600;color:#222;margin:2px 0 4px;}
+.countdown{
+  font-family:ui-monospace,Menlo,monospace;background:#ffffff1f;padding:3px 9px;border-radius:6px;font-size:13px;
+}
+.bankinfo{background:#f8f8f8;border-radius:8px;padding:12px 14px;margin-top:14px;}
+.bankinfo .row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;gap:12px;}
+.bankinfo .row .k{color:#999;}
+.bankinfo .row .v{font-weight:500;text-align:right;word-break:break-all;}
+
+/* ---- 付款凭证上传（仅入金方向） ---- */
+.upload-box{
+  margin-top:14px;background:#fafafa;border:1px dashed #d9d9d9;border-radius:8px;padding:12px 14px;
+}
+.upload-box .up-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:500;color:#222;}
+.upload-box input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+.upload-box .up-pick{
+  display:inline-flex;align-items:center;gap:6px;margin-top:10px;height:32px;padding:0 14px;
+  background:#fff;border:1px solid #d9d9d9;border-radius:8px;color:#222;font-size:13px;cursor:pointer;
+}
+.upload-box .up-pick:hover{border-color:var(--primary-color);color:var(--primary-color);}
+.upload-box .up-prev{display:flex;align-items:center;gap:10px;margin-top:10px;min-width:0;}
+.upload-box .up-prev .up-info{min-width:0;}
+.up-thumb{
+  width:52px;height:52px;flex:none;border-radius:6px;border:1px solid #eef0f4;background:#fff;
+  object-fit:cover;display:block;cursor:zoom-in;
+}
+.up-name{font-size:13px;color:#222;word-break:break-all;line-height:1.4;}
+.up-meta{font-size:12px;color:#999;margin-top:2px;}
+.up-re{font-size:12px;display:inline-block;margin-top:4px;}
+.proof-done{
+  display:flex;align-items:center;gap:10px;margin-top:14px;padding:10px 12px;
+  background:#f6ffed;border:1px solid #b7eb8f;border-radius:8px;
+}
+a.link-dis,a.link-dis:hover{color:#00000040;cursor:not-allowed;text-decoration:none;}
+
+.legs-note{font-size:12px;color:#999;margin-top:10px;line-height:1.6;}
+.mini-list{border:1px solid #eef0f4;border-radius:10px;overflow:hidden;}
+.mini-list .ml-row{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 16px;
+  border-bottom:1px solid #f4f4f4;font-size:13px;
+}
+.mini-list .ml-row:last-child{border-bottom:none;}
+.stub{
+  background:#fff;border-radius:10px;padding:64px 24px;text-align:center;color:#bfbfbf;font-size:14px;
+}
+.toast{
+  position:fixed;top:88px;left:50%;transform:translateX(-50%) translateY(-12px);z-index:400;
+  background:#fff;border-radius:8px;box-shadow:0 6px 16px #00000029;padding:10px 16px;font-size:13.5px;
+  display:flex;align-items:center;gap:8px;opacity:0;pointer-events:none;transition:all .22s;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.flex{display:flex;}
+.ai-c{align-items:center;}
+.jc-b{justify-content:space-between;}
+.gap8{gap:8px;}
+.gap12{gap:12px;}
+.gap16{gap:16px;}
+.wrap{flex-wrap:wrap;}
+.mt8{margin-top:8px;}
+.mt14{margin-top:14px;}
+.mt20{margin-top:20px;}
+.mt24{margin-top:24px;}
+.mb8{margin-bottom:8px;}
+.mb14{margin-bottom:14px;}
+.mb20{margin-bottom:20px;}
+.w450{width:450px;max-width:100%;}
+@media (max-width:1100px){
+  .head-assets{gap:40px;flex-wrap:wrap;}
+  .app-main{padding:20px 14px 40px;}
+}
+</style>
+</head>
+<body>
+<!-- ================= TOP HEADER ================= -->
+<div class="topbar">
+  <div class="brand" id="brand">
+    <div class="brand-logo">P</div>
+    <div class="brand-name">PayPaz</div>
+  </div>
+  <div class="topbar-collapse" id="collapseBtn" title="收起/展开侧边栏">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </div>
+  <div class="topbar-crumb" id="crumb">Dashboard</div>
+  <div class="topbar-spacer"></div>
+  <div class="topbar-item"><span class="badge-dot"></span><span>API 正常</span></div>
+  <div class="topbar-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 1 3 3v1a5 5 0 0 1 4 5v4l1 2H4l1-2v-4a5 5 0 0 1 4-5V5a3 3 0 0 1 3-3z"/></svg>
+    <span>通知</span>
+  </div>
+  <div class="topbar-item">
+    <div class="avatar">HX</div>
+    <span>宏兴国际 · 主账户</span>
+    <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0h10L5 6z"/></svg>
+  </div>
+</div>
+
+<!-- ================= SIDEBAR ================= -->
+<div class="sider" id="sider">
+  <div class="nav-item active" data-page="dashboard">
+    <span class="ni-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>
+    <span class="ni-txt">Dashboard</span>
+  </div>
+  <div class="nav-item" data-page="wallet">
+    <span class="ni-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M16 11h5v4h-5a2 2 0 0 1 0-4z"/></svg></span>
+    <span class="ni-txt">Wallet</span>
+  </div>
+  <div class="nav-item" data-page="fiat">
+    <span class="ni-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 5l5 6 5-6M12 11v8M8 14h8M8 17h8"/></svg></span>
+    <span class="ni-txt">法币账户</span>
+    <span class="nav-tagnew">NEW</span>
+  </div>
+  <div class="nav-item open" data-submenu="assets">
+    <span class="ni-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="m3 7 9 5 9-5M12 12v10"/></svg></span>
+    <span class="ni-txt">Assets</span>
+    <span class="ni-arrow"><svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m2 2 4 4-4 4"/></svg></span>
+  </div>
+  <div class="nav-sub open" id="sub-assets">
+    <div class="nav-item" data-page="deposit"><span class="ni-txt">Deposit 充值</span></div>
+    <div class="nav-item" data-page="withdraw"><span class="ni-txt">Withdraw 提现</span></div>
+    <div class="nav-item" data-page="history"><span class="ni-txt">History 记录</span></div>
+    <div class="nav-item" data-page="token"><span class="ni-txt">Token 代币</span></div>
+  </div>
+  <div class="nav-item" data-page="statement">
+    <span class="ni-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></span>
+    <span class="ni-txt">DailyStatement</span>
+  </div>
+  <div class="nav-item" data-page="developer">
+    <span class="ni-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m8 8-5 4 5 4M16 8l5 4-5 4M13 5l-2 14"/></svg></span>
+    <span class="ni-txt">Developer</span>
+  </div>
+  <div class="nav-item" data-page="system">
+    <span class="ni-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg></span>
+    <span class="ni-txt">System</span>
+  </div>
+  <div class="nav-item" data-page="local">
+    <span class="ni-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8h13l-3-3M21 16H8l3 3"/><circle cx="18.5" cy="8" r="2.5"/><circle cx="5.5" cy="16" r="2.5"/></svg></span>
+    <span class="ni-txt">模拟客户出入金</span>
+    <span class="nav-tagnew">NEW</span>
+  </div>
+</div>
+
+<!-- ================= MAIN ================= -->
+<div class="app-main" id="appMain">
+
+<!-- ---------- DASHBOARD ---------- -->
+<div class="page active" id="page-dashboard">
+  <div class="page-title">Dashboard</div>
+  <div class="page-desc">商户总览 · 链上资产与本地法币账户</div>
+
+  <div class="card">
+    <p class="card-title">总资产</p>
+    <div class="flex ai-c jc-b wrap gap16" style="margin-top:14px;margin-bottom:24px;">
+      <div class="head-assets">
+        <div>
+          <span class="lbl">余额: </span>
+          <p class="big" id="dashTotal">486,320.55 <span>USDT</span></p>
+          <div class="assets-items">
+            <div><span class="lbl" style="font-size:12px;">可用: </span><p id="dashAvail">452,180.30 <span style="font-size:12px;">USDT</span></p></div>
+            <div><span class="lbl" style="font-size:12px;">冻结: </span><p class="err" id="dashLocked">34,140.25 <span class="err" style="font-size:12px;">USDT</span></p></div>
+          </div>
+        </div>
+        <div>
+          <span class="lbl">子账户数量: </span>
+          <p class="big">12</p>
+        </div>
+      </div>
+      <div class="flex gap12">
+        <button class="btn primary lg w104" data-goto="deposit">充值</button>
+        <button class="btn lg w104" data-goto="withdraw">提现</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 法币账户 summary (NEW) -->
+  <div class="card">
+    <p class="card-title">法币账户 <span class="tag tag-purple mini" style="margin-left:6px;">CNY</span></p>
+    <div class="flex ai-c jc-b wrap gap16" style="margin-top:14px;margin-bottom:24px;">
+      <div class="head-assets">
+        <div>
+          <span class="lbl">总额: </span>
+          <p class="big" id="dashCnyTotal">1,606,900.00 <span>CNY</span></p>
+          <div class="assets-items">
+            <div><span class="lbl" style="font-size:12px;">可用: </span><p id="dashCnyAvail">1,286,400.00 <span style="font-size:12px;">CNY</span></p></div>
+            <div><span class="lbl" style="font-size:12px;">待结算: </span><p style="color:#faad14;" id="dashCnyPending">320,500.00 <span style="font-size:12px;color:#faad14;">CNY</span></p></div>
+          </div>
+        </div>
+        <div>
+          <span class="lbl">今日本地收付净额: </span>
+          <p class="big" style="font-size:26px;">+218,600.00 <span>CNY</span></p>
+        </div>
+      </div>
+      <div class="flex gap12">
+        <button class="btn primary lg" data-goto="fiat" data-fiat-tab="in">法币直存</button>
+        <button class="btn lg" data-goto="fiat" data-fiat-tab="out">法币直取</button>
+        <button class="btn lg" data-goto="fiat" data-fiat-tab="fx">On/Off Ramp</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec-title">提现订单进度</div>
+    <div class="wd-list">
+      <div class="wd-1" data-wdjump="risk_pending">
+        <p>风险待审</p><span class="count">3</span><span class="amount">18,400.00 USDT</span>
+      </div>
+      <div class="wd-2" data-wdjump="transferring">
+        <p>转账中</p><span class="count">5</span><span class="amount">62,150.00 USDT</span>
+      </div>
+      <div class="wd-3" data-wdjump="fail">
+        <p>失败 (24h)</p><span class="count">1</span><span class="amount">2,000.00 USDT</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="sec-title">近七日记录</div>
+      <div id="dashChart"></div>
+      <div class="chart-legend">
+        <span><i class="lg-dot" style="background:#435ddd;"></i>充值</span>
+        <span><i class="lg-dot" style="background:#52c41a;"></i>提现</span>
+        <span><i class="lg-dot" style="background:#faad14;"></i>本地收付款</span>
+      </div>
+    </div>
+    <div>
+      <div class="sec-title">提现中</div>
+      <div class="table-wrap" id="dashWithdrawing"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- DEPOSIT ---------- -->
+<div class="page" id="page-deposit">
+  <div class="page-title">充值</div>
+  <div class="page-desc">链上充值 · 生成专属充值地址</div>
+  <div class="panel">
+    <div class="step">
+      <p class="step-title"><span class="step-label">1</span><span class="step-text">选择代币</span></p>
+      <div class="pp-select" id="depToken"></div>
+    </div>
+    <div class="step disabled" id="depStep2">
+      <p class="step-title"><span class="step-label">2</span><span class="step-text">选择网络</span></p>
+      <div class="pp-select" id="depChain"></div>
+    </div>
+    <div class="step disabled" id="depStep3">
+      <p class="step-title"><span class="step-label">3</span><span class="step-text">充值详情</span></p>
+      <div id="depDetail"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- WITHDRAW ---------- -->
+<div class="page" id="page-withdraw">
+  <div class="page-title">提现</div>
+  <div class="page-desc">链上提现 · 单笔 / 批量</div>
+  <div class="panel">
+    <div class="tabs" id="wdTabs">
+      <div class="tab active" data-wdtab="single">Single 单笔提现</div>
+      <div class="tab" data-wdtab="batch">Batch 批量提现</div>
+    </div>
+
+    <div class="tabpane active" id="wdpane-single">
+      <div class="step">
+        <p class="step-title"><span class="step-label">1</span><span class="step-text">选择代币</span></p>
+        <div class="pp-select" id="wdToken"></div>
+      </div>
+      <div class="step disabled" id="wdStep2">
+        <p class="step-title"><span class="step-label">2</span><span class="step-text">设置目的地</span></p>
+        <span class="label">网络</span>
+        <div class="pp-select" id="wdChain"></div>
+        <span class="label">地址</span>
+        <div class="pp-input"><input id="wdAddress" placeholder="请输入提现地址" disabled></div>
+      </div>
+      <div class="step disabled" id="wdStep3">
+        <p class="step-title"><span class="step-label">3</span><span class="step-text">设置提现金额</span></p>
+        <span class="label">到账金额</span>
+        <div class="pp-input" id="wdAmountWrap">
+          <input id="wdAmount" placeholder="最小提现金额 20" inputmode="decimal">
+          <span class="suffix"><span id="wdAmountSym">USDT</span><button class="btn-link" id="wdAll">全部</button></span>
+        </div>
+        <p class="field-err" id="wdAmountErr" style="display:none;"></p>
+        <div class="detail-info">
+          <p><span>可用余额</span><span id="wdAvail">-</span></p>
+          <p><span>服务费</span><span id="wdFee">-</span></p>
+          <p><span>提现数量</span><span id="wdTotal">-</span></p>
+        </div>
+        <button class="btn primary lg w450" id="wdNext" disabled>下一步</button>
+      </div>
+    </div>
+
+    <div class="tabpane" id="wdpane-batch">
+      <div class="stub">
+        批量提现功能<br>
+        <span style="font-size:13px;">上传 CSV 批量创建提现任务 · 原型中不展开</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- HISTORY ---------- -->
+<div class="page" id="page-history">
+  <div class="page-title">记录</div>
+  <div class="page-desc">链上充提记录 + 本地渠道 On/Off Ramp + 法币直存直取</div>
+  <div class="panel">
+    <div class="tabs" id="hisTabs"></div>
+    <div id="hisFilter"></div>
+    <div class="table-wrap"><div id="hisTable"></div></div>
+    <div class="table-foot" id="hisFoot"></div>
+  </div>
+</div>
+
+<!-- ---------- TOKEN ---------- -->
+<div class="page" id="page-token">
+  <div class="page-title">代币</div>
+  <div class="page-desc">多代币 / 多网络资产总览</div>
+  <div class="panel">
+    <div class="header-form">
+      <div class="hf-row">
+        <div class="form-item">
+          <span class="label">代币</span>
+          <select class="fi" id="tkToken"></select>
+        </div>
+        <div class="form-item">
+          <span class="label">网络</span>
+          <select class="fi large" id="tkChain"></select>
+        </div>
+        <div class="form-item" style="margin-left:auto;font-weight:700;font-size:20px;">
+          <span>当前余额：</span><span id="tkSum">-</span>
+        </div>
+      </div>
+    </div>
+    <div class="table-wrap"><div id="tkTable"></div></div>
+  </div>
+</div>
+
+<!-- ---------- STUBS ---------- -->
+<div class="page" id="page-wallet"><div class="page-title">Wallet</div><div class="page-desc">子钱包管理</div><div class="stub">Wallet Management · 原型中不展开</div></div>
+<div class="page" id="page-statement"><div class="page-title">DailyStatement</div><div class="page-desc">每日对账单</div><div class="stub">Daily Statement · 原型中不展开</div></div>
+<div class="page" id="page-developer"><div class="page-title">Developer</div><div class="page-desc">API Keys / Webhooks / IP 白名单</div><div class="stub">Developer · 原型中不展开</div></div>
+<div class="page" id="page-system"><div class="page-title">System</div><div class="page-desc">用户与权限 / 安全设置</div><div class="stub">System · 原型中不展开</div></div>
+
+<!-- ---------- 法币账户 ---------- -->
+<div class="page" id="page-fiat">
+  <div class="page-title">法币账户</div>
+  <div class="page-desc">商户本地法币（CNY）账户 · 直存 / 直取 / On/Off Ramp</div>
+
+  <div class="card">
+    <p class="card-title">CNY 余额</p>
+    <div class="flex ai-c jc-b wrap gap16" style="margin-top:14px;margin-bottom:24px;">
+      <div class="head-assets">
+        <div>
+          <span class="lbl">总额: </span>
+          <p class="big" id="fiatTotal">1,606,900.00 <span>CNY</span></p>
+          <div class="assets-items">
+            <div><span class="lbl" style="font-size:12px;">可用: </span><p id="fiatAvail">1,286,400.00 <span style="font-size:12px;">CNY</span></p></div>
+            <div><span class="lbl" style="font-size:12px;">待结算: </span><p style="color:#faad14;" id="fiatPending">320,500.00 <span style="font-size:12px;color:#faad14;">CNY</span></p></div>
+          </div>
+        </div>
+        <div>
+          <span class="lbl">近30日直存笔数: </span>
+          <p class="big">46</p>
+        </div>
+      </div>
+      <div class="flex gap12">
+        <button class="btn lg" data-goto="history" data-his-tab="fiatin">查看直存记录</button>
+        <button class="btn lg" data-goto="history" data-his-tab="fiatout">查看直取记录</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="entry-row">
+    <div class="entry-card active" data-fiattab="in">
+      <div class="ec-ico" style="background:#eef6ff;color:#2f80ed;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg>
+      </div>
+      <div class="ec-t">法币直存 <span class="tag tag-warning mini" style="margin-left:4px;">待确认</span></div>
+      <div class="ec-d">向卡商指定收款卡打入人民币，扣除平台服务费后计入法币账户。</div>
+      <div class="ec-d muted mt8">备注：需要讨论商户是否需要</div>
+    </div>
+    <div class="entry-card" data-fiattab="out">
+      <div class="ec-ico" style="background:#f6ffed;color:#52c41a;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20V8M7 13l5-5 5 5M4 4h16"/></svg>
+      </div>
+      <div class="ec-t">法币直取 <span class="tag tag-warning mini" style="margin-left:4px;">待确认</span></div>
+      <div class="ec-d">从已确认可用的 CNY 余额提现至指定银行账户，由卡商执行放款。</div>
+      <div class="ec-d muted mt8">备注：需要讨论商户是否需要</div>
+    </div>
+    <div class="entry-card" data-fiattab="fx">
+      <div class="ec-ico" style="background:#f9f0ff;color:#722ed1;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8h14l-3-3M21 16H7l3 3"/></svg>
+      </div>
+      <div class="ec-t">On/Off Ramp</div>
+      <div class="ec-d">商户自有资金双向兑换：法币换稳定币 / 稳定币换法币，按卡商额度自动拆单。</div>
+    </div>
+  </div>
+
+  <!-- 法币直存 -->
+  <div class="panel tabpane active" id="fiatpane-in">
+    <p class="legs-note mb14" style="margin-top:0;">
+      <span class="tag tag-warning mini" style="margin-right:6px;">待确认</span>需要讨论商户是否需要（该能力是否对商户开放尚未定稿，原型先保留）。
+    </p>
+    <div class="step">
+      <p class="step-title"><span class="step-label">1</span><span class="step-text">填写存入金额</span></p>
+      <span class="label">存入法币金额</span>
+      <div class="pp-input" id="fdAmtWrap">
+        <input id="fdAmt" placeholder="最小存入金额 1,000" inputmode="decimal">
+        <span class="suffix">CNY</span>
+      </div>
+      <p class="field-err" id="fdErr" style="display:none;"></p>
+      <div class="quote-box">
+        <div class="row"><span class="k">存入法币金额</span><span class="v" id="fdGross">0.00 CNY</span></div>
+        <div class="row"><span class="k">平台服务费 (0.5%)</span><span class="v err" id="fdFee">-0.00 CNY</span></div>
+        <div class="row total"><span class="k">到账 CNY 净额</span><span class="v" id="fdNet">0.00 CNY</span></div>
+      </div>
+    </div>
+    <div class="step" id="fdStep2">
+      <p class="step-title"><span class="step-label">2</span><span class="step-text">提交并等待卡商分配收款卡</span></p>
+      <button class="btn primary lg w450" id="fdSubmit" disabled>提交直存申请</button>
+      <div id="fdResult"></div>
+    </div>
+  </div>
+
+  <!-- 法币直取 -->
+  <div class="panel tabpane" id="fiatpane-out">
+    <p class="legs-note mb14" style="margin-top:0;">
+      <span class="tag tag-warning mini" style="margin-right:6px;">待确认</span>需要讨论商户是否需要（该能力是否对商户开放尚未定稿，原型先保留）。
+    </p>
+    <div class="step">
+      <p class="step-title"><span class="step-label">1</span><span class="step-text">填写提现金额</span></p>
+      <span class="label">提现 CNY 金额</span>
+      <div class="pp-input" id="fwAmtWrap">
+        <input id="fwAmt" placeholder="可用余额 1,286,400.00" inputmode="decimal">
+        <span class="suffix">CNY<button class="btn-link" id="fwAll">全部</button></span>
+      </div>
+      <p class="field-err" id="fwErr" style="display:none;"></p>
+      <div class="detail-info">
+        <p><span>可用余额（已确认可用）</span><span id="fwAvail">1,286,400.00 CNY</span></p>
+        <p><span>手续费 (0.3%)</span><span id="fwFee">0.00 CNY</span></p>
+        <p><span>实际到账净额</span><span id="fwNet">0.00 CNY</span></p>
+      </div>
+    </div>
+    <div class="step" id="fwStep2">
+      <p class="step-title"><span class="step-label">2</span><span class="step-text">目标银行账户</span></p>
+      <span class="label">开户行</span>
+      <div class="pp-input"><input id="fwBank" value="招商银行 深圳分行营业部"></div>
+      <span class="label">收款账号</span>
+      <div class="pp-input"><input id="fwAcct" value="6214 8300 1122 3344"></div>
+      <span class="label">户名</span>
+      <div class="pp-input"><input id="fwHolder" value="深圳宏兴国际贸易有限公司"></div>
+    </div>
+    <div class="step" id="fwStep3">
+      <p class="step-title"><span class="step-label">3</span><span class="step-text">提交提现</span></p>
+      <button class="btn primary lg w450" id="fwSubmit" disabled>提交提现申请</button>
+      <div id="fwResult"></div>
+    </div>
+  </div>
+
+  <!-- On/Off Ramp -->
+  <div class="panel tabpane" id="fiatpane-fx">
+    <div class="flex ai-c jc-b wrap gap12 mb14">
+      <div class="sec-title" style="margin-bottom:0;">On/Off Ramp（商户自有资金 · 面向商户）</div>
+      <button class="btn" data-goto="history" data-his-tab="onramp">在 History 中查看完整记录</button>
+    </div>
+    <div class="step">
+      <p class="step-title"><span class="step-label">1</span><span class="step-text">选择兑换方向与金额</span></p>
+      <div class="seg" id="fxDir" style="margin-top:6px;">
+        <button class="active" data-fxdir="f2s">法币换稳定币</button>
+        <button data-fxdir="s2f">稳定币换法币</button>
+      </div>
+      <span class="label" id="fxAmtLabel">兑换总额（支付 CNY）</span>
+      <div class="pp-input" id="fxAmtWrap">
+        <input id="fxAmt" placeholder="最小 10,000" inputmode="decimal">
+        <span class="suffix" id="fxAmtSym">CNY</span>
+      </div>
+      <p class="field-err" id="fxErr" style="display:none;"></p>
+      <div class="quote-box">
+        <div class="row"><span class="k">参考汇率</span><span class="v">7.180000</span></div>
+        <div class="row"><span class="k" id="fxRateK">预估成交汇率区间</span><span class="v" id="fxRateRange">7.2380 ~ 7.2660</span></div>
+        <div class="row total"><span class="k" id="fxOutK">预估到账</span><span class="v" id="fxOut">0.00 USDT</span></div>
+      </div>
+      <p class="legs-note">
+        On/Off Ramp 涉及真实资金划转，系统会按各卡商单卡额度自动拆分为 2~4 笔子单（Leg）分别撮合，
+        各子单成交汇率略有差异；全部成交后按已完成子单计算加权平均汇率。
+      </p>
+    </div>
+    <div class="step" id="fxStep2">
+      <p class="step-title"><span class="step-label">2</span><span class="step-text">提交并撮合</span></p>
+      <button class="btn primary lg w450" id="fxSubmit" disabled>提交 On/Off Ramp</button>
+      <div id="fxResult"></div>
+    </div>
+    <div class="hr"></div>
+    <div class="sec-title">近期 On/Off Ramp 请求（本页仅展示在途 / 近期视图）</div>
+    <p class="legs-note" style="margin-top:0;">
+      子单成交后会自动写入 Assets → History 的「On Ramp（本地渠道）」/「Off Ramp（本地渠道）」，
+      并标记为「面向商户」，完成记录以 History 为准。
+    </p>
+    <div class="mini-list" id="fxHistory"></div>
+  </div>
+</div>
+
+<!-- ---------- 模拟客户出入金 ---------- -->
+<div class="page" id="page-local">
+  <div class="page-title">模拟客户出入金</div>
+  <div class="page-desc">沙盒：模拟终端客户的入金 / 出金体验 · On Ramp / Off Ramp / 法币直存 / 法币直取（不影响商户自有账户）</div>
+  <div class="panel">
+    <div class="tabs" id="lcTabs">
+      <div class="tab active" data-lctab="on">发起 On Ramp（客户想买稳定币）</div>
+      <div class="tab" data-lctab="off">发起 Off Ramp（客户想卖稳定币）</div>
+      <div class="tab" data-lctab="fd">法币直存</div>
+      <div class="tab" data-lctab="fw">法币直取</div>
+    </div>
+
+    <!-- On Ramp -->
+    <div class="tabpane active" id="lcpane-on">
+      <div class="step">
+        <p class="step-title"><span class="step-label">1</span><span class="step-text">客户与数量</span></p>
+        <span class="label">客户 ID</span>
+        <div class="pp-input"><input id="onClient" value="8830021"></div>
+        <span class="label">客户想买入的稳定币数量</span>
+        <div class="pp-input" id="onQtyWrap">
+          <input id="onQty" placeholder="最小 100" inputmode="decimal">
+          <span class="suffix">USDT</span>
+        </div>
+        <p class="field-err" id="onErr" style="display:none;"></p>
+      </div>
+      <div class="step" id="onStep2">
+        <p class="step-title"><span class="step-label">2</span><span class="step-text">报价</span></p>
+        <div class="quote-box">
+          <div class="row"><span class="k">成交汇率</span><span class="v" id="onRate">7.251951</span></div>
+          <div class="row"><span class="k">买入稳定币数量</span><span class="v" id="onQtyEcho">0.00 USDT</span></div>
+          <div class="row total"><span class="k">客户应付法币金额</span><span class="v" id="onPay">0.00 CNY</span></div>
+        </div>
+        <button class="btn primary lg w450 mt20" id="onGen" disabled>生成收银台链接</button>
+      </div>
+      <div class="step" id="onStep3" style="display:none;">
+        <p class="step-title"><span class="step-label">3</span><span class="step-text">收银台 & 订单状态</span></p>
+        <div id="onResult"></div>
+      </div>
+    </div>
+
+    <!-- Off Ramp -->
+    <div class="tabpane" id="lcpane-off">
+      <div class="step">
+        <p class="step-title"><span class="step-label">1</span><span class="step-text">客户与数量</span></p>
+        <span class="label">客户 ID</span>
+        <div class="pp-input"><input id="offClient" value="8830045"></div>
+        <span class="label">客户想卖出的稳定币数量</span>
+        <div class="pp-input" id="offQtyWrap">
+          <input id="offQty" placeholder="最小 100" inputmode="decimal">
+          <span class="suffix">USDT</span>
+        </div>
+        <p class="field-err" id="offErr" style="display:none;"></p>
+      </div>
+      <div class="step" id="offStep2">
+        <p class="step-title"><span class="step-label">2</span><span class="step-text">报价</span></p>
+        <div class="quote-box">
+          <div class="row"><span class="k">成交汇率</span><span class="v" id="offRate">7.136920</span></div>
+          <div class="row"><span class="k">卖出稳定币数量</span><span class="v" id="offQtyEcho">0.00 USDT</span></div>
+          <div class="row total"><span class="k">客户将收到法币金额</span><span class="v" id="offRecv">0.00 CNY</span></div>
+        </div>
+      </div>
+      <div class="step" id="offStep3">
+        <p class="step-title"><span class="step-label">3</span><span class="step-text">客户收款银行账户</span></p>
+        <span class="label">开户行</span>
+        <div class="pp-input"><input id="offBank" value="中国工商银行 上海浦东分行"></div>
+        <span class="label">收款账号</span>
+        <div class="pp-input"><input id="offAcct" value="6222 0212 0099 8877"></div>
+        <span class="label">户名</span>
+        <div class="pp-input"><input id="offHolder" value="陈明远"></div>
+        <button class="btn primary lg w450 mt20" id="offSubmit" disabled>提交 Off Ramp 订单</button>
+        <div id="offResult"></div>
+      </div>
+    </div>
+
+    <!-- 法币直存（模拟客户视角 · 沙盒副本） -->
+    <div class="tabpane" id="lcpane-fd">
+      <p class="legs-note mb14" style="margin-top:0;">
+        沙盒演示：模拟终端客户的法币直存体验，数据独立于「法币账户」页面，不影响商户自有 CNY 余额。
+      </p>
+      <div class="step">
+        <p class="step-title"><span class="step-label">1</span><span class="step-text">填写存入金额</span></p>
+        <span class="label">存入法币金额</span>
+        <div class="pp-input" id="sfdAmtWrap">
+          <input id="sfdAmt" placeholder="最小存入金额 1,000" inputmode="decimal">
+          <span class="suffix">CNY</span>
+        </div>
+        <p class="field-err" id="sfdErr" style="display:none;"></p>
+        <div class="quote-box">
+          <div class="row total"><span class="k">存入法币金额</span><span class="v" id="sfdGross">0.00 CNY</span></div>
+        </div>
+      </div>
+      <div class="step" id="sfdStep2">
+        <p class="step-title"><span class="step-label">2</span><span class="step-text">提交并等待卡商分配收款卡</span></p>
+        <button class="btn primary lg w450" id="sfdSubmit" disabled>提交直存申请</button>
+        <div id="sfdResult"></div>
+      </div>
+    </div>
+
+    <!-- 法币直取（模拟客户视角 · 沙盒副本） -->
+    <div class="tabpane" id="lcpane-fw">
+      <p class="legs-note mb14" style="margin-top:0;">
+        沙盒演示：模拟终端客户的法币直取体验，数据独立于「法币账户」页面，不影响商户自有 CNY 余额。
+      </p>
+      <div class="step">
+        <p class="step-title"><span class="step-label">1</span><span class="step-text">填写提现金额</span></p>
+        <span class="label">提现 CNY 金额</span>
+        <div class="pp-input" id="sfwAmtWrap">
+          <input id="sfwAmt" placeholder="可用余额 1,286,400.00" inputmode="decimal">
+          <span class="suffix">CNY<button class="btn-link" id="sfwAll">全部</button></span>
+        </div>
+        <p class="field-err" id="sfwErr" style="display:none;"></p>
+        <div class="detail-info">
+          <p><span>可用余额（已确认可用）</span><span id="sfwAvail">1,286,400.00 CNY</span></p>
+          <p><span>实际到账金额</span><span id="sfwNet">0.00 CNY</span></p>
+        </div>
+      </div>
+      <div class="step" id="sfwStep2">
+        <p class="step-title"><span class="step-label">2</span><span class="step-text">目标银行账户</span></p>
+        <span class="label">开户行</span>
+        <div class="pp-input"><input id="sfwBank" value="招商银行 深圳分行营业部"></div>
+        <span class="label">收款账号</span>
+        <div class="pp-input"><input id="sfwAcct" value="6214 8300 1122 3344"></div>
+        <span class="label">户名</span>
+        <div class="pp-input"><input id="sfwHolder" value="陈明远"></div>
+      </div>
+      <div class="step" id="sfwStep3">
+        <p class="step-title"><span class="step-label">3</span><span class="step-text">提交提现</span></p>
+        <button class="btn primary lg w450" id="sfwSubmit" disabled>提交提现申请</button>
+        <div id="sfwResult"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app-main -->
+
+<!-- ================= MODALS ================= -->
+<div class="modal-mask" id="mWdConfirm">
+  <div class="modal">
+    <div class="modal-hd"><span>提现</span><button class="modal-x" data-close="mWdConfirm">&times;</button></div>
+    <div class="modal-bd">
+      <div class="big-ico" style="background:#eef6ff;color:#2f80ed;">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20V8M7 13l5-5 5 5M4 4h16"/></svg>
+      </div>
+      <p class="detail-total"><span class="err" id="cfAmount">-0</span><span id="cfSym">USDT</span></p>
+      <div class="info-content" id="cfInfo"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" data-close="mWdConfirm">上一步</button>
+      <button class="btn primary" id="cfConfirm">确认</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="mWdAuth">
+  <div class="modal">
+    <div class="modal-hd"><span>安全验证</span><button class="modal-x" data-close="mWdAuth">&times;</button></div>
+    <div class="modal-bd">
+      <p class="muted" style="font-size:13px;margin-bottom:14px;">为保障资金安全，提现需完成邮箱验证码与谷歌验证器双重校验。</p>
+      <span class="label" style="margin-top:0;">邮箱验证码</span>
+      <div class="pp-input" style="width:100%;">
+        <input id="authEmailCode" maxlength="6" placeholder="请输入 6 位邮箱验证码" inputmode="numeric">
+        <span class="suffix"><button class="btn-link" id="authSend">发送</button></span>
+      </div>
+      <span class="label">谷歌验证器 (Google Authenticator)</span>
+      <div class="pp-input" style="width:100%;">
+        <input id="authGaCode" maxlength="6" placeholder="请输入 6 位动态码" inputmode="numeric">
+      </div>
+      <p class="field-err" id="authErr" style="display:none;width:100%;"></p>
+      <div style="background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;padding:9px 12px;margin-top:14px;font-size:12px;color:#8a6d3b;">
+        原型演示：任意 6 位数字即可通过校验。
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" data-close="mWdAuth">取消</button>
+      <button class="btn primary" id="authConfirm">确认</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-mask" id="mWdDone">
+  <div class="modal">
+    <div class="modal-hd"><span>提现</span><button class="modal-x" data-close="mWdDone">&times;</button></div>
+    <div class="modal-bd">
+      <div class="big-ico" style="background:#eef6ff;color:#2f80ed;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9" opacity=".25"/><path d="M12 3a9 9 0 0 1 9 9"/></svg>
+      </div>
+      <p class="detail-total"><span class="err" id="dnAmount">-0</span><span id="dnSym">USDT</span><span style="color:#2f80ed;font-size:16px;">转账中</span></p>
+      <div class="info-content" id="dnInfo"></div>
+    </div>
+    <div class="modal-ft"><button class="btn primary" id="dnClose">完成</button></div>
+  </div>
+</div>
+
+<div class="modal-mask" id="mDetail">
+  <div class="modal w500">
+    <div class="modal-hd"><span id="dtTitle">详情</span><button class="modal-x" data-close="mDetail">&times;</button></div>
+    <div class="modal-bd"><div class="kv-grid" id="dtBody"></div></div>
+    <div class="modal-ft"><button class="btn" data-close="mDetail">关闭</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toastIco"></span><span id="toastMsg"></span></div>
+
+<script>
+/* ============================================================
+   PayPaz 商户后台 · 原型 (vanilla JS)
+   ============================================================ */
+(function () {
+'use strict';
+
+/* ---------- helpers ---------- */
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+function fmt(n, dp) {
+  dp = dp === undefined ? 2 : dp;
+  if (isNaN(n) || n === null || n === '') n = 0;
+  var s = Number(n).toFixed(dp);
+  var parts = s.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return parts.join('.');
+}
+function num(v) { var n = parseFloat(String(v).replace(/,/g, '')); return isNaN(n) ? 0 : n; }
+function esc(s) {
+  return String(s === undefined || s === null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function stripTags(s) { return String(s).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim(); }
+function tag(text, type) { return '<span class="tag tag-' + type + '">' + esc(text) + '</span>'; }
+function mid(s, head, tail) {
+  s = String(s || '');
+  if (s.length <= head + tail + 3) return esc(s);
+  return esc(s.slice(0, head)) + '...' + esc(s.slice(-tail));
+}
+function orderNo(prefix) {
+  var d = new Date();
+  var p = function (x) { return String(x).padStart(2, '0'); };
+  return prefix + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) +
+    p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+}
+function nowStr() {
+  var d = new Date();
+  var p = function (x) { return String(x).padStart(2, '0'); };
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' +
+    p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}
+
+/* ---------- toast ---------- */
+var toastTimer = null;
+function toast(msg, ok) {
+  var t = $('#toast');
+  $('#toastIco').innerHTML = ok === false
+    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff4d4f" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>'
+    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2"><path d="m4 12 5 5L20 6"/></svg>';
+  $('#toastMsg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
+}
+
+/* ---------- modal ---------- */
+function openModal(id) { $('#' + id).classList.add('open'); }
+function closeModal(id) { $('#' + id).classList.remove('open'); }
+document.addEventListener('click', function (e) {
+  var el = e.target.closest ? e.target.closest('[data-close]') : null;
+  if (el) closeModal(el.getAttribute('data-close'));
+  if (e.target.classList && e.target.classList.contains('modal-mask')) e.target.classList.remove('open');
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') $$('.modal-mask.open').forEach(function (m) { m.classList.remove('open'); });
+});
+
+/* ---------- fake QR ---------- */
+function qrSvg(text, size) {
+  var N = 25, h = 0, i, x, y;
+  for (i = 0; i < text.length; i++) { h = ((h << 5) - h + text.charCodeAt(i)) | 0; }
+  var seed = Math.abs(h) || 12345;
+  function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+  var cells = [];
+  for (y = 0; y < N; y++) { cells.push([]); for (x = 0; x < N; x++) cells[y].push(rnd() > 0.5 ? 1 : 0); }
+  function finder(ox, oy) {
+    for (y = 0; y < 7; y++) for (x = 0; x < 7; x++) {
+      var on = (x === 0 || x === 6 || y === 0 || y === 6) || (x >= 2 && x <= 4 && y >= 2 && y <= 4);
+      cells[oy + y][ox + x] = on ? 1 : 0;
+    }
+    for (y = -1; y < 8; y++) for (x = -1; x < 8; x++) {
+      if (oy + y < 0 || ox + x < 0 || oy + y >= N || ox + x >= N) continue;
+      if (y === -1 || y === 7 || x === -1 || x === 7) cells[oy + y][ox + x] = 0;
+    }
+  }
+  finder(0, 0); finder(N - 7, 0); finder(0, N - 7);
+  var rects = '';
+  for (y = 0; y < N; y++) for (x = 0; x < N; x++) {
+    if (cells[y][x]) rects += '<rect x="' + x + '" y="' + y + '" width="1" height="1"/>';
+  }
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + N + ' ' + N + '" ' +
+    'shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><rect width="' + N + '" height="' + N +
+    '" fill="#fff"/><g fill="#222">' + rects + '</g></svg>';
+}
+
+/* ---------- data ---------- */
+var CARD_MERCHANTS = ['恒信卡商 A', '星海卡商 B', '金诚卡商 C', '汇通卡商 D', '瑞丰卡商 E'];
+var CARD_TAILS = ['8842', '3317', '5520', '7761', '9038'];
+var REF_RATE = 7.18;
+var ONRAMP_RATE = 7.18 * 1.007 * 1.003;   /* 7.251953 */
+var OFFRAMP_RATE = 7.18 * 0.994;          /* 7.136920 */
+
+var TOKENS = [
+  {
+    id: 'USDT', name: 'USDT', full: 'Tether USD', color: '#26A17B', letter: 'T',
+    chains: [
+      { id: 'TRON', name: 'Tron (TRC20)', short: 'TRC20', allowDeposit: true, depositMin: '10', withdrawMin: 20,
+        fee: 1, available: 312480.20, address: 'TQn9Y2khDD95J42FQtQTdwVVRnDpu4Xy8f' },
+      { id: 'ETH', name: 'Ethereum (ERC20)', short: 'ERC20', allowDeposit: true, depositMin: '20', withdrawMin: 30,
+        fee: 5, available: 118700.10, address: '0x8f2A55949038A9610F50Fb23b5883Af3B4ecb3c4' },
+      { id: 'BSC', name: 'BNB Smart Chain (BEP20)', short: 'BEP20', allowDeposit: false, depositMin: '5', withdrawMin: 10,
+        fee: 0.5, available: 0, address: '0x0000000000000000000000000000000000000000' }
+    ]
+  },
+  {
+    id: 'USDC', name: 'USDC', full: 'USD Coin', color: '#2775CA', letter: 'C',
+    chains: [
+      { id: 'ETH', name: 'Ethereum (ERC20)', short: 'ERC20', allowDeposit: true, depositMin: '20', withdrawMin: 30,
+        fee: 5, available: 21000.00, address: '0x3D9bC1a7cF5b02E5cEfF37B4b9E1C0a2F71De83b' }
+    ]
+  }
+];
+function getToken(id) { for (var i = 0; i < TOKENS.length; i++) if (TOKENS[i].id === id) return TOKENS[i]; return null; }
+function coinHtml(tk, cls) {
+  return '<span class="coin ' + (cls || '') + '" style="background:' + tk.color + '">' + tk.letter + '</span>';
+}
+var CNY_COIN = '<span class="coin sm" style="background:#D8232A">&yen;</span>';
+
+/* balances */
+var BAL = { usdtTotal: 486320.55, usdtAvail: 452180.30, usdtLocked: 34140.25,
+            cnyAvail: 1286400.00, cnyPending: 320500.00 };
+function cnyTotal() { return BAL.cnyAvail + BAL.cnyPending; }
+function refreshBalances() {
+  $('#dashCnyAvail').innerHTML = fmt(BAL.cnyAvail) + ' <span style="font-size:12px;">CNY</span>';
+  $('#dashCnyPending').innerHTML = fmt(BAL.cnyPending) + ' <span style="font-size:12px;color:#faad14;">CNY</span>';
+  $('#dashCnyTotal').innerHTML = fmt(cnyTotal()) + ' <span>CNY</span>';
+  $('#fiatAvail').innerHTML = fmt(BAL.cnyAvail) + ' <span style="font-size:12px;">CNY</span>';
+  $('#fiatPending').innerHTML = fmt(BAL.cnyPending) + ' <span style="font-size:12px;color:#faad14;">CNY</span>';
+  $('#fiatTotal').innerHTML = fmt(cnyTotal()) + ' <span>CNY</span>';
+  $('#fwAvail').textContent = fmt(BAL.cnyAvail) + ' CNY';
+  var el = $('#fwAmt'); if (el) el.placeholder = '可用余额 ' + fmt(BAL.cnyAvail);
+}
+
+/* ============================================================
+   SHELL: sidebar / nav
+   ============================================================ */
+var PAGE_TITLE = {
+  dashboard: 'Dashboard', wallet: 'Wallet', deposit: 'Assets / Deposit',
+  withdraw: 'Assets / Withdraw', history: 'Assets / History', token: 'Assets / Token',
+  fiat: '法币账户', local: '模拟客户出入金', statement: 'DailyStatement',
+  developer: 'Developer', system: 'System'
+};
+function go(page) {
+  $$('.page').forEach(function (p) { p.classList.remove('active'); });
+  var target = $('#page-' + page);
+  if (!target) return;
+  target.classList.add('active');
+  $$('.sider .nav-item').forEach(function (n) {
+    n.classList.toggle('active', n.getAttribute('data-page') === page);
+  });
+  $('#crumb').textContent = PAGE_TITLE[page] || page;
+  window.scrollTo(0, 0);
+}
+$$('.sider .nav-item[data-page]').forEach(function (n) {
+  n.addEventListener('click', function () { go(n.getAttribute('data-page')); });
+});
+$$('.sider .nav-item[data-submenu]').forEach(function (n) {
+  n.addEventListener('click', function () {
+    n.classList.toggle('open');
+    $('#sub-' + n.getAttribute('data-submenu')).classList.toggle('open');
+  });
+});
+$('#collapseBtn').addEventListener('click', function () {
+  $('#sider').classList.toggle('collapsed');
+  $('#appMain').classList.toggle('collapsed');
+  $('#brand').classList.toggle('collapsed');
+});
+document.addEventListener('click', function (e) {
+  var b = e.target.closest ? e.target.closest('[data-goto]') : null;
+  if (!b) return;
+  var pg = b.getAttribute('data-goto');
+  go(pg);
+  if (b.getAttribute('data-fiat-tab')) window.selectFiatTab(b.getAttribute('data-fiat-tab'));
+  if (b.getAttribute('data-his-tab')) window.selectHisTab(b.getAttribute('data-his-tab'));
+});
+
+/* ============================================================
+   Generic custom select (450x44, #f8f8f8)
+   ============================================================ */
+function makeSelect(root, cfg) {
+  root.innerHTML =
+    '<div class="pp-select-ctl">' +
+      '<div class="val"><span class="ph">' + esc(cfg.placeholder) + '</span></div>' +
+      '<span class="pp-arrow"><svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor"><path d="M0 0h10L5 6z"/></svg></span>' +
+    '</div>' +
+    '<div class="pp-dropdown">' +
+      (cfg.search === false ? '' :
+        '<div class="pp-search">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>' +
+        '<input type="text" placeholder="搜索"></div>') +
+      '<div class="pp-list"></div>' +
+    '</div>';
+
+  var ctl = $('.pp-select-ctl', root);
+  var listEl = $('.pp-list', root);
+  var searchEl = $('.pp-search input', root);
+  var api = { value: null };
+
+  function renderList() {
+    var q = (searchEl ? searchEl.value : '').toLowerCase();
+    var items = cfg.getItems().filter(function (it) {
+      return !q || (cfg.searchText ? cfg.searchText(it) : '').toLowerCase().indexOf(q) > -1;
+    });
+    if (!items.length) { listEl.innerHTML = '<div class="empty">暂无数据</div>'; return; }
+    listEl.innerHTML = items.map(function (it) {
+      var cls = 'item' + (it.__disabled ? ' disabled' : '') + (cfg.isActive(it, api.value) ? ' active' : '');
+      return '<div class="' + cls + '" data-key="' + esc(cfg.keyOf(it)) + '">' + cfg.renderItem(it) + '</div>';
+    }).join('');
+    $$('.item', listEl).forEach(function (el) {
+      el.addEventListener('click', function () {
+        if (el.classList.contains('disabled')) { toast('该网络暂不支持此操作', false); return; }
+        var key = el.getAttribute('data-key');
+        var picked = cfg.getItems().filter(function (it) { return String(cfg.keyOf(it)) === key; })[0];
+        api.set(picked);
+        root.classList.remove('open');
+      });
+    });
+  }
+
+  api.set = function (item) {
+    api.value = item;
+    var valEl = $('.val', root);
+    valEl.innerHTML = item ? cfg.renderValue(item) : '<span class="ph">' + esc(cfg.placeholder) + '</span>';
+    if (cfg.onSelect) cfg.onSelect(item);
+  };
+  api.refresh = function () { renderList(); };
+  api.clear = function () { api.set(null); };
+
+  ctl.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var willOpen = !root.classList.contains('open');
+    $$('.pp-select.open').forEach(function (s) { s.classList.remove('open'); });
+    if (willOpen) {
+      root.classList.add('open');
+      if (searchEl) searchEl.value = '';
+      renderList();
+      if (searchEl) setTimeout(function () { searchEl.focus(); }, 30);
+    }
+  });
+  if (searchEl) {
+    searchEl.addEventListener('input', renderList);
+    searchEl.addEventListener('click', function (e) { e.stopPropagation(); });
+  }
+  document.addEventListener('click', function (e) {
+    if (!root.contains(e.target)) root.classList.remove('open');
+  });
+  return api;
+}
+
+function tokenItemHtml(tk, amount) {
+  return coinHtml(tk) + '<div class="names"><span class="name">' + tk.name +
+    '</span><span class="other-name">' + tk.full + '</span></div>' +
+    (amount !== undefined ? '<span class="amount">' + fmt(amount, 6) + '</span>' : '');
+}
+function tokenValueHtml(tk) {
+  return coinHtml(tk) + '<div class="names"><span class="name">' + tk.name + '</span></div>';
+}
+function chainDot(ch) {
+  var colors = { TRON: '#EB0029', ETH: '#627EEA', BSC: '#F0B90B' };
+  return '<span class="coin" style="background:' + (colors[ch.id] || '#888') + '">' + ch.short.slice(0, 1) + '</span>';
+}
+function chainItemHtml(ch, extra) {
+  return chainDot(ch) + '<div class="names"><span class="name">' + ch.name + '</span>' +
+    '<span class="other-name">' + (extra || ch.short) + '</span></div>';
+}
+
+/* ============================================================
+   DEPOSIT page
+   ============================================================ */
+var depTokenSel, depChainSel;
+depTokenSel = makeSelect($('#depToken'), {
+  placeholder: '选择代币',
+  getItems: function () { return TOKENS; },
+  keyOf: function (t) { return t.id; },
+  searchText: function (t) { return t.name + ' ' + t.full; },
+  isActive: function (t, v) { return v && v.id === t.id; },
+  renderItem: function (t) { return tokenItemHtml(t); },
+  renderValue: tokenValueHtml,
+  onSelect: function (t) {
+    depChainSel.clear();
+    $('#depStep2').classList.toggle('disabled', !t);
+    $('#depStep3').classList.add('disabled');
+    $('#depDetail').innerHTML = '';
+    depChainSel.refresh();
+  }
+});
+depChainSel = makeSelect($('#depChain'), {
+  placeholder: '选择网络',
+  getItems: function () {
+    var t = depTokenSel.value; if (!t) return [];
+    return t.chains.map(function (c) { var o = Object.create(c); o.__disabled = !c.allowDeposit; return o; });
+  },
+  keyOf: function (c) { return c.id; },
+  searchText: function (c) { return c.name; },
+  isActive: function (c, v) { return v && v.id === c.id; },
+  renderItem: function (c) { return chainItemHtml(c, c.allowDeposit ? c.short : c.short + ' · 暂不支持充值'); },
+  renderValue: function (c) { return chainItemHtml(c); },
+  onSelect: function (c) { renderDepositDetail(c); }
+});
+function renderDepositDetail(ch) {
+  var box = $('#depDetail');
+  $('#depStep3').classList.toggle('disabled', !ch);
+  if (!ch) { box.innerHTML = ''; return; }
+  var tk = depTokenSel.value;
+  box.innerHTML =
+    '<div class="qr-parent">' +
+      '<div class="qr-box">' + qrSvg(ch.address, 59) + '</div>' +
+      '<div class="names"><span class="title">充值地址</span><p class="address">' + esc(ch.address) + '</p></div>' +
+      '<button class="copy-btn" id="depCopy" title="复制地址">' +
+        '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">' +
+        '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>' +
+      '</button>' +
+    '</div>' +
+    '<div class="min-tips"><span>最小充值</span><span>' + ch.depositMin + ' ' + tk.name + '</span></div>' +
+    '<div class="min-tips"><span>预计到账</span><span>' + (ch.id === 'TRON' ? '1 个网络确认' : '12 个网络确认') + '</span></div>';
+  $('#depCopy').addEventListener('click', function () { copyText(ch.address, this); });
+}
+function copyText(text, btn) {
+  var done = function () {
+    toast('地址已复制');
+    if (btn) {
+      var old = btn.innerHTML;
+      btn.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2.2"><path d="m4 12 5 5L20 6"/></svg>';
+      setTimeout(function () { btn.innerHTML = old; }, 1600);
+    }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+  } else { fallbackCopy(text); done(); }
+}
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch (e) { /* noop */ }
+  document.body.removeChild(ta);
+}
+depTokenSel.set(TOKENS[0]);
+
+/* ============================================================
+   WITHDRAW page
+   ============================================================ */
+$$('#wdTabs .tab').forEach(function (t) {
+  t.addEventListener('click', function () {
+    $$('#wdTabs .tab').forEach(function (x) { x.classList.remove('active'); });
+    t.classList.add('active');
+    var k = t.getAttribute('data-wdtab');
+    $('#wdpane-single').classList.toggle('active', k === 'single');
+    $('#wdpane-batch').classList.toggle('active', k === 'batch');
+  });
+});
+
+var wdTokenSel, wdChainSel;
+function tokenAvail(t) { return t.chains.reduce(function (a, c) { return a + c.available; }, 0); }
+wdTokenSel = makeSelect($('#wdToken'), {
+  placeholder: '选择代币',
+  getItems: function () { return TOKENS.filter(function (t) { return tokenAvail(t) > 0; }); },
+  keyOf: function (t) { return t.id; },
+  searchText: function (t) { return t.name + ' ' + t.full; },
+  isActive: function (t, v) { return v && v.id === t.id; },
+  renderItem: function (t) { return tokenItemHtml(t, tokenAvail(t)); },
+  renderValue: tokenValueHtml,
+  onSelect: function (t) {
+    wdChainSel.clear();
+    $('#wdAddress').value = '';
+    $('#wdAddress').disabled = true;
+    $('#wdStep2').classList.toggle('disabled', !t);
+    $('#wdAmountSym').textContent = t ? t.name : 'USDT';
+    resetWdAmount();
+    wdChainSel.refresh();
+  }
+});
+wdChainSel = makeSelect($('#wdChain'), {
+  placeholder: '选择网络',
+  getItems: function () {
+    var t = wdTokenSel.value; if (!t) return [];
+    return t.chains.map(function (c) { var o = Object.create(c); o.__disabled = c.available <= 0; return o; });
+  },
+  keyOf: function (c) { return c.id; },
+  searchText: function (c) { return c.name; },
+  isActive: function (c, v) { return v && v.id === c.id; },
+  renderItem: function (c) {
+    return chainDot(c) + '<div class="names"><span class="name">' + c.name + '</span>' +
+      '<span class="other-name">' + (c.available > 0 ? '可用 ' + fmt(c.available, 6) : '余额不足') + '</span></div>' +
+      '<span class="amount">费 ' + c.fee + '</span>';
+  },
+  renderValue: function (c) { return chainItemHtml(c); },
+  onSelect: function (c) {
+    var addr = $('#wdAddress');
+    addr.value = '';
+    addr.disabled = !c;
+    resetWdAmount();
+    updateWdStep3();
+  }
+});
+$('#wdAddress').addEventListener('input', function () { resetWdAmount(); updateWdStep3(); });
+function updateWdStep3() {
+  var ok = !!wdChainSel.value && $('#wdAddress').value.trim().length > 0;
+  $('#wdStep3').classList.toggle('disabled', !ok);
+  var ch = wdChainSel.value;
+  $('#wdAmount').placeholder = ch ? '最小提现金额 ' + ch.withdrawMin : '请输入金额';
+  $('#wdAvail').textContent = ch ? fmt(ch.available, 6) + ' ' + wdTokenSel.value.name : '-';
+}
+function resetWdAmount() {
+  $('#wdAmount').value = '';
+  $('#wdFee').textContent = '-';
+  $('#wdTotal').textContent = '-';
+  $('#wdAmountErr').style.display = 'none';
+  $('#wdAmountWrap').classList.remove('error');
+  $('#wdNext').disabled = true;
+}
+function calcWithdraw() {
+  var ch = wdChainSel.value, tk = wdTokenSel.value;
+  var errEl = $('#wdAmountErr');
+  if (!ch || !tk) return;
+  var v = num($('#wdAmount').value);
+  var sym = ' ' + tk.name;
+  if (!$('#wdAmount').value) {
+    $('#wdFee').textContent = '-'; $('#wdTotal').textContent = '-';
+    errEl.style.display = 'none'; $('#wdAmountWrap').classList.remove('error');
+    $('#wdNext').disabled = true; return;
+  }
+  var err = '';
+  if (v < ch.withdrawMin) err = '提现金额不能小于最小提现金额 ' + ch.withdrawMin;
+  else if (v > ch.available - ch.fee) err = '可用余额不足（可用 ' + fmt(ch.available, 6) + '，需另付服务费 ' + ch.fee + '）';
+  errEl.textContent = err;
+  errEl.style.display = err ? 'block' : 'none';
+  $('#wdAmountWrap').classList.toggle('error', !!err);
+  $('#wdFee').textContent = fmt(ch.fee, 6) + sym;
+  $('#wdTotal').textContent = fmt(v + ch.fee, 6) + sym;
+  $('#wdNext').disabled = !!err;
+}
+$('#wdAmount').addEventListener('input', function () {
+  this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  calcWithdraw();
+});
+$('#wdAll').addEventListener('click', function () {
+  var ch = wdChainSel.value; if (!ch) return;
+  var max = Math.max(0, ch.available - ch.fee);
+  $('#wdAmount').value = max.toFixed(6);
+  calcWithdraw();
+});
+$('#wdNext').addEventListener('click', function () {
+  var ch = wdChainSel.value, tk = wdTokenSel.value;
+  var v = num($('#wdAmount').value);
+  var total = v + ch.fee;
+  $('#cfAmount').textContent = '-' + fmt(total, 6);
+  $('#cfSym').textContent = tk.name;
+  $('#cfInfo').innerHTML = withdrawInfoHtml(tk, ch, v, total);
+  openModal('mWdConfirm');
+});
+function withdrawInfoHtml(tk, ch, received, total) {
+  return '<div><span class="label">网络</span><span class="value">' + esc(ch.name) + '</span></div>' +
+    '<div><span class="label">地址</span><span class="value">' + esc($('#wdAddress').value) + '</span></div>' +
+    '<div><span class="label">到账金额</span><span class="value">' + fmt(received, 6) + ' ' + tk.name + '</span></div>' +
+    '<div><span class="label">服务费</span><span class="value">' + fmt(ch.fee, 6) + ' ' + tk.name + '</span></div>' +
+    '<div><span class="label">提现数量</span><span class="value"><span class="err">-' + fmt(total, 6) + '</span> ' + tk.name + '</span></div>' +
+    '<div><span class="label">时间</span><span class="value">' + nowStr() + '</span></div>';
+}
+$('#cfConfirm').addEventListener('click', function () {
+  closeModal('mWdConfirm');
+  $('#authEmailCode').value = '';
+  $('#authGaCode').value = '';
+  $('#authErr').style.display = 'none';
+  openModal('mWdAuth');
+});
+var authTimer = null;
+$('#authSend').addEventListener('click', function () {
+  var btn = this;
+  if (btn.disabled) return;
+  var left = 60;
+  btn.disabled = true;
+  btn.textContent = left + 's';
+  toast('验证码已发送至 a***@hongxing.com');
+  clearInterval(authTimer);
+  authTimer = setInterval(function () {
+    left--;
+    if (left <= 0) { clearInterval(authTimer); btn.disabled = false; btn.textContent = '重新发送'; }
+    else btn.textContent = left + 's';
+  }, 1000);
+});
+[$('#authEmailCode'), $('#authGaCode')].forEach(function (el) {
+  el.addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 6); });
+});
+$('#authConfirm').addEventListener('click', function () {
+  var a = $('#authEmailCode').value, b = $('#authGaCode').value;
+  if (a.length !== 6 || b.length !== 6) {
+    $('#authErr').textContent = '请输入 6 位邮箱验证码与 6 位谷歌验证码';
+    $('#authErr').style.display = 'block';
+    return;
+  }
+  clearInterval(authTimer);
+  $('#authSend').disabled = false; $('#authSend').textContent = '发送';
+  closeModal('mWdAuth');
+  var ch = wdChainSel.value, tk = wdTokenSel.value;
+  var v = num($('#wdAmount').value), total = v + ch.fee;
+  $('#dnAmount').textContent = '-' + fmt(total, 6);
+  $('#dnSym').textContent = tk.name;
+  $('#dnInfo').innerHTML =
+    '<div><span class="label">订单号</span><span class="value">' + orderNo('W') + '</span></div>' +
+    withdrawInfoHtml(tk, ch, v, total);
+  setTimeout(function () { openModal('mWdDone'); }, 500);
+});
+$('#dnClose').addEventListener('click', function () {
+  closeModal('mWdDone');
+  resetWdAmount();
+  go('dashboard');
+  toast('提现已提交，状态：转账中');
+});
+
+/* ============================================================
+   TOKEN page
+   ============================================================ */
+var TOKEN_ROWS = [];
+TOKENS.forEach(function (t) {
+  t.chains.forEach(function (c) {
+    TOKEN_ROWS.push({ tokenId: t.id, token: t, chainId: c.id, chainName: c.name, balance: c.available, cur: t.id });
+  });
+});
+TOKEN_ROWS.push({ tokenId: 'CNY', token: null, chainId: 'LOCAL', chainName: '本地法币账户', balance: cnyTotal(), cur: 'CNY', fiat: true });
+
+function initTokenPage() {
+  var tks = $('#tkToken');
+  tks.innerHTML = '<option value="">全部</option>' +
+    TOKENS.map(function (t) { return '<option value="' + t.id + '">' + t.name + '</option>'; }).join('') +
+    '<option value="CNY">CNY</option>';
+  tks.value = 'USDT';
+  tks.addEventListener('change', function () { fillChainOptions(); renderTokenTable(); });
+  $('#tkChain').addEventListener('change', renderTokenTable);
+  fillChainOptions();
+  renderTokenTable();
+}
+function fillChainOptions() {
+  var tid = $('#tkToken').value;
+  var opts = [{ v: '', l: '全部' }];
+  if (tid === 'CNY') opts.push({ v: 'LOCAL', l: '本地法币账户' });
+  else if (tid) getToken(tid).chains.forEach(function (c) { opts.push({ v: c.id, l: c.name }); });
+  else {
+    opts.push({ v: 'TRON', l: 'Tron (TRC20)' }, { v: 'ETH', l: 'Ethereum (ERC20)' },
+      { v: 'BSC', l: 'BNB Smart Chain (BEP20)' }, { v: 'LOCAL', l: '本地法币账户' });
+  }
+  $('#tkChain').innerHTML = opts.map(function (o) { return '<option value="' + o.v + '">' + o.l + '</option>'; }).join('');
+}
+function renderTokenTable() {
+  var tid = $('#tkToken').value, cid = $('#tkChain').value;
+  TOKEN_ROWS[TOKEN_ROWS.length - 1].balance = cnyTotal();
+  var rows = TOKEN_ROWS.filter(function (r) {
+    return (!tid || r.tokenId === tid) && (!cid || r.chainId === cid);
+  }).sort(function (a, b) { return b.balance - a.balance; });
+
+  var sums = {};
+  rows.forEach(function (r) { sums[r.cur] = (sums[r.cur] || 0) + r.balance; });
+  var sumTxt = Object.keys(sums).map(function (k) { return fmt(sums[k], k === 'CNY' ? 2 : 6) + ' ' + k; }).join(' + ');
+  $('#tkSum').textContent = sumTxt || '0.00';
+
+  var body = rows.map(function (r) {
+    var ico = r.fiat ? CNY_COIN : coinHtml(r.token, 'sm');
+    var actions = r.fiat
+      ? '<a href="javascript:;" data-tkact="fiat-in" title="法币直存">直存</a> ' +
+        '<a href="javascript:;" data-tkact="fiat-out" title="法币直取">直取</a> ' +
+        '<a href="javascript:;" data-tkact="fiat-his" title="记录">记录</a>'
+      : '<a href="javascript:;" data-tkact="deposit" data-tk="' + r.tokenId + '" data-ch="' + r.chainId + '">充值</a> ' +
+        '<a href="javascript:;" data-tkact="withdraw" data-tk="' + r.tokenId + '" data-ch="' + r.chainId + '">提现</a> ' +
+        '<a href="javascript:;" data-tkact="history">记录</a>';
+    return '<tr>' +
+      '<td>' + (r.fiat ? 'CNY' : r.token.name) + '</td>' +
+      '<td>' + esc(r.chainName) + '</td>' +
+      '<td>' + ico + '</td>' +
+      '<td>' + fmt(r.balance, r.fiat ? 2 : 6) + '</td>' +
+      '<td style="display:flex;gap:14px;">' + actions + '</td>' +
+      '</tr>';
+  }).join('');
+
+  $('#tkTable').innerHTML = rows.length
+    ? '<table class="pp-table"><thead><tr><th>代币</th><th>网络</th><th>图标</th><th>余额</th><th>操作</th></tr></thead><tbody>' + body + '</tbody></table>'
+    : '<div class="table-empty">暂无数据</div>';
+
+  $$('#tkTable [data-tkact]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var act = a.getAttribute('data-tkact');
+      if (act === 'deposit') {
+        go('deposit');
+        depTokenSel.set(getToken(a.getAttribute('data-tk')));
+        var ch = getToken(a.getAttribute('data-tk')).chains.filter(function (c) { return c.id === a.getAttribute('data-ch'); })[0];
+        if (ch && ch.allowDeposit) depChainSel.set(ch); else toast('该网络暂不支持充值', false);
+      } else if (act === 'withdraw') {
+        go('withdraw');
+        var t = getToken(a.getAttribute('data-tk'));
+        if (tokenAvail(t) > 0) wdTokenSel.set(t);
+        var c2 = t.chains.filter(function (c) { return c.id === a.getAttribute('data-ch'); })[0];
+        if (c2 && c2.available > 0) wdChainSel.set(c2);
+      } else if (act === 'history') { go('history'); window.selectHisTab('deposit'); }
+      else if (act === 'fiat-in') { go('fiat'); window.selectFiatTab('in'); }
+      else if (act === 'fiat-out') { go('fiat'); window.selectFiatTab('out'); }
+      else if (act === 'fiat-his') { go('history'); window.selectHisTab('fiatin'); }
+    });
+  });
+}
+
+/* ============================================================
+   DASHBOARD widgets
+   ============================================================ */
+function renderDashChart() {
+  var days = ['08-19', '08-20', '08-21', '08-22', '08-23', '08-24', '08-25'];
+  var dep = [42, 58, 35, 71, 66, 84, 52];
+  var wit = [30, 44, 51, 38, 62, 47, 60];
+  var loc = [18, 26, 22, 40, 34, 55, 46];
+  var W = 560, H = 220, pad = 30, bw = (W - pad * 2) / days.length;
+  var maxV = 100;
+  var g = '';
+  for (var gi = 0; gi <= 4; gi++) {
+    var gy = pad + (H - pad * 2) * gi / 4;
+    g += '<line x1="' + pad + '" y1="' + gy + '" x2="' + (W - pad) + '" y2="' + gy + '" stroke="#f0f0f0"/>';
+  }
+  days.forEach(function (d, i) {
+    var x = pad + bw * i + bw * 0.16;
+    var w = bw * 0.2;
+    [[dep[i], '#435ddd', 0], [wit[i], '#52c41a', 1], [loc[i], '#faad14', 2]].forEach(function (s) {
+      var h = (H - pad * 2) * s[0] / maxV;
+      g += '<rect x="' + (x + w * s[2] * 1.15) + '" y="' + (H - pad - h) + '" width="' + w + '" height="' + h +
+        '" rx="2" fill="' + s[1] + '"/>';
+    });
+    g += '<text x="' + (pad + bw * i + bw / 2) + '" y="' + (H - 10) + '" font-size="10" fill="#999" text-anchor="middle">' + d + '</text>';
+  });
+  $('#dashChart').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" height="220" xmlns="http://www.w3.org/2000/svg">' + g + '</svg>';
+}
+function renderDashWithdrawing() {
+  var rows = [
+    { no: 'W20260825094512', token: 'USDT', chain: 'TRC20', amt: '25,000.000000', st: ['转账中', 'processing'] },
+    { no: 'W20260825093010', token: 'USDT', chain: 'ERC20', amt: '12,150.000000', st: ['转账中', 'processing'] },
+    { no: 'W20260825091733', token: 'USDC', chain: 'ERC20', amt: '8,000.000000', st: ['风险待审', 'warning'] },
+    { no: 'W20260825090201', token: 'USDT', chain: 'TRC20', amt: '17,000.000000', st: ['转账中', 'processing'] }
+  ];
+  $('#dashWithdrawing').innerHTML =
+    '<table class="pp-table"><thead><tr><th>订单号</th><th>代币</th><th>网络</th><th>数量</th><th>状态</th></tr></thead><tbody>' +
+    rows.map(function (r) {
+      return '<tr><td class="mono">' + mid(r.no, 8, 6) + '</td><td>' + r.token + '</td><td>' + r.chain +
+        '</td><td class="err">-' + r.amt + '</td><td>' + tag(r.st[0], r.st[1]) + '</td></tr>';
+    }).join('') + '</tbody></table>';
+}
+$$('[data-wdjump]').forEach(function (el) {
+  el.addEventListener('click', function () {
+    go('history');
+    window.selectHisTab('withdraw');
+    var map = { risk_pending: '风险待审', transferring: '转账中', fail: '失败' };
+    var sel = $('#hisStatus');
+    if (sel) { sel.value = map[el.getAttribute('data-wdjump')] || ''; window.applyHisFilter(); }
+  });
+});
+
+/* expose for part 2 of the script */
+window.__pp = {
+  $: $, $$: $$, fmt: fmt, num: num, esc: esc, stripTags: stripTags, tag: tag, mid: mid,
+  toast: toast, openModal: openModal, closeModal: closeModal, go: go, orderNo: orderNo, nowStr: nowStr,
+  BAL: BAL, cnyTotal: cnyTotal, refreshBalances: refreshBalances, CARD_MERCHANTS: CARD_MERCHANTS,
+  CARD_TAILS: CARD_TAILS,
+  REF_RATE: REF_RATE, ONRAMP_RATE: ONRAMP_RATE, OFFRAMP_RATE: OFFRAMP_RATE,
+  renderTokenTable: renderTokenTable, initTokenPage: initTokenPage,
+  renderDashChart: renderDashChart, renderDashWithdrawing: renderDashWithdrawing
+};
+})();
+
+/* ============================================================
+   PayPaz 商户后台 · 原型 (part 2)
+   ============================================================ */
+(function () {
+'use strict';
+var P = window.__pp;
+var $ = P.$, $$ = P.$$, fmt = P.fmt, num = P.num, esc = P.esc, tag = P.tag, mid = P.mid;
+var toast = P.toast, openModal = P.openModal, closeModal = P.closeModal, go = P.go;
+var CM = P.CARD_MERCHANTS, REF = P.REF_RATE, ON_RATE = P.ONRAMP_RATE, OFF_RATE = P.OFFRAMP_RATE;
+
+function master(id) { return esc(id) + ' <span class="tag tag-success mini">Master</span>'; }
+function sub(id) { return esc(id) + ' <span class="tag tag-default mini">Sub</span>'; }
+
+/* 面向客户（单笔终端订单） vs 面向商户（法币账户 On/Off Ramp 拆单产生的批量子单） */
+function scopeCell(v) {
+  return v === 'merchant'
+    ? '<span class="tag tag-purple mini">面向商户</span> <span class="tag tag-processing mini">批量</span>'
+    : '<span class="tag tag-default mini">面向客户</span>';
+}
+function partyCell(v, row) {
+  if (row.scope === 'merchant') return esc(v) + ' <span class="tag tag-purple mini">本商户</span>';
+  return row.isMaster ? master(v) : sub(v);
+}
+
+/* ============================================================
+   HISTORY — 7 tabs
+   ============================================================ */
+var HIS = {
+  deposit: {
+    label: '充值',
+    fields: ['client', 'orderNo', 'batchNo', 'token', 'chain'],
+    cols: [
+      { t: '订单号', k: 'no', r: function (v) { return '<span class="mono">' + mid(v, 9, 6) + '</span>'; } },
+      { t: '客户ID', k: 'client', r: function (v, row) { return row.isMaster ? master(v) : sub(v); } },
+      { t: '代币', k: 'token' }, { t: '网络', k: 'chain' },
+      { t: '金额', k: 'amount', r: function (v) { return '<span class="ok">+' + v + '</span>'; } },
+      { t: '服务费', k: 'fee' }, { t: '净额', k: 'net' },
+      { t: '地址', k: 'address', r: function (v) { return '<span class="mono">' + mid(v, 8, 6) + '</span>'; } },
+      { t: '哈希', k: 'hash', r: function (v) { return '<span class="mono">' + mid(v, 8, 6) + '</span>'; } },
+      { t: '时间', k: 'time' },
+      { t: '状态', k: 'status', r: function (v) { return tag(v[0], v[1]); } }
+    ],
+    rows: [
+      { no: 'D20260825081204', client: '8830021', isMaster: true, token: 'USDT', chain: 'Tron (TRC20)', amount: '50,000.000000', fee: '0.000000', net: '50,000.000000', address: 'TQn9Y2khDD95J42FQtQTdwVVRnDpu4Xy8f', hash: '9f2c41ab77de5510c4ab8821ee3390fa', time: '2026-08-25 08:12:04', status: ['已到账', 'success'] },
+      { no: 'D20260824194433', client: '8830045', isMaster: false, token: 'USDT', chain: 'Ethereum (ERC20)', amount: '18,600.000000', fee: '0.000000', net: '18,600.000000', address: '0x8f2A55949038A9610F50Fb23b5883Af3B4ecb3c4', hash: '0x3ab1994c72f0aa1188ce7712bd4409ef', time: '2026-08-24 19:44:33', status: ['已到账', 'success'] },
+      { no: 'D20260824102915', client: '8830021', isMaster: true, token: 'USDC', chain: 'Ethereum (ERC20)', amount: '9,000.000000', fee: '0.000000', net: '9,000.000000', address: '0x3D9bC1a7cF5b02E5cEfF37B4b9E1C0a2F71De83b', hash: '0x77b2ce014a9e3388d0bb2c1a5fe410cd', time: '2026-08-24 10:29:15', status: ['确认中', 'processing'] }
+    ]
+  },
+  withdraw: {
+    label: '提现',
+    fields: ['client', 'orderNo', 'batchNo', 'token', 'chain'],
+    cols: [
+      { t: '订单号', k: 'no', r: function (v) { return '<span class="mono">' + mid(v, 9, 6) + '</span>'; } },
+      { t: '客户ID', k: 'client', r: function (v, row) { return row.isMaster ? master(v) : sub(v); } },
+      { t: '代币', k: 'token' }, { t: '网络', k: 'chain' },
+      { t: '提现数量', k: 'amount', r: function (v) { return '<span class="err">-' + v + '</span>'; } },
+      { t: '服务费', k: 'fee' }, { t: '净额', k: 'net' },
+      { t: '地址', k: 'address', r: function (v) { return '<span class="mono">' + mid(v, 8, 6) + '</span>'; } },
+      { t: '哈希', k: 'hash', r: function (v) { return v ? '<span class="mono">' + mid(v, 8, 6) + '</span>' : '-'; } },
+      { t: '时间', k: 'time' },
+      { t: '状态', k: 'status', r: function (v) { return tag(v[0], v[1]); } }
+    ],
+    rows: [
+      { no: 'W20260825094512', client: '8830021', isMaster: true, token: 'USDT', chain: 'Tron (TRC20)', amount: '25,001.000000', fee: '1.000000', net: '25,000.000000', address: 'TFhq2mRj9Kk1v8Yn3PLd7xVaXeUu9QbT4S', hash: '', time: '2026-08-25 09:45:12', status: ['转账中', 'processing'] },
+      { no: 'W20260825091733', client: '8830045', isMaster: false, token: 'USDC', chain: 'Ethereum (ERC20)', amount: '8,005.000000', fee: '5.000000', net: '8,000.000000', address: '0x51aa77Bc9930d2C4E1b0e88bB2F0aa19cD3477fE', hash: '', time: '2026-08-25 09:17:33', status: ['风险待审', 'warning'] },
+      { no: 'W20260824221408', client: '8830021', isMaster: true, token: 'USDT', chain: 'Ethereum (ERC20)', amount: '2,005.000000', fee: '5.000000', net: '2,000.000000', address: '0x9CdE01aF5522b7710f7bB0912cCd88a7f0Ee31A2', hash: '', time: '2026-08-24 22:14:08', status: ['失败', 'error'], failedReason: '目标地址被列入黑名单' },
+      { no: 'W20260824150912', client: '8830021', isMaster: true, token: 'USDT', chain: 'Tron (TRC20)', amount: '40,001.000000', fee: '1.000000', net: '40,000.000000', address: 'TXk8s2N1PpVvR7dQ3mWc5Yb9LgHe4UaZo1', hash: 'b71ee0cd449a2210ff8c31de6a2290b4', time: '2026-08-24 15:09:12', status: ['已发送', 'success'] }
+    ]
+  },
+  order: {
+    label: '订单',
+    fields: ['client', 'orderNo', 'batchNo', 'token', 'chain'],
+    cols: [
+      { t: '订单号', k: 'no', r: function (v) { return '<span class="mono">' + mid(v, 9, 6) + '</span>'; } },
+      { t: '客户ID', k: 'client', r: function (v, row) { return row.isMaster ? master(v) : sub(v); } },
+      { t: '代币', k: 'token' }, { t: '网络', k: 'chain' },
+      { t: '金额', k: 'amount' }, { t: '服务费', k: 'fee' }, { t: '净额', k: 'net' },
+      { t: '地址', k: 'address', r: function (v) { return '<span class="mono">' + mid(v, 8, 6) + '</span>'; } },
+      { t: '哈希', k: 'hash', r: function (v) { return v ? '<span class="mono">' + mid(v, 8, 6) + '</span>' : '-'; } },
+      { t: '时间', k: 'time' },
+      { t: '状态', k: 'status', r: function (v) { return tag(v[0], v[1]); } }
+    ],
+    rows: [
+      { no: 'O20260825073322', client: '8830078', isMaster: false, token: 'USDT', chain: 'Tron (TRC20)', amount: '3,200.000000', fee: '9.600000', net: '3,190.400000', address: 'TPay9c1Kv3RrN7bQ2mXd8Ye4LhGa5UzWo6', hash: 'c02fd188aa3e77b109ce442288ab5f10', time: '2026-08-25 07:33:22', status: ['已完成', 'success'] },
+      { no: 'O20260824183050', client: '8830078', isMaster: false, token: 'USDT', chain: 'Ethereum (ERC20)', amount: '1,500.000000', fee: '4.500000', net: '1,495.500000', address: '0x2Bd7Ac09f1e5A3388bB01cC44d2f7719aE0C6b38', hash: '', time: '2026-08-24 18:30:50', status: ['待支付', 'warning'] },
+      { no: 'O20260824121447', client: '8830090', isMaster: false, token: 'USDC', chain: 'Ethereum (ERC20)', amount: '760.000000', fee: '2.280000', net: '757.720000', address: '0xB1c9E3550aA772214d0b8c3fe4419Ad77Cc0201f', hash: '', time: '2026-08-24 12:14:47', status: ['已超时', 'default'] }
+    ]
+  },
+  onramp: {
+    label: 'On Ramp（本地渠道）',
+    fields: ['client', 'orderNo', 'cardm'],
+    cols: [
+      { t: '订单号', k: 'no', r: function (v) { return '<span class="mono">' + mid(v, 9, 6) + '</span>'; } },
+      { t: '类型', k: 'scope', r: scopeCell },
+      { t: '客户 / 来源', k: 'client', r: partyCell },
+      { t: '买入稳定币数量', k: 'qty' },
+      { t: '参考汇率', k: 'refRate', r: function (v) { return '<span class="muted">' + v + '</span>'; } },
+      { t: '平台加点报价', k: 'rate', r: function (v) { return '<b>' + v + '</b>'; } },
+      { t: '应付法币金额', k: 'pay' },
+      { t: '平台服务费', k: 'fee', r: function (v) { return '<span class="err">-' + v + '</span>'; } },
+      { t: '到账稳定币净额', k: 'net', r: function (v) { return '<span class="ok">+' + v + '</span>'; } },
+      { t: '分配的收款卡/卡商', k: 'card' },
+      { t: '时间', k: 'time' },
+      { t: '状态', k: 'status', r: function (v) { return tag(v[0], v[1]); } }
+    ],
+    rows: [
+      { no: 'ON20260825101233', client: '8830021', isMaster: true, qty: '20,000.000000 USDT', refRate: '7.180000', rate: '7.251951', pay: '145,039.02 CNY', fee: '60.000000 USDT', net: '19,940.000000 USDT', card: '恒信卡商 A · 尾号 8842', time: '2026-08-25 10:12:33', status: ['已完成', 'success'] },
+      { no: 'ON20260825094410', client: '8830045', isMaster: false, qty: '5,000.000000 USDT', refRate: '7.180000', rate: '7.251951', pay: '36,259.75 CNY', fee: '15.000000 USDT', net: '4,985.000000 USDT', card: '星海卡商 B · 尾号 3317', time: '2026-08-25 09:44:10', status: ['待客户支付', 'warning'] },
+      { no: 'ON20260824220155', client: '8830078', isMaster: false, qty: '12,000.000000 USDT', refRate: '7.180000', rate: '7.251951', pay: '87,023.41 CNY', fee: '36.000000 USDT', net: '11,964.000000 USDT', card: '金诚卡商 C · 尾号 5520', time: '2026-08-24 22:01:55', status: ['卡商确认中', 'processing'] },
+      { no: 'ON20260824161200-L1', scope: 'merchant', client: '宏兴国际 · 法币账户 On/Off Ramp', qty: '46,335.880000 USDT', refRate: '7.180000', rate: '7.251400', pay: '336,000.00 CNY', fee: '0.000000 USDT', net: '46,335.880000 USDT', card: '恒信卡商 A · 尾号 8842', time: '2026-08-24 16:12:00', status: ['已完成', 'success'], srcNo: 'FX20260824161200', leg: 1 }
+    ]
+  },
+  offramp: {
+    label: 'Off Ramp（本地渠道）',
+    fields: ['client', 'orderNo', 'cardm'],
+    cols: [
+      { t: '订单号', k: 'no', r: function (v) { return '<span class="mono">' + mid(v, 9, 6) + '</span>'; } },
+      { t: '类型', k: 'scope', r: scopeCell },
+      { t: '客户 / 来源', k: 'client', r: partyCell },
+      { t: '卖出稳定币数量', k: 'qty' },
+      { t: '卡商报价', k: 'rate', r: function (v) { return '<b>' + v + '</b>'; } },
+      { t: '客户收到法币金额', k: 'recv', r: function (v) { return '<span class="ok">+' + v + '</span>'; } },
+      { t: '扣除的手续费', k: 'fee', r: function (v) { return '<span class="err">-' + v + '</span>'; } },
+      { t: '分配的放款卡/卡商', k: 'card' },
+      { t: '时间', k: 'time' },
+      { t: '状态', k: 'status', r: function (v) { return tag(v[0], v[1]); } }
+    ],
+    rows: [
+      { no: 'OFF2026082509' + '3021', client: '8830045', isMaster: false, qty: '8,000.000000 USDT', rate: '7.136920', recv: '57,095.36 CNY', fee: '24.000000 USDT', card: '汇通卡商 D · 尾号 7761', time: '2026-08-25 09:30:21', status: ['已完成', 'success'] },
+      { no: 'OFF20260825084517', client: '8830021', isMaster: true, qty: '15,000.000000 USDT', rate: '7.136920', recv: '107,053.80 CNY', fee: '45.000000 USDT', card: '恒信卡商 A · 尾号 8842', time: '2026-08-25 08:45:17', status: ['卡商放款中', 'processing'] },
+      { no: 'OFF20260824174902', client: '8830090', isMaster: false, qty: '2,500.000000 USDT', rate: '7.136920', recv: '17,842.30 CNY', fee: '7.500000 USDT', card: '分配放款卡中', time: '2026-08-24 17:49:02', status: ['受理中', 'warning'] },
+      { no: 'OFF20260823103045-L1', scope: 'merchant', client: '宏兴国际 · 法币账户 On/Off Ramp', qty: '25,200.000000 USDT', rate: '7.132200', recv: '179,731.44 CNY', fee: '0.000000 USDT', card: '恒信卡商 A · 尾号 8842', time: '2026-08-23 10:30:45', status: ['已完成', 'success'], srcNo: 'FX20260823103045', leg: 1 }
+    ]
+  },
+  fiatin: {
+    label: '法币直存',
+    fields: ['orderNo', 'cardm'],
+    cols: [
+      { t: '订单号', k: 'no', r: function (v) { return '<span class="mono">' + mid(v, 9, 6) + '</span>'; } },
+      { t: '存入法币金额 (CNY)', k: 'gross' },
+      { t: '平台服务费', k: 'fee', r: function (v) { return '<span class="err">-' + v + '</span>'; } },
+      { t: '到账 CNY 净额', k: 'net', r: function (v, row) {
+          return '<span class="ok">+' + v + '</span> ' +
+            (row.settled ? tag('已确认可用', 'success') : tag('待结算', 'warning')); } },
+      { t: '分配的收款卡/卡商', k: 'card' },
+      { t: '时间', k: 'time' },
+      { t: '状态', k: 'status', r: function (v) { return tag(v[0], v[1]); } }
+    ],
+    rows: [
+      { no: 'FD20260825071500', gross: '500,000.00', fee: '2,500.00', net: '497,500.00', settled: true, card: '恒信卡商 A · 尾号 8842', time: '2026-08-25 07:15:00', status: ['已结算可用', 'success'] },
+      { no: 'FD20260824201133', gross: '320,000.00', fee: '1,600.00', net: '318,400.00', settled: false, card: '星海卡商 B · 尾号 3317', time: '2026-08-24 20:11:33', status: ['已收款待结算', 'processing'] },
+      { no: 'FD20260824130842', gross: '150,000.00', fee: '750.00', net: '149,250.00', settled: false, card: '金诚卡商 C · 尾号 5520', time: '2026-08-24 13:08:42', status: ['待卡商收款', 'warning'] }
+    ]
+  },
+  fiatout: {
+    label: '法币直取',
+    fields: ['orderNo', 'cardm'],
+    cols: [
+      { t: '订单号', k: 'no', r: function (v) { return '<span class="mono">' + mid(v, 9, 6) + '</span>'; } },
+      { t: '提现 CNY 金额', k: 'gross', r: function (v) { return '<span class="err">-' + v + '</span>'; } },
+      { t: '手续费', k: 'fee' },
+      { t: '实际到账净额', k: 'net', r: function (v) { return '<span class="ok">+' + v + '</span>'; } },
+      { t: '目标银行账户', k: 'bank' },
+      { t: '分配的放款卡/卡商', k: 'card' },
+      { t: '时间', k: 'time' },
+      { t: '状态', k: 'status', r: function (v) { return tag(v[0], v[1]); } }
+    ],
+    rows: [
+      { no: 'FW20260825102044', gross: '200,000.00', fee: '600.00', net: '199,400.00', bank: '招商银行 ****3344', card: '分配放款卡中', time: '2026-08-25 10:20:44', status: ['受理中（分配放款卡中）', 'warning'] },
+      { no: 'FW20260825085512', gross: '80,000.00', fee: '240.00', net: '79,760.00', bank: '招商银行 ****3344', card: '汇通卡商 D · 尾号 7761', time: '2026-08-25 08:55:12', status: ['卡商已打款', 'processing'] },
+      { no: 'FW20260824163329', gross: '350,000.00', fee: '1,050.00', net: '348,950.00', bank: '中国银行 ****9021', card: '恒信卡商 A · 尾号 8842', time: '2026-08-24 16:33:29', status: ['已核实到账', 'success'] }
+    ]
+  }
+};
+var HIS_ORDER = ['deposit', 'withdraw', 'order', 'onramp', 'offramp', 'fiatin', 'fiatout'];
+var hisActive = 'deposit';
+
+function buildHisTabs() {
+  $('#hisTabs').innerHTML = HIS_ORDER.map(function (k) {
+    return '<div class="tab' + (k === hisActive ? ' active' : '') + '" data-histab="' + k + '">' + HIS[k].label + '</div>';
+  }).join('');
+  $$('#hisTabs .tab').forEach(function (t) {
+    t.addEventListener('click', function () { selectHisTab(t.getAttribute('data-histab')); });
+  });
+}
+function statusOptions(k) {
+  var seen = {}, out = [];
+  HIS[k].rows.forEach(function (r) { if (!seen[r.status[0]]) { seen[r.status[0]] = 1; out.push(r.status[0]); } });
+  return out;
+}
+function buildHisFilter() {
+  var cfg = HIS[hisActive];
+  var f = cfg.fields;
+  var row1 = '';
+  if (f.indexOf('client') > -1) row1 += fItem('客户ID', '<input class="fi" id="hisClient" placeholder="请输入客户ID">');
+  if (f.indexOf('orderNo') > -1) row1 += fItem('订单号', '<input class="fi large" id="hisOrderNo" placeholder="请输入订单号">');
+  if (f.indexOf('batchNo') > -1) row1 += fItem('批次号', '<input class="fi" id="hisBatchNo" placeholder="请输入批次号">');
+  if (f.indexOf('token') > -1) row1 += fItem('代币', '<select class="fi" id="hisToken"><option value="">全部</option><option>USDT</option><option>USDC</option></select>');
+  if (f.indexOf('chain') > -1) row1 += fItem('网络', '<select class="fi large" id="hisChain"><option value="">全部</option><option>Tron (TRC20)</option><option>Ethereum (ERC20)</option></select>');
+  if (f.indexOf('cardm') > -1) row1 += fItem('卡商', '<select class="fi large" id="hisCard"><option value="">全部</option>' +
+    CM.map(function (c) { return '<option>' + c + '</option>'; }).join('') + '</select>');
+
+  var row2 = fItem('状态', '<select class="fi large" id="hisStatus"><option value="">全部</option>' +
+      statusOptions(hisActive).map(function (s) { return '<option>' + esc(s) + '</option>'; }).join('') + '</select>') +
+    fItem('时间范围', '<input class="fi date" id="hisFrom" type="date"> <span style="padding:0 6px;color:#999;">~</span> <input class="fi date" id="hisTo" type="date">') +
+    '<button class="btn primary" id="hisSearch">搜索</button><button class="btn" id="hisReset">重置</button>';
+
+  $('#hisFilter').innerHTML = '<div class="header-form"><div class="hf-row">' + row1 + '</div><div class="hf-row">' + row2 + '</div></div>';
+  $('#hisSearch').addEventListener('click', applyHisFilter);
+  $('#hisReset').addEventListener('click', function () {
+    $$('#hisFilter input').forEach(function (i) { i.value = ''; });
+    $$('#hisFilter select').forEach(function (s) { s.value = ''; });
+    applyHisFilter();
+  });
+  $$('#hisFilter input').forEach(function (i) {
+    i.addEventListener('keydown', function (e) { if (e.key === 'Enter') applyHisFilter(); });
+  });
+}
+function fItem(label, ctl) {
+  return '<div class="form-item"><span class="label">' + label + '</span>' + ctl + '</div>';
+}
+function val(id) { var el = $('#' + id); return el ? el.value.trim() : ''; }
+
+function applyHisFilter() {
+  var cfg = HIS[hisActive];
+  var qClient = val('hisClient'), qNo = val('hisOrderNo'), qToken = val('hisToken'),
+      qChain = val('hisChain'), qStatus = val('hisStatus'), qCard = val('hisCard');
+  var rows = cfg.rows.filter(function (r) {
+    if (qClient && String(r.client || '').indexOf(qClient) < 0) return false;
+    if (qNo && r.no.toLowerCase().indexOf(qNo.toLowerCase()) < 0) return false;
+    if (qToken && String(r.token || r.qty || '').indexOf(qToken) < 0) return false;
+    if (qChain && String(r.chain || '') !== qChain) return false;
+    if (qStatus && r.status[0] !== qStatus) return false;
+    if (qCard && String(r.card || '').indexOf(qCard.split(' ')[0]) < 0) return false;
+    return true;
+  });
+  renderHisTable(rows);
+}
+function renderHisTable(rows) {
+  var cfg = HIS[hisActive];
+  var head = cfg.cols.map(function (c) { return '<th>' + c.t + '</th>'; }).join('') + '<th>操作</th>';
+  var body = rows.map(function (r, i) {
+    var tds = cfg.cols.map(function (c) {
+      var raw = r[c.k];
+      return '<td>' + (c.r ? c.r(raw, r) : esc(raw === undefined ? '-' : raw)) + '</td>';
+    }).join('');
+    return '<tr data-hisrow="' + cfg.rows.indexOf(r) + '">' + tds +
+      '<td><a href="javascript:;" data-hisdetail="' + cfg.rows.indexOf(r) + '">详情</a></td></tr>';
+  }).join('');
+  $('#hisTable').innerHTML = rows.length
+    ? '<table class="pp-table"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>'
+    : '<div class="table-empty">暂无符合条件的记录</div>';
+  $('#hisFoot').textContent = '共 ' + rows.length + ' 条';
+  $$('#hisTable tbody tr').forEach(function (tr) {
+    tr.addEventListener('click', function () { openHisDetail(parseInt(tr.getAttribute('data-hisrow'), 10)); });
+  });
+}
+function openHisDetail(idx) {
+  var cfg = HIS[hisActive];
+  var r = cfg.rows[idx];
+  if (!r) return;
+  $('#dtTitle').textContent = cfg.label + ' · 订单详情';
+  var html = cfg.cols.map(function (c) {
+    var raw = r[c.k];
+    var v = c.r ? c.r(raw, r) : esc(raw === undefined ? '-' : raw);
+    if (c.k === 'no' || c.k === 'address' || c.k === 'hash') v = '<span class="mono">' + esc(raw || '-') + '</span>';
+    return '<div class="k">' + c.t + '</div><div class="v">' + v + '</div>';
+  }).join('');
+  if (r.failedReason) html += '<div class="k">失败原因</div><div class="v err">' + esc(r.failedReason) + '</div>';
+  if (r.srcNo) html += '<div class="k">来源请求</div><div class="v"><span class="mono">' + esc(r.srcNo) +
+    '</span> · 子单 #' + esc(r.leg) + '（法币账户 On/Off Ramp 拆单）</div>';
+  html += '<div class="k">结算币种</div><div class="v">' + (hisActive.indexOf('fiat') === 0 ? 'CNY' : 'USDT / USDC') + '</div>';
+  html += '<div class="k">备注</div><div class="v">原型演示数据</div>';
+  $('#dtBody').innerHTML = html;
+  openModal('mDetail');
+}
+function selectHisTab(k) {
+  if (!HIS[k]) return;
+  hisActive = k;
+  $$('#hisTabs .tab').forEach(function (t) { t.classList.toggle('active', t.getAttribute('data-histab') === k); });
+  buildHisFilter();
+  renderHisTable(HIS[k].rows);
+}
+window.selectHisTab = selectHisTab;
+window.applyHisFilter = applyHisFilter;
+
+/* 共享入口：任何页面产生的成交记录都写入 HISTORY（唯一的完成记录来源） */
+function pushHisRow(k, row) {
+  if (!HIS[k]) return;
+  HIS[k].rows.unshift(row);
+  if (hisActive === k) applyHisFilter();
+}
+
+/* ============================================================
+   法币账户 — tabs
+   ============================================================ */
+function selectFiatTab(k) {
+  $$('#page-fiat .entry-card').forEach(function (c) {
+    c.classList.toggle('active', c.getAttribute('data-fiattab') === k);
+  });
+  ['in', 'out', 'fx'].forEach(function (x) {
+    $('#fiatpane-' + x).classList.toggle('active', x === k);
+  });
+}
+window.selectFiatTab = selectFiatTab;
+$$('#page-fiat .entry-card').forEach(function (c) {
+  c.addEventListener('click', function () { selectFiatTab(c.getAttribute('data-fiattab')); });
+});
+
+/* ---------- 法币直存 ---------- */
+var FD_STAGES = [
+  { t: '待卡商收款', c: 'warning', d: '系统已分配收款卡，请向下方卡号打款。' },
+  { t: '已收款待结算', c: 'processing', d: '卡商已确认收到款项，资金进入待结算池。' },
+  { t: '已结算可用', c: 'success', d: '结算完成，净额已计入法币账户可用余额。' }
+];
+var fdOrder = null;
+function calcFd() {
+  var v = num($('#fdAmt').value);
+  var fee = v * 0.005, net = v - fee;
+  $('#fdGross').textContent = fmt(v) + ' CNY';
+  $('#fdFee').textContent = '-' + fmt(fee) + ' CNY';
+  $('#fdNet').textContent = fmt(net) + ' CNY';
+  var err = '';
+  if ($('#fdAmt').value && v < 1000) err = '单笔最小存入金额为 1,000 CNY';
+  $('#fdErr').textContent = err;
+  $('#fdErr').style.display = err ? 'block' : 'none';
+  $('#fdAmtWrap').classList.toggle('error', !!err);
+  $('#fdSubmit').disabled = !!err || v < 1000;
+}
+$('#fdAmt').addEventListener('input', function () {
+  this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  calcFd();
+});
+$('#fdSubmit').addEventListener('click', function () {
+  var v = num($('#fdAmt').value);
+  fdOrder = { no: P.orderNo('FD'), gross: v, fee: v * 0.005, net: v * 0.995, stage: 0,
+    card: CM[0] + ' · 尾号 8842', time: P.nowStr() };
+  renderFd();
+  toast('直存申请已提交');
+});
+function renderFd() {
+  if (!fdOrder) { $('#fdResult').innerHTML = ''; return; }
+  var st = FD_STAGES[fdOrder.stage];
+  var last = fdOrder.stage === FD_STAGES.length - 1;
+  $('#fdResult').innerHTML =
+    '<div class="status-card">' +
+      '<div class="sc-hd"><div><b>法币直存订单</b><div class="sc-no">' + fdOrder.no + '</div></div>' +
+      tag(st.t, st.c) + '</div>' +
+      '<div class="quote-box" style="width:100%;margin-top:0;">' +
+        '<div class="row"><span class="k">存入法币金额</span><span class="v">' + fmt(fdOrder.gross) + ' CNY</span></div>' +
+        '<div class="row"><span class="k">平台服务费 (0.5%)</span><span class="v err">-' + fmt(fdOrder.fee) + ' CNY</span></div>' +
+        '<div class="row"><span class="k">到账 CNY 净额</span><span class="v">' + fmt(fdOrder.net) + ' CNY ' +
+          (last ? tag('已确认可用', 'success') : tag('待结算', 'warning')) + '</span></div>' +
+        '<div class="row"><span class="k">分配的收款卡 / 卡商</span><span class="v">' + esc(fdOrder.card) + '</span></div>' +
+        '<div class="row"><span class="k">创建时间</span><span class="v">' + fdOrder.time + '</span></div>' +
+      '</div>' +
+      '<div class="bankinfo">' +
+        '<div class="row"><span class="k">开户行</span><span class="v">中国建设银行 深圳福田支行</span></div>' +
+        '<div class="row"><span class="k">收款账号</span><span class="v mono">6217 0011 2233 8842</span></div>' +
+        '<div class="row"><span class="k">户名</span><span class="v">深圳恒信商贸有限公司</span></div>' +
+      '</div>' +
+      '<p class="legs-note">' + esc(st.d) + '</p>' +
+      (last
+        ? '<button class="btn mt14" id="fdReset">再创建一笔</button>'
+        : '<a href="javascript:;" class="mt14" style="display:inline-block;" id="fdNextStage">模拟下一步 →</a>') +
+    '</div>';
+  if (!last) {
+    $('#fdNextStage').addEventListener('click', function () {
+      fdOrder.stage++;
+      if (fdOrder.stage === FD_STAGES.length - 1) {
+        P.BAL.cnyPending = Math.max(0, P.BAL.cnyPending - fdOrder.net);
+        P.BAL.cnyAvail += fdOrder.net;
+        P.refreshBalances(); P.renderTokenTable();
+        toast('已结算，净额计入可用余额');
+      } else if (fdOrder.stage === 1) {
+        P.BAL.cnyPending += fdOrder.net;
+        P.refreshBalances(); P.renderTokenTable();
+        toast('卡商已确认收款，进入待结算');
+      }
+      renderFd();
+    });
+  } else {
+    $('#fdReset').addEventListener('click', function () {
+      fdOrder = null; $('#fdAmt').value = ''; calcFd(); renderFd();
+    });
+  }
+}
+
+/* ---------- 法币直取 ---------- */
+var FW_STAGES = ['受理中（分配放款卡中）', '卡商已打款', '已核实到账'];
+var fwOrder = null;
+function calcFw() {
+  var v = num($('#fwAmt').value);
+  var fee = v * 0.003, net = v - fee;
+  $('#fwFee').textContent = fmt(fee) + ' CNY';
+  $('#fwNet').textContent = fmt(net) + ' CNY';
+  var err = '';
+  if ($('#fwAmt').value) {
+    if (v < 500) err = '单笔最小提现金额为 500 CNY';
+    else if (v > P.BAL.cnyAvail) err = '超出可用余额（可用 ' + fmt(P.BAL.cnyAvail) + ' CNY）';
+  }
+  $('#fwErr').textContent = err;
+  $('#fwErr').style.display = err ? 'block' : 'none';
+  $('#fwAmtWrap').classList.toggle('error', !!err);
+  $('#fwSubmit').disabled = !!err || v < 500;
+}
+$('#fwAmt').addEventListener('input', function () {
+  this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  calcFw();
+});
+$('#fwAll').addEventListener('click', function () {
+  $('#fwAmt').value = P.BAL.cnyAvail.toFixed(2); calcFw();
+});
+$('#fwSubmit').addEventListener('click', function () {
+  var v = num($('#fwAmt').value);
+  fwOrder = { no: P.orderNo('FW'), gross: v, fee: v * 0.003, net: v * 0.997, stage: 0,
+    bank: $('#fwBank').value, acct: $('#fwAcct').value, holder: $('#fwHolder').value,
+    card: '分配放款卡中', time: P.nowStr() };
+  P.BAL.cnyAvail -= v;
+  P.refreshBalances(); P.renderTokenTable();
+  renderFw();
+  toast('提现申请已受理');
+});
+function renderFw() {
+  if (!fwOrder) { $('#fwResult').innerHTML = ''; return; }
+  var last = fwOrder.stage === FW_STAGES.length - 1;
+  var steps = FW_STAGES.map(function (s, i) {
+    var cls = i < fwOrder.stage ? 'done' : (i === fwOrder.stage ? 'cur' : '');
+    return '<div class="sp ' + cls + '"><div class="dot">' + (i < fwOrder.stage ? '✓' : (i + 1)) + '</div>' +
+      '<div class="txt">' + esc(s) + '</div></div>';
+  }).join('');
+  $('#fwResult').innerHTML =
+    '<div class="status-card">' +
+      '<div class="sc-hd"><div><b>法币直取订单</b><div class="sc-no">' + fwOrder.no + '</div></div>' +
+      tag(FW_STAGES[fwOrder.stage], last ? 'success' : (fwOrder.stage === 1 ? 'processing' : 'warning')) + '</div>' +
+      '<div class="stepper">' + steps + '</div>' +
+      '<div class="quote-box" style="width:100%;">' +
+        '<div class="row"><span class="k">提现 CNY 金额</span><span class="v err">-' + fmt(fwOrder.gross) + ' CNY</span></div>' +
+        '<div class="row"><span class="k">手续费 (0.3%)</span><span class="v">' + fmt(fwOrder.fee) + ' CNY</span></div>' +
+        '<div class="row"><span class="k">实际到账净额</span><span class="v">' + fmt(fwOrder.net) + ' CNY</span></div>' +
+        '<div class="row"><span class="k">目标银行账户</span><span class="v">' + esc(fwOrder.bank) + ' · ' + esc(fwOrder.acct) + '</span></div>' +
+        '<div class="row"><span class="k">户名</span><span class="v">' + esc(fwOrder.holder) + '</span></div>' +
+        '<div class="row"><span class="k">分配的放款卡 / 卡商</span><span class="v">' + esc(fwOrder.card) + '</span></div>' +
+        '<div class="row"><span class="k">创建时间</span><span class="v">' + fwOrder.time + '</span></div>' +
+      '</div>' +
+      (last
+        ? '<button class="btn mt14" id="fwReset">再创建一笔</button>'
+        : '<a href="javascript:;" class="mt14" style="display:inline-block;" id="fwNextStage">模拟下一步 →</a>') +
+    '</div>';
+  if (!last) {
+    $('#fwNextStage').addEventListener('click', function () {
+      fwOrder.stage++;
+      if (fwOrder.stage === 1) { fwOrder.card = CM[3] + ' · 尾号 7761'; toast('卡商已打款'); }
+      else toast('已核实到账');
+      renderFw();
+    });
+  } else {
+    $('#fwReset').addEventListener('click', function () {
+      fwOrder = null; $('#fwAmt').value = ''; calcFw(); renderFw();
+    });
+  }
+}
+
+/* ---------- On/Off Ramp (商户自有资金, merged, multi-leg) ---------- */
+var fxDir = 'f2s';
+var fxOrder = null;
+function cardLabel(cm) {
+  var i = CM.indexOf(cm);
+  return cm + ' · 尾号 ' + (P.CARD_TAILS[i] || '0000');
+}
+/* 每笔成交子单写入 History 的 On Ramp / Off Ramp tab，标记为「面向商户 · 批量」 */
+function recordFxLeg(l) {
+  if (!fxOrder || l.recorded) return;
+  l.recorded = true;
+  var isF2S = fxOrder.dir === 'f2s';
+  var stamp = fxOrder.no.slice(2);
+  var row = {
+    scope: 'merchant', client: '宏兴国际 · 法币账户 On/Off Ramp',
+    card: cardLabel(l.cm), time: P.nowStr(), status: ['已完成', 'success'],
+    srcNo: fxOrder.no, leg: l.i
+  };
+  if (isF2S) {
+    var outQty = l.amount / l.rate;
+    row.no = 'ON' + stamp + '-L' + l.i;
+    row.qty = fmt(outQty, 6) + ' USDT';
+    row.refRate = REF.toFixed(6);
+    row.rate = l.rate.toFixed(6);
+    row.pay = fmt(l.amount) + ' CNY';
+    row.fee = '0.000000 USDT';
+    row.net = fmt(outQty, 6) + ' USDT';
+    pushHisRow('onramp', row);
+  } else {
+    row.no = 'OFF' + stamp + '-L' + l.i;
+    row.qty = fmt(l.amount, 6) + ' USDT';
+    row.rate = l.rate.toFixed(6);
+    row.recv = fmt(l.amount * l.rate) + ' CNY';
+    row.fee = '0.000000 USDT';
+    pushHisRow('offramp', row);
+  }
+}
+$$('#fxDir button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    $$('#fxDir button').forEach(function (x) { x.classList.remove('active'); });
+    b.classList.add('active');
+    fxDir = b.getAttribute('data-fxdir');
+    $('#fxAmtLabel').textContent = fxDir === 'f2s' ? '兑换总额（支付 CNY）' : '兑换总额（卖出 USDT）';
+    $('#fxAmtSym').textContent = fxDir === 'f2s' ? 'CNY' : 'USDT';
+    $('#fxAmt').placeholder = fxDir === 'f2s' ? '最小 10,000' : '最小 1,000';
+    $('#fxOutK').textContent = fxDir === 'f2s' ? '预估到账 USDT' : '预估到账 CNY';
+    $('#fxRateRange').textContent = fxDir === 'f2s' ? '7.2380 ~ 7.2660' : '7.1180 ~ 7.1460';
+    calcFx();
+  });
+});
+function fxMin() { return fxDir === 'f2s' ? 10000 : 1000; }
+function fxMidRate() { return fxDir === 'f2s' ? 7.252 : 7.132; }
+function calcFx() {
+  var v = num($('#fxAmt').value);
+  var out = fxDir === 'f2s' ? v / fxMidRate() : v * fxMidRate();
+  $('#fxOut').textContent = fmt(out, fxDir === 'f2s' ? 6 : 2) + ' ' + (fxDir === 'f2s' ? 'USDT' : 'CNY');
+  var err = '';
+  if ($('#fxAmt').value && v < fxMin()) err = '最小兑换金额为 ' + fmt(fxMin()) + ' ' + (fxDir === 'f2s' ? 'CNY' : 'USDT');
+  if (!err && fxDir === 's2f' && v > 452180.30) err = 'USDT 可用余额不足';
+  if (!err && fxDir === 'f2s' && v > P.BAL.cnyAvail) err = 'CNY 可用余额不足（可用 ' + fmt(P.BAL.cnyAvail) + '）';
+  $('#fxErr').textContent = err;
+  $('#fxErr').style.display = err ? 'block' : 'none';
+  $('#fxAmtWrap').classList.toggle('error', !!err);
+  $('#fxSubmit').disabled = !!err || v < fxMin();
+}
+$('#fxAmt').addEventListener('input', function () {
+  this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  calcFx();
+});
+var fxTimers = [];
+$('#fxSubmit').addEventListener('click', function () {
+  fxTimers.forEach(clearTimeout); fxTimers = [];
+  var total = num($('#fxAmt').value);
+  var n = 3;
+  var weights = [0.42, 0.33, 0.25];
+  var base = fxMidRate();
+  var drift = fxDir === 'f2s' ? [-0.0140, 0.0000, 0.0140] : [0.0140, 0.0000, -0.0140];
+  fxOrder = {
+    no: P.orderNo('FX'), dir: fxDir, total: total, time: P.nowStr(),
+    legs: []
+  };
+  for (var i = 0; i < n; i++) {
+    fxOrder.legs.push({
+      i: i + 1, cm: CM[i], amount: total * weights[i],
+      rate: base + drift[i], status: 'pending'
+    });
+  }
+  renderFx();
+  /* seed: legs 1 & 2 complete quickly, leg 3 stays 处理中 (partial fill) */
+  fxTimers.push(setTimeout(function () { fxOrder.legs[0].status = 'done'; renderFx(); }, 900));
+  fxTimers.push(setTimeout(function () { fxOrder.legs[1].status = 'done'; renderFx(); toast('子单 2 已成交，订单部分完成'); }, 2000));
+  toast('On/Off Ramp 请求已提交，正在按卡商额度拆单撮合');
+});
+function renderFx() {
+  if (!fxOrder) { $('#fxResult').innerHTML = ''; return; }
+  var isF2S = fxOrder.dir === 'f2s';
+  var inSym = isF2S ? 'CNY' : 'USDT', outSym = isF2S ? 'USDT' : 'CNY';
+  var doneLegs = fxOrder.legs.filter(function (l) { return l.status === 'done'; });
+  doneLegs.forEach(recordFxLeg);
+  var filledIn = doneLegs.reduce(function (a, l) { return a + l.amount; }, 0);
+  var filledOut = doneLegs.reduce(function (a, l) { return a + (isF2S ? l.amount / l.rate : l.amount * l.rate); }, 0);
+  var wavg = filledIn > 0 ? doneLegs.reduce(function (a, l) { return a + l.rate * l.amount; }, 0) / filledIn : 0;
+  var allDone = doneLegs.length === fxOrder.legs.length;
+  var st = allDone ? ['已完成', 'success'] : (doneLegs.length ? ['部分完成', 'warning'] : ['处理中', 'processing']);
+
+  var legRows = fxOrder.legs.map(function (l) {
+    var s = l.status === 'done' ? tag('已成交', 'success') : tag('处理中', 'processing');
+    return '<tr><td>#' + l.i + '</td><td>' + esc(l.cm) + '</td><td>' + fmt(l.amount, isF2S ? 2 : 6) + ' ' + inSym +
+      '</td><td>' + (l.status === 'done' ? l.rate.toFixed(6) : '<span class="muted">撮合中</span>') +
+      '</td><td>' + (l.status === 'done' ? fmt(isF2S ? l.amount / l.rate : l.amount * l.rate, isF2S ? 6 : 2) + ' ' + outSym : '-') +
+      '</td><td>' + s + '</td></tr>';
+  }).join('');
+
+  $('#fxResult').innerHTML =
+    '<div class="status-card" style="width:100%;max-width:760px;">' +
+      '<div class="sc-hd"><div><b>On/Off Ramp 请求 · ' + (isF2S ? '法币换稳定币（On Ramp）' : '稳定币换法币（Off Ramp）') + '</b>' +
+      '<div class="sc-no">' + fxOrder.no + ' · ' + fxOrder.time + '</div></div>' + tag(st[0], st[1]) + '</div>' +
+      '<div class="quote-box" style="width:100%;margin-top:0;">' +
+        '<div class="row"><span class="k">提交总额</span><span class="v">' + fmt(fxOrder.total, isF2S ? 2 : 6) + ' ' + inSym + '</span></div>' +
+        '<div class="row"><span class="k">已成交总额</span><span class="v">' + fmt(filledIn, isF2S ? 2 : 6) + ' ' + inSym +
+          ' <span class="muted">(' + Math.round(filledIn / fxOrder.total * 100) + '%)</span></span></div>' +
+        '<div class="row"><span class="k">加权平均汇率（仅已成交子单）</span><span class="v">' + (wavg ? wavg.toFixed(6) : '-') + '</span></div>' +
+        '<div class="row total"><span class="k">已到账</span><span class="v">' + fmt(filledOut, isF2S ? 6 : 2) + ' ' + outSym + '</span></div>' +
+      '</div>' +
+      '<div class="sec-title mt20">子单明细 (Legs)</div>' +
+      '<div class="table-wrap"><table class="pp-table"><thead><tr><th>Leg</th><th>分配卡商</th><th>金额</th>' +
+        '<th>成交汇率</th><th>到账</th><th>状态</th></tr></thead><tbody>' + legRows + '</tbody></table></div>' +
+      '<p class="legs-note">已成交子单会自动写入 Assets → History 的「' +
+        (isF2S ? 'On Ramp（本地渠道）' : 'Off Ramp（本地渠道）') +
+        '」，并标记为「面向商户 · 批量」以区别于面向客户的单笔订单。</p>' +
+      (allDone
+        ? '<button class="btn mt14" id="fxReset">再提交一笔</button>'
+        : '<a href="javascript:;" class="mt14" style="display:inline-block;" id="fxAdvance">模拟剩余子单成交 →</a>' +
+          '<p class="legs-note">剩余子单受卡商单卡额度与银行到账时间影响，通常在 10~40 分钟内陆续成交。</p>') +
+    '</div>';
+
+  if (allDone) {
+    $('#fxReset').addEventListener('click', function () {
+      fxOrder = null; $('#fxAmt').value = ''; calcFx(); renderFx();
+    });
+  } else {
+    $('#fxAdvance').addEventListener('click', function () {
+      fxOrder.legs.forEach(function (l) { l.status = 'done'; });
+      renderFx();
+      toast('全部子单已成交');
+    });
+  }
+}
+function renderFxHistory() {
+  var items = [
+    { no: 'FX20260824161200', dir: '法币换稳定币', total: '800,000.00 CNY', out: '110,320.418000 USDT', rate: '7.251400', st: ['已完成', 'success'], legs: '4 / 4' },
+    { no: 'FX20260823103045', dir: '稳定币换法币', total: '60,000.000000 USDT', out: '427,932.00 CNY', rate: '7.132200', st: ['已完成', 'success'], legs: '3 / 3' },
+    { no: 'FX20260822200811', dir: '法币换稳定币', total: '450,000.00 CNY', out: '41,368.900000 USDT', rate: '7.254100', st: ['部分完成', 'warning'], legs: '2 / 3' }
+  ];
+  $('#fxHistory').innerHTML = items.map(function (it) {
+    return '<div class="ml-row">' +
+      '<div><b>' + it.dir + '</b><div class="sc-no">' + it.no + ' · 子单 ' + it.legs + '</div></div>' +
+      '<div style="text-align:right;"><div>' + it.total + ' → <b>' + it.out + '</b></div>' +
+      '<div class="muted" style="font-size:12px;">加权均价 ' + it.rate + '</div></div>' +
+      '<div>' + tag(it.st[0], it.st[1]) + '</div></div>';
+  }).join('');
+}
+
+/* ============================================================
+   模拟客户出入金 — On Ramp / Off Ramp / 法币直存 / 法币直取
+   ============================================================ */
+var LC_TABS = ['on', 'off', 'fd', 'fw'];
+$$('#lcTabs .tab').forEach(function (t) {
+  t.addEventListener('click', function () {
+    $$('#lcTabs .tab').forEach(function (x) { x.classList.remove('active'); });
+    t.classList.add('active');
+    var k = t.getAttribute('data-lctab');
+    LC_TABS.forEach(function (x) { $('#lcpane-' + x).classList.toggle('active', x === k); });
+  });
+});
+
+/* ============================================================
+   付款凭证（仅入金方向：On Ramp / 法币直存 —— 客户需线下转账后上传截图）
+   ============================================================ */
+function proofSize(b) {
+  return b < 1024 * 1024 ? Math.max(1, Math.round(b / 1024)) + ' KB' : (b / 1048576).toFixed(2) + ' MB';
+}
+/* 交互式上传区：未上传时显示选择按钮，已上传时显示缩略图 + 文件名 + 重新上传 */
+function proofBoxHtml(pfx, order, note) {
+  var p = order.proof;
+  return '<div class="upload-box" id="' + pfx + 'ProofBox">' +
+      '<div class="up-hd"><span>上传付款凭证</span>' +
+        (p ? tag('已上传', 'success') : tag('待上传', 'warning')) + '</div>' +
+      '<p class="legs-note" style="margin-top:6px;">' + esc(note) + '</p>' +
+      '<input type="file" accept="image/*" id="' + pfx + 'ProofFile">' +
+      (p
+        ? '<div class="up-prev">' +
+            '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
+              '<img class="up-thumb" src="' + esc(p.url) + '" alt="付款凭证缩略图">' +
+            '</a>' +
+            '<div class="up-info">' +
+              '<div class="up-name">' + esc(p.name) + '</div>' +
+              '<div class="up-meta">' + esc(p.size) + ' · ' + esc(p.time) + '</div>' +
+              '<a href="javascript:;" class="up-re" id="' + pfx + 'ProofRe">重新上传</a>' +
+            '</div>' +
+          '</div>'
+        : '<label class="up-pick" for="' + pfx + 'ProofFile">选择付款凭证图片</label>') +
+      '<p class="field-err" id="' + pfx + 'ProofErr" style="display:none;width:auto;"></p>' +
+    '</div>';
+}
+/* 只读回显：订单详情里展示客户已上传的凭证 */
+function proofDoneHtml(order) {
+  var p = order.proof;
+  if (!p) return '';
+  return '<div class="proof-done">' +
+      '<a href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
+        '<img class="up-thumb" src="' + esc(p.url) + '" alt="付款凭证缩略图">' +
+      '</a>' +
+      '<div class="up-info">' +
+        '<div class="up-name">客户已上传付款凭证</div>' +
+        '<div class="up-meta">' + esc(p.name) + ' · ' + esc(p.size) + ' · ' + esc(p.time) + '</div>' +
+      '</div>' +
+    '</div>';
+}
+function proofErr(pfx, msg) {
+  var el = $('#' + pfx + 'ProofErr');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+}
+function bindProof(pfx, order, rerender) {
+  var inp = $('#' + pfx + 'ProofFile');
+  if (!inp) return;
+  inp.addEventListener('change', function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    if (f.type.indexOf('image/') !== 0) {
+      this.value = '';
+      proofErr(pfx, '请上传图片格式的付款凭证（JPG / PNG 等）');
+      return;
+    }
+    if (order.proof && order.proof.url) URL.revokeObjectURL(order.proof.url);
+    order.proof = { name: f.name, size: proofSize(f.size), url: URL.createObjectURL(f), time: P.nowStr() };
+    rerender();
+    toast('付款凭证已上传');
+  });
+  var re = $('#' + pfx + 'ProofRe');
+  if (re) {
+    re.addEventListener('click', function () {
+      if (order.proof && order.proof.url) URL.revokeObjectURL(order.proof.url);
+      order.proof = null;
+      rerender();
+    });
+  }
+}
+/* 未上传凭证时拦截「模拟下一步」 */
+function proofGate(pfx, order) {
+  if (order.proof) return true;
+  proofErr(pfx, '请先上传付款凭证');
+  toast('请先上传付款凭证', false);
+  var box = $('#' + pfx + 'ProofBox');
+  if (box && box.scrollIntoView) box.scrollIntoView({ block: 'nearest' });
+  return false;
+}
+
+/* ---- On Ramp ---- */
+var onOrder = null, onTimer = null;
+function calcOn() {
+  var q = num($('#onQty').value);
+  var pay = q * ON_RATE;
+  $('#onRate').textContent = ON_RATE.toFixed(6);
+  $('#onQtyEcho').textContent = fmt(q, 6) + ' USDT';
+  $('#onPay').textContent = fmt(pay) + ' CNY';
+  var err = '';
+  if ($('#onQty').value && q < 100) err = '最小买入数量为 100 USDT';
+  $('#onErr').textContent = err;
+  $('#onErr').style.display = err ? 'block' : 'none';
+  $('#onQtyWrap').classList.toggle('error', !!err);
+  $('#onGen').disabled = !!err || q < 100;
+}
+$('#onQty').addEventListener('input', function () {
+  this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  calcOn();
+});
+$('#onGen').addEventListener('click', function () {
+  var q = num($('#onQty').value);
+  onOrder = { no: P.orderNo('ON'), client: $('#onClient').value, qty: q, rate: ON_RATE,
+    pay: q * ON_RATE, fee: q * 0.003, net: q * 0.997, stage: 0, left: 900,
+    card: CM[0] + ' · 尾号 8842', time: P.nowStr(), proof: null };
+  $('#onStep3').style.display = '';
+  renderOn();
+  startOnCountdown();
+  toast('收银台链接已生成');
+});
+function startOnCountdown() {
+  clearInterval(onTimer);
+  onTimer = setInterval(function () {
+    if (!onOrder || onOrder.stage !== 0) { clearInterval(onTimer); return; }
+    onOrder.left--;
+    var el = $('#onCountdown');
+    if (el) el.textContent = mmss(onOrder.left);
+    if (onOrder.left <= 0) { clearInterval(onTimer); onOrder.stage = 2; renderOn(); toast('订单已超时', false); }
+  }, 1000);
+}
+function mmss(s) {
+  s = Math.max(0, s);
+  return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+function refCode(no) { return String(no).slice(-6); }
+function renderOn() {
+  if (!onOrder) { $('#onResult').innerHTML = ''; return; }
+  var box = $('#onResult');
+  if (onOrder.stage === 0) {
+    box.innerHTML =
+      '<div class="checkout">' +
+        '<div class="co-hd"><span>PayPaz 收银台（客户视图预览）</span>' +
+        '<span class="countdown" id="onCountdown">' + mmss(onOrder.left) + '</span></div>' +
+        '<div class="co-bd">' +
+          '<div class="muted" style="font-size:12px;">需支付法币金额</div>' +
+          '<div class="co-amt">&yen; ' + fmt(onOrder.pay) + '</div>' +
+          '<div class="muted" style="font-size:12px;">订单号 ' + onOrder.no + ' · 买入 ' + fmt(onOrder.qty, 6) + ' USDT</div>' +
+          '<div class="bankinfo">' +
+            '<div class="row"><span class="k">开户行</span><span class="v">中国建设银行 深圳福田支行</span></div>' +
+            '<div class="row"><span class="k">收款账号</span><span class="v mono">6217 0011 2233 8842</span></div>' +
+            '<div class="row"><span class="k">户名</span><span class="v">深圳恒信商贸有限公司</span></div>' +
+            '<div class="row"><span class="k">转账备注</span><span class="v mono err">' + refCode(onOrder.no) + '</span></div>' +
+            '<div class="row"><span class="k">分配卡商</span><span class="v">' + esc(onOrder.card) + '</span></div>' +
+          '</div>' +
+          '<p class="legs-note">请在倒计时结束前完成转账，<b>并务必在转账备注/摘要栏填写上方的备注码</b>，' +
+            '这样卡商能更快核对到您的这笔付款；超时订单将自动关闭并释放收款卡额度。</p>' +
+          '<button class="btn mt8" id="onCopyLink">复制收银台链接</button>' +
+          proofBoxHtml('on', onOrder, '客户完成银行转账后，需上传转账成功截图；卡商核对凭证后才会确认收款。') +
+        '</div>' +
+      '</div>' +
+      '<div class="mt20"><a href="javascript:;" id="onAdvance"' +
+        (onOrder.proof ? '' : ' class="link-dis"') + '>模拟客户已支付 + 卡商已确认 →</a></div>';
+    $('#onCopyLink').addEventListener('click', function () {
+      var link = 'https://checkout.paypaz.tech/on/' + onOrder.no;
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link);
+      toast('收银台链接已复制');
+    });
+    bindProof('on', onOrder, renderOn);
+    $('#onAdvance').addEventListener('click', function () {
+      if (!proofGate('on', onOrder)) return;
+      clearInterval(onTimer); onOrder.stage = 1; renderOn(); toast('订单已完成，稳定币已入账');
+    });
+  } else if (onOrder.stage === 1) {
+    box.innerHTML =
+      '<div class="status-card">' +
+        '<div class="sc-hd"><div><b>On Ramp 订单</b><div class="sc-no">' + onOrder.no + '</div></div>' + tag('已完成', 'success') + '</div>' +
+        '<div class="quote-box" style="width:100%;margin-top:0;">' +
+          '<div class="row"><span class="k">客户</span><span class="v">' + esc(onOrder.client) + '</span></div>' +
+          '<div class="row"><span class="k">买入稳定币数量</span><span class="v">' + fmt(onOrder.qty, 6) + ' USDT</span></div>' +
+          '<div class="row"><span class="k">客户已付法币金额</span><span class="v">' + fmt(onOrder.pay) + ' CNY</span></div>' +
+          '<div class="row"><span class="k">分配的收款卡 / 卡商</span><span class="v">' + esc(onOrder.card) + '</span></div>' +
+          '<div class="row total"><span class="k">已为您充值</span><span class="v ok">+' + fmt(onOrder.qty, 6) + ' USDT</span></div>' +
+        '</div>' +
+        proofDoneHtml(onOrder) +
+        '<button class="btn mt14" id="onReset">再创建一笔</button>' +
+      '</div>';
+    $('#onReset').addEventListener('click', function () {
+      onOrder = null; $('#onQty').value = ''; calcOn(); $('#onStep3').style.display = 'none'; renderOn();
+    });
+  } else {
+    box.innerHTML = '<div class="status-card"><div class="sc-hd"><div><b>On Ramp 订单</b>' +
+      '<div class="sc-no">' + onOrder.no + '</div></div>' + tag('已超时关闭', 'default') + '</div>' +
+      '<button class="btn mt14" id="onReset2">重新创建</button></div>';
+    $('#onReset2').addEventListener('click', function () {
+      onOrder = null; $('#onQty').value = ''; calcOn(); $('#onStep3').style.display = 'none'; renderOn();
+    });
+  }
+}
+
+/* ---- Off Ramp ---- */
+var offOrder = null;
+var OFF_STAGES = ['受理中（分配放款卡中）', '卡商已放款', '客户已确认收款'];
+function calcOff() {
+  var q = num($('#offQty').value);
+  var recv = q * OFF_RATE;
+  $('#offRate').textContent = OFF_RATE.toFixed(6);
+  $('#offQtyEcho').textContent = fmt(q, 6) + ' USDT';
+  $('#offRecv').textContent = fmt(recv) + ' CNY';
+  var err = '';
+  if ($('#offQty').value && q < 100) err = '最小卖出数量为 100 USDT';
+  $('#offErr').textContent = err;
+  $('#offErr').style.display = err ? 'block' : 'none';
+  $('#offQtyWrap').classList.toggle('error', !!err);
+  $('#offSubmit').disabled = !!err || q < 100;
+}
+$('#offQty').addEventListener('input', function () {
+  this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  calcOff();
+});
+$('#offSubmit').addEventListener('click', function () {
+  var q = num($('#offQty').value);
+  offOrder = { no: P.orderNo('OFF'), client: $('#offClient').value, qty: q, rate: OFF_RATE,
+    recv: q * OFF_RATE, fee: q * 0.003, deduct: q * 1.003, stage: 0, card: '分配放款卡中',
+    bank: $('#offBank').value, acct: $('#offAcct').value, holder: $('#offHolder').value, time: P.nowStr() };
+  renderOff();
+  toast('Off Ramp 订单已提交');
+});
+function renderOff() {
+  if (!offOrder) { $('#offResult').innerHTML = ''; return; }
+  var last = offOrder.stage === OFF_STAGES.length - 1;
+  var steps = OFF_STAGES.map(function (s, i) {
+    var cls = i < offOrder.stage ? 'done' : (i === offOrder.stage ? 'cur' : '');
+    return '<div class="sp ' + cls + '"><div class="dot">' + (i < offOrder.stage ? '✓' : (i + 1)) + '</div>' +
+      '<div class="txt">' + esc(s) + '</div></div>';
+  }).join('');
+  $('#offResult').innerHTML =
+    '<div class="status-card mt20">' +
+      '<div class="sc-hd"><div><b>Off Ramp 订单</b><div class="sc-no">' + offOrder.no + '</div></div>' +
+      tag(OFF_STAGES[offOrder.stage], last ? 'success' : (offOrder.stage === 1 ? 'processing' : 'warning')) + '</div>' +
+      '<div class="stepper">' + steps + '</div>' +
+      '<div class="quote-box" style="width:100%;">' +
+        '<div class="row"><span class="k">客户</span><span class="v">' + esc(offOrder.client) + '</span></div>' +
+        '<div class="row"><span class="k">卖出稳定币数量</span><span class="v">' + fmt(offOrder.qty, 6) + ' USDT</span></div>' +
+        '<div class="row"><span class="k">客户收款账户</span><span class="v">' + esc(offOrder.bank) + ' · ' + esc(offOrder.acct) + ' · ' + esc(offOrder.holder) + '</span></div>' +
+        '<div class="row"><span class="k">分配的放款卡 / 卡商</span><span class="v">' + esc(offOrder.card) + '</span></div>' +
+        '<div class="row total"><span class="k">客户将收到法币金额</span><span class="v">' + fmt(offOrder.recv) + ' CNY</span></div>' +
+      '</div>' +
+      (last
+        ? '<button class="btn mt14" id="offReset">再创建一笔</button>'
+        : '<a href="javascript:;" class="mt14" style="display:inline-block;" id="offAdvance">模拟下一步 →</a>') +
+    '</div>';
+  if (!last) {
+    $('#offAdvance').addEventListener('click', function () {
+      offOrder.stage++;
+      if (offOrder.stage === 1) { offOrder.card = CM[3] + ' · 尾号 7761'; toast('卡商已向客户放款'); }
+      else toast('客户已确认收款，订单完成');
+      renderOff();
+    });
+  } else {
+    $('#offReset').addEventListener('click', function () {
+      offOrder = null; $('#offQty').value = ''; calcOff(); renderOff();
+    });
+  }
+}
+
+/* ============================================================
+   模拟客户出入金 · 法币直存 / 法币直取（沙盒副本，独立于法币账户页面）
+   ============================================================ */
+var SIM = { cnyAvail: 1286400.00, cnyPending: 320500.00 };
+function refreshSimBalance() {
+  $('#sfwAvail').textContent = fmt(SIM.cnyAvail) + ' CNY';
+  $('#sfwAmt').placeholder = '可用余额 ' + fmt(SIM.cnyAvail);
+}
+
+/* ---- 沙盒 · 法币直存 ---- */
+var sfdOrder = null;
+function calcSfd() {
+  var v = num($('#sfdAmt').value);
+  $('#sfdGross').textContent = fmt(v) + ' CNY';
+  var err = '';
+  if ($('#sfdAmt').value && v < 1000) err = '单笔最小存入金额为 1,000 CNY';
+  $('#sfdErr').textContent = err;
+  $('#sfdErr').style.display = err ? 'block' : 'none';
+  $('#sfdAmtWrap').classList.toggle('error', !!err);
+  $('#sfdSubmit').disabled = !!err || v < 1000;
+}
+$('#sfdAmt').addEventListener('input', function () {
+  this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  calcSfd();
+});
+$('#sfdSubmit').addEventListener('click', function () {
+  var v = num($('#sfdAmt').value);
+  sfdOrder = { no: P.orderNo('FD'), gross: v, fee: v * 0.005, net: v * 0.995, stage: 0,
+    card: CM[0] + ' · 尾号 8842', time: P.nowStr(), proof: null };
+  renderSfd();
+  toast('直存申请已提交（沙盒）');
+});
+function renderSfd() {
+  if (!sfdOrder) { $('#sfdResult').innerHTML = ''; return; }
+  var st = FD_STAGES[sfdOrder.stage];
+  var last = sfdOrder.stage === FD_STAGES.length - 1;
+  $('#sfdResult').innerHTML =
+    '<div class="status-card">' +
+      '<div class="sc-hd"><div><b>法币直存订单（客户视角模拟）</b><div class="sc-no">' + sfdOrder.no + '</div></div>' +
+      tag(st.t, st.c) + '</div>' +
+      '<div class="quote-box" style="width:100%;margin-top:0;">' +
+        '<div class="row total"><span class="k">存入法币金额</span><span class="v">' + fmt(sfdOrder.gross) + ' CNY ' +
+          (last ? tag('已确认可用', 'success') : tag('待结算', 'warning')) + '</span></div>' +
+        '<div class="row"><span class="k">分配的收款卡 / 卡商</span><span class="v">' + esc(sfdOrder.card) + '</span></div>' +
+        '<div class="row"><span class="k">创建时间</span><span class="v">' + sfdOrder.time + '</span></div>' +
+      '</div>' +
+      '<div class="bankinfo">' +
+        '<div class="row"><span class="k">开户行</span><span class="v">中国建设银行 深圳福田支行</span></div>' +
+        '<div class="row"><span class="k">收款账号</span><span class="v mono">6217 0011 2233 8842</span></div>' +
+        '<div class="row"><span class="k">户名</span><span class="v">深圳恒信商贸有限公司</span></div>' +
+        '<div class="row"><span class="k">转账备注</span><span class="v mono err">' + refCode(sfdOrder.no) + '</span></div>' +
+      '</div>' +
+      '<p class="legs-note">' + esc(st.d) +
+        (sfdOrder.stage === 0 ? '<b>转账时请务必在备注/摘要栏填写上方的备注码</b>，这样卡商能更快核对到您的这笔付款。' : '') +
+      '</p>' +
+      (sfdOrder.stage === 0
+        ? proofBoxHtml('sfd', sfdOrder, '客户向上方卡号完成银行转账后，需上传转账成功截图；卡商核对凭证后才会确认收款。')
+        : proofDoneHtml(sfdOrder)) +
+      (last
+        ? '<button class="btn mt14" id="sfdReset">再创建一笔</button>'
+        : '<a href="javascript:;" class="mt14' +
+          (sfdOrder.stage === 0 && !sfdOrder.proof ? ' link-dis' : '') +
+          '" style="display:inline-block;" id="sfdNextStage">模拟下一步 →</a>') +
+    '</div>';
+  if (sfdOrder.stage === 0) bindProof('sfd', sfdOrder, renderSfd);
+  if (!last) {
+    $('#sfdNextStage').addEventListener('click', function () {
+      if (sfdOrder.stage === 0 && !proofGate('sfd', sfdOrder)) return;
+      sfdOrder.stage++;
+      if (sfdOrder.stage === FD_STAGES.length - 1) {
+        SIM.cnyPending = Math.max(0, SIM.cnyPending - sfdOrder.net);
+        SIM.cnyAvail += sfdOrder.net;
+        refreshSimBalance();
+        toast('已结算，净额计入客户可用余额（沙盒）');
+      } else if (sfdOrder.stage === 1) {
+        SIM.cnyPending += sfdOrder.net;
+        toast('卡商已确认收款，进入待结算');
+      }
+      renderSfd();
+    });
+  } else {
+    $('#sfdReset').addEventListener('click', function () {
+      sfdOrder = null; $('#sfdAmt').value = ''; calcSfd(); renderSfd();
+    });
+  }
+}
+
+/* ---- 沙盒 · 法币直取 ---- */
+var sfwOrder = null;
+function calcSfw() {
+  var v = num($('#sfwAmt').value);
+  var net = v * 0.997;
+  $('#sfwNet').textContent = fmt(net) + ' CNY';
+  var err = '';
+  if ($('#sfwAmt').value) {
+    if (v < 500) err = '单笔最小提现金额为 500 CNY';
+    else if (v > SIM.cnyAvail) err = '超出可用余额（可用 ' + fmt(SIM.cnyAvail) + ' CNY）';
+  }
+  $('#sfwErr').textContent = err;
+  $('#sfwErr').style.display = err ? 'block' : 'none';
+  $('#sfwAmtWrap').classList.toggle('error', !!err);
+  $('#sfwSubmit').disabled = !!err || v < 500;
+}
+$('#sfwAmt').addEventListener('input', function () {
+  this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+  calcSfw();
+});
+$('#sfwAll').addEventListener('click', function () {
+  $('#sfwAmt').value = SIM.cnyAvail.toFixed(2); calcSfw();
+});
+$('#sfwSubmit').addEventListener('click', function () {
+  var v = num($('#sfwAmt').value);
+  sfwOrder = { no: P.orderNo('FW'), gross: v, fee: v * 0.003, net: v * 0.997, stage: 0,
+    bank: $('#sfwBank').value, acct: $('#sfwAcct').value, holder: $('#sfwHolder').value,
+    card: '分配放款卡中', time: P.nowStr() };
+  SIM.cnyAvail -= v;
+  refreshSimBalance();
+  renderSfw();
+  toast('提现申请已受理（沙盒）');
+});
+function renderSfw() {
+  if (!sfwOrder) { $('#sfwResult').innerHTML = ''; return; }
+  var last = sfwOrder.stage === FW_STAGES.length - 1;
+  var steps = FW_STAGES.map(function (s, i) {
+    var cls = i < sfwOrder.stage ? 'done' : (i === sfwOrder.stage ? 'cur' : '');
+    return '<div class="sp ' + cls + '"><div class="dot">' + (i < sfwOrder.stage ? '✓' : (i + 1)) + '</div>' +
+      '<div class="txt">' + esc(s) + '</div></div>';
+  }).join('');
+  $('#sfwResult').innerHTML =
+    '<div class="status-card">' +
+      '<div class="sc-hd"><div><b>法币直取订单（客户视角模拟）</b><div class="sc-no">' + sfwOrder.no + '</div></div>' +
+      tag(FW_STAGES[sfwOrder.stage], last ? 'success' : (sfwOrder.stage === 1 ? 'processing' : 'warning')) + '</div>' +
+      '<div class="stepper">' + steps + '</div>' +
+      '<div class="quote-box" style="width:100%;">' +
+        '<div class="row"><span class="k">提现 CNY 金额</span><span class="v">' + fmt(sfwOrder.gross) + ' CNY</span></div>' +
+        '<div class="row total"><span class="k">实际到账金额</span><span class="v">' + fmt(sfwOrder.net) + ' CNY</span></div>' +
+        '<div class="row"><span class="k">目标银行账户</span><span class="v">' + esc(sfwOrder.bank) + ' · ' + esc(sfwOrder.acct) + '</span></div>' +
+        '<div class="row"><span class="k">户名</span><span class="v">' + esc(sfwOrder.holder) + '</span></div>' +
+        '<div class="row"><span class="k">分配的放款卡 / 卡商</span><span class="v">' + esc(sfwOrder.card) + '</span></div>' +
+        '<div class="row"><span class="k">创建时间</span><span class="v">' + sfwOrder.time + '</span></div>' +
+      '</div>' +
+      (last
+        ? '<button class="btn mt14" id="sfwReset">再创建一笔</button>'
+        : '<a href="javascript:;" class="mt14" style="display:inline-block;" id="sfwNextStage">模拟下一步 →</a>') +
+    '</div>';
+  if (!last) {
+    $('#sfwNextStage').addEventListener('click', function () {
+      sfwOrder.stage++;
+      if (sfwOrder.stage === 1) { sfwOrder.card = CM[3] + ' · 尾号 7761'; toast('卡商已打款'); }
+      else toast('已核实到账');
+      renderSfw();
+    });
+  } else {
+    $('#sfwReset').addEventListener('click', function () {
+      sfwOrder = null; $('#sfwAmt').value = ''; calcSfw(); renderSfw();
+    });
+  }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+buildHisTabs();
+selectHisTab('deposit');
+P.initTokenPage();
+P.renderDashChart();
+P.renderDashWithdrawing();
+P.refreshBalances();
+renderFxHistory();
+refreshSimBalance();
+calcFd(); calcFw(); calcFx(); calcOn(); calcOff();
+calcSfd(); calcSfw();
+})();
+
+</script>
+</body>
+</html>
