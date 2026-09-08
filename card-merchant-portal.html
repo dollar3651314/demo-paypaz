@@ -467,7 +467,7 @@
           <div class="tbl-wrap">
             <table>
               <thead>
-                <tr><th>编号</th><th>卡号</th><th>持卡人</th><th>开户行</th><th>支付渠道</th><th>币种</th><th>上线 / 下线</th><th>时段总额上限</th><th>单笔限额</th><th>状态</th><th>操作</th></tr>
+                <tr><th>编号</th><th>卡号</th><th>持卡人</th><th>开户行</th><th>支付渠道</th><th>币种</th><th>上线 / 下线</th><th>时段总额上限</th><th>单笔限额</th><th>收款条件</th><th>状态</th><th>操作</th></tr>
               </thead>
               <tbody id="cards-in-tbody"></tbody>
             </table>
@@ -607,9 +607,12 @@ let chainSeq = 8801;       // 演示用链上提现单号自增
  * ------------------------------------------------------------------ */
 let cardSeq = 100;
 let CARDS_IN = [
-  { id:'CIN-01', seq:'PC-01', no:'6225 8801 **** 3391', holder:KYC_NAME, bank:'招商银行 深圳分行', channels:['银行卡转账','支付宝'], ccy:'CNY', on:'09:00', off:'22:00', shiftLimit:300000, singleLimit:50000, enabled:true },
-  { id:'CIN-02', seq:'PC-02', no:'6217 0021 **** 8842', holder:KYC_NAME, bank:'中国银行 广州分行', channels:['银行卡转账','微信支付','云闪付'], ccy:'CNY', on:'08:30', off:'23:30', shiftLimit:200000, singleLimit:30000, enabled:true },
-  { id:'CIN-03', seq:'PC-03', no:'6222 0233 **** 1157', holder:KYC_NAME, bank:'工商银行 东莞分行', channels:['支付宝'], ccy:'CNY', on:'10:00', off:'18:00', shiftLimit:80000, singleLimit:20000, enabled:false },
+  { id:'CIN-01', seq:'PC-01', no:'6225 8801 **** 3391', holder:KYC_NAME, bank:'招商银行 深圳分行', channels:['银行卡转账','支付宝'], ccy:'CNY', on:'09:00', off:'22:00', shiftLimit:300000, singleLimit:50000, enabled:true,
+    acceptMinority:false, acceptSpecialRegion:false, acceptSenior:false, allowRemark:false },
+  { id:'CIN-02', seq:'PC-02', no:'6217 0021 **** 8842', holder:KYC_NAME, bank:'中国银行 广州分行', channels:['银行卡转账','微信支付','云闪付'], ccy:'CNY', on:'08:30', off:'23:30', shiftLimit:200000, singleLimit:30000, enabled:true,
+    acceptMinority:false, acceptSpecialRegion:true, acceptSenior:true, allowRemark:false },
+  { id:'CIN-03', seq:'PC-03', no:'6222 0233 **** 1157', holder:KYC_NAME, bank:'工商银行 东莞分行', channels:['支付宝'], ccy:'CNY', on:'10:00', off:'18:00', shiftLimit:80000, singleLimit:20000, enabled:false,
+    acceptMinority:true, acceptSpecialRegion:false, acceptSenior:false, allowRemark:false },
 ];
 let CARDS_OUT = [
   { id:'COUT-01', seq:'PO-01', no:'6225 8801 **** 7720', holder:KYC_NAME, bank:'招商银行 深圳分行', channels:['银行卡转账'], ccy:'CNY', on:'09:00', off:'21:00', shiftLimit:500000, singleLimit:100000, enabled:true },
@@ -628,10 +631,12 @@ function nextCardSeq(kind){
  * ------------------------------------------------------------------ */
 let COLLECT = [
   { no:'RC-93027', type:'collect_otc',  fiat:7251.95,  usdt:1000.00, customer:'王小明', cardId:'CIN-01', method:'银行卡转账', left:1440, status:'pending' },
-  { no:'RC-93044', type:'collect_otc',  fiat:3626.00,  usdt:500.00,  customer:'赵一鸣', cardId:'CIN-02', method:'微信支付',   left:2015, status:'pending' },
-  { no:'RC-93051', type:'collect_otc',  fiat:10878.00, usdt:1500.00, customer:'陈美玲', cardId:'CIN-01', method:'支付宝',     left:860,  status:'pending' },
-  { no:'FD-30081', type:'collect_fiat', fiat:2600.00,  usdt:0,       customer:'林志豪', cardId:'CIN-02', method:'银行卡转账', left:1720, status:'pending' },
-  { no:'FD-30092', type:'collect_fiat', fiat:1480.00,  usdt:0,       customer:'周若男', cardId:'CIN-01', method:'银行卡转账', left:2380, status:'pending' },
+  { no:'RC-93044', type:'collect_otc',  fiat:3626.00,  usdt:500.00,  customer:'赵一鸣', cardId:'CIN-02', method:'微信支付',   left:2015, status:'pending', senior:true },
+  /* 演示客户条件与指派卡不符：陈美玲为少数民族客户，但 CIN-01 默认不接受少数民族客户 */
+  { no:'RC-93051', type:'collect_otc',  fiat:10878.00, usdt:1500.00, customer:'陈美玲', cardId:'CIN-01', method:'支付宝',     left:860,  status:'pending', ethnic:true },
+  { no:'FD-30081', type:'collect_fiat', fiat:2600.00,  usdt:0,       customer:'林志豪', cardId:'CIN-02', method:'银行卡转账', left:1720, status:'pending', region:true },
+  /* 演示客户条件与指派卡不符：周若男65周岁以上，但 CIN-01 默认不接受65周岁以上客户 */
+  { no:'FD-30092', type:'collect_fiat', fiat:1480.00,  usdt:0,       customer:'周若男', cardId:'CIN-01', method:'银行卡转账', left:2380, status:'pending', senior:true },
   /* 演示「金额相近」用：银行到账 ¥5,003.00（跨行手续费差额）与本单应收 ¥5,000.00 相差 0.06%，落在快速核对的 1% 容差内 */
   { no:'FD-30104', type:'collect_fiat', fiat:5000.00,  usdt:0,       customer:'黄雅琴', cardId:'CIN-01', method:'银行卡转账', left:2560, status:'pending' },
   /* 本期已完成的 On Ramp（同时是「已处理」队列与「银行卡往来明细」的数据来源） */
@@ -959,9 +964,18 @@ function renderCards(){
   renderCardTable('in', CARDS_IN, 'cards-in-tbody');
   renderCardTable('out', CARDS_OUT, 'cards-out-tbody');
 }
+function cardConditionTags(c){
+  const t = [];
+  t.push(c.acceptMinority ? '<span class="tag tag-info">少数民族</span>' : '<span class="tag tag-off">仅汉族</span>');
+  if(c.acceptSpecialRegion) t.push('<span class="tag tag-info">江浙沪</span>');
+  if(c.acceptSenior) t.push('<span class="tag tag-info">65+</span>');
+  t.push(c.allowRemark ? '<span class="tag tag-info">允许备注</span>' : '<span class="tag tag-off">禁止备注</span>');
+  return t.join('');
+}
 function renderCardTable(kind, list, tbodyId){
   const body = document.getElementById(tbodyId);
-  if(!list.length){ body.innerHTML = '<tr><td colspan="11" class="empty">尚未添加卡片</td></tr>'; return; }
+  const colspan = kind === 'in' ? 12 : 11;
+  if(!list.length){ body.innerHTML = '<tr><td colspan="' + colspan + '" class="empty">尚未添加卡片</td></tr>'; return; }
   const sorted = list.slice().sort((a, b) => String(a.seq).localeCompare(String(b.seq)));
   body.innerHTML = sorted.map(c =>
     '<tr>' +
@@ -974,6 +988,7 @@ function renderCardTable(kind, list, tbodyId){
       '<td class="mono nowrap">' + c.on + ' ~ ' + c.off + '</td>' +
       '<td class="mono nowrap">' + cny(c.shiftLimit) + '</td>' +
       '<td class="mono nowrap">' + cny(c.singleLimit) + '</td>' +
+      (kind === 'in' ? '<td style="min-width:150px;">' + cardConditionTags(c) + '</td>' : '') +
       '<td>' + (c.enabled ? '<span class="tag tag-ok">已启用</span>' : '<span class="tag tag-off">已停用</span>') + '</td>' +
       '<td class="nowrap">' +
         '<span class="link-btn" onclick="openCardForm(\'' + kind + '\',\'' + c.id + '\')">编辑</span>' +
@@ -1014,8 +1029,10 @@ let cardForm = null;   // { kind, id|null, no, holder, bank, channels[], ccy, on
 function openCardForm(kind, id){
   const src = id ? listOf(kind).find(x => x.id === id) : null;
   cardForm = src
-    ? { kind, id, seq:src.seq, no:src.no, holder:src.holder, bank:src.bank, channels:src.channels.slice(), ccy:src.ccy, on:src.on, off:src.off, shiftLimit:String(src.shiftLimit), singleLimit:String(src.singleLimit) }
-    : { kind, id:null, seq:nextCardSeq(kind), no:'', holder:'', bank:'', channels:[], ccy:'CNY', on:'09:00', off:'21:00', shiftLimit:'', singleLimit:'' };
+    ? { kind, id, seq:src.seq, no:src.no, holder:src.holder, bank:src.bank, channels:src.channels.slice(), ccy:src.ccy, on:src.on, off:src.off, shiftLimit:String(src.shiftLimit), singleLimit:String(src.singleLimit),
+        acceptMinority:!!src.acceptMinority, acceptSpecialRegion:!!src.acceptSpecialRegion, acceptSenior:!!src.acceptSenior, allowRemark:!!src.allowRemark }
+    : { kind, id:null, seq:nextCardSeq(kind), no:'', holder:'', bank:'', channels:[], ccy:'CNY', on:'09:00', off:'21:00', shiftLimit:'', singleLimit:'',
+        acceptMinority:false, acceptSpecialRegion:false, acceptSenior:false, allowRemark:false };
   const kindName = kind === 'in' ? '收款卡' : '放款卡';
   openDrawer(
     (id ? '编辑' : '新增') + kindName,
@@ -1088,6 +1105,17 @@ function renderCardForm(){
       '<div class="form-item"><div class="field-label">单笔限额</div>' +
         '<input type="number" class="' + bad('single') + '" value="' + esc(f.singleLimit) + '" placeholder="50000" oninput="cardFieldSet(\'singleLimit\', this.value)">' + err('single') +
       '</div>' +
+      (f.kind === 'in'
+        ? '<div class="form-item full"><div class="field-label">收款条件（默认严格，勾选后放开）</div>' +
+            '<div class="select-box">' +
+              '<div class="select-opt' + (f.acceptMinority ? ' active' : '') + '" onclick="cardToggleFlag(\'acceptMinority\')">可接受少数民族客户</div>' +
+              '<div class="select-opt' + (f.acceptSpecialRegion ? ' active' : '') + '" onclick="cardToggleFlag(\'acceptSpecialRegion\')">专接杭州/无锡/江浙客户</div>' +
+              '<div class="select-opt' + (f.acceptSenior ? ' active' : '') + '" onclick="cardToggleFlag(\'acceptSenior\')">可接受65周岁以上客户</div>' +
+              '<div class="select-opt' + (f.allowRemark ? ' active' : '') + '" onclick="cardToggleFlag(\'allowRemark\')">允许入账备注</div>' +
+            '</div>' +
+            '<div class="hint block">默认不接受少数民族/65周岁以上客户，也不专接江浙沪地区、不允许备注；按需勾选放开，用于派单匹配。</div>' +
+          '</div>'
+        : '') +
     '</div>';
 
   const n = Object.keys(e).length;
@@ -1096,6 +1124,7 @@ function renderCardForm(){
     '<button class="primary-btn" ' + (n ? 'disabled' : '') + ' onclick="saveCard()">保存</button>';
 }
 function cardFieldSet(k, v){ cardForm[k] = v; renderCardForm(); }
+function cardToggleFlag(k){ cardForm[k] = !cardForm[k]; renderCardForm(); }
 function cardToggleChannel(ch){
   const i = cardForm.channels.indexOf(ch);
   if(i >= 0) cardForm.channels.splice(i, 1); else cardForm.channels.push(ch);
@@ -1109,6 +1138,8 @@ function saveCard(){
     no:f.no.trim(), holder:f.holder.trim(), bank:f.bank.trim(),
     channels:f.channels.slice(), ccy:f.ccy, on:f.on, off:f.off,
     shiftLimit:parseFloat(f.shiftLimit), singleLimit:parseFloat(f.singleLimit),
+    acceptMinority:f.acceptMinority, acceptSpecialRegion:f.acceptSpecialRegion,
+    acceptSenior:f.acceptSenior, allowRemark:f.allowRemark,
   };
   if(f.id){
     const c = arr.find(x => x.id === f.id);
@@ -1669,23 +1700,32 @@ let cs = null;  // collect state
 function openCollect(no){
   const o = COLLECT.find(x => x.no === no);
   if(!o) return;
-  cs = { no, method:null, payer:'', payerAck:false, reviewed:false, forged:false };
+  cs = { no, method:null, payer:'', payerAck:false, reviewed:false, forged:false, hasRemark:false };
   openDrawer('处理 On Ramp 订单 ' + no, TYPE_META[o.type].label + ' · 应收 ' + cny(o.fiat) + ' · 指派卡 ' + cardLabel(o.cardId));
   renderCollect();
 }
 
+function profileMismatch(o, card){
+  if(!card) return [];
+  const out = [];
+  if(o.ethnic && !card.acceptMinority) out.push('少数民族客户');
+  if(o.region && !card.acceptSpecialRegion) out.push('杭州/无锡/江浙客户');
+  if(o.senior && !card.acceptSenior) out.push('65周岁以上客户');
+  return out;
+}
 function collectGates(){
   const o = COLLECT.find(x => x.no === cs.no);
   const card = cardById(o.cardId);
   const allowed = card ? card.channels : [];
-  const g1 = cs.method ? (allowed.indexOf(cs.method) >= 0 ? 'pass' : 'fail') : 'idle';
+  const remarkBad = cs.hasRemark && card && !card.allowRemark;
+  const g1 = cs.method ? ((allowed.indexOf(cs.method) >= 0 && !remarkBad) ? 'pass' : 'fail') : 'idle';
   let g2 = 'idle';
   if(cs.payer.trim()){
     g2 = (cs.payer.trim() === o.customer) ? 'pass' : (cs.payerAck ? 'pass' : 'fail');
   }
   /* 第三关＝「查看客户上传的凭证并核验」：凭证不是卡商产出的，卡商只做核对与真伪判断 */
   const g3 = cs.forged ? 'fail' : (cs.reviewed ? 'pass' : 'idle');
-  return { o, card, allowed, g1, g2, g3, mismatch: cs.payer.trim() && cs.payer.trim() !== o.customer };
+  return { o, card, allowed, g1, g2, g3, remarkBad, profileBad: profileMismatch(o, card), mismatch: cs.payer.trim() && cs.payer.trim() !== o.customer };
 }
 
 function renderCollect(){
@@ -1702,8 +1742,10 @@ function renderCollect(){
         const active = cs.method === ch;
         return '<div class="select-opt' + (ok ? '' : ' blocked') + (active ? ' active' : '') + '" onclick="collectSetMethod(\'' + ch + '\')">' + ch + (ok ? '' : ' ⚠') + '</div>';
       }).join('') + '</div>' +
-      (s.g1 === 'fail' ? '<div class="banner banner-err"><div><b>渠道不匹配</b>「' + esc(cs.method) + '」不在该收款卡开通的渠道内，无法确认收款。请更换为已开通渠道，或点击底部「上报异常」交由平台处理。</div></div>' : '') +
+      (cs.method && s.allowed.indexOf(cs.method) < 0 ? '<div class="banner banner-err"><div><b>渠道不匹配</b>「' + esc(cs.method) + '」不在该收款卡开通的渠道内，无法确认收款。请更换为已开通渠道，或点击底部「上报异常」交由平台处理。</div></div>' : '') +
       (cs.method && cs.method !== o.method ? '<div class="banner banner-warn"><div><b>与客户下单时申报的方式不一致</b>下单申报为「' + esc(o.method) + '」，此处选择「' + esc(cs.method) + '」，请确认凭证与实际到账一致。</div></div>' : '') +
+      '<div class="toggle-row" onclick="collectToggleRemark()"><div class="cbox' + (cs.hasRemark ? ' on' : '') + '"></div>本笔到账流水带有备注 / 摘要</div>' +
+      (s.remarkBad ? '<div class="banner banner-err"><div><b>本单不允许带备注</b>该收款卡未开启「允许入账备注」，请要求客户重新汇款且不填写任何备注，或点击底部「上报异常」交由平台处理。</div></div>' : '') +
     '</div>';
 
   const gate2 =
@@ -1755,6 +1797,10 @@ function renderCollect(){
       '<div class="quote-row"><div class="k">指派收款卡</div><div class="v mono">' + cardLabel(o.cardId) + '</div></div>' +
       '<div class="quote-row"><div class="k">剩余时间</div><div class="v countdown" data-cd="' + o.no + '">' + mmss(o.left) + '</div></div>' +
     '</div>' +
+    (s.profileBad.length
+      ? '<div class="banner banner-err"><div><b>客户条件与本卡不符</b>客户为' + s.profileBad.map(esc).join('、') +
+        '，但「' + esc(cardLabel(o.cardId)) + '」未开启对应的收款条件。请人工判断是否继续，或上报异常改派其他收款卡。</div></div>'
+      : '') +
     '<div class="section-title">三重核验</div>' + gate1 + gate2 + gate3;
 
   const allPass = s.g1 === 'pass' && s.g2 === 'pass' && s.g3 === 'pass';
@@ -1786,6 +1832,7 @@ function collectSetPayer(v){ cs.payer = v; if(v.trim() === (COLLECT.find(x => x.
 function collectTogglePayerAck(){ cs.payerAck = !cs.payerAck; renderCollect(); }
 function collectToggleReviewed(){ cs.reviewed = !cs.reviewed; renderCollect(); }
 function collectToggleForged(){ cs.forged = !cs.forged; renderCollect(); }
+function collectToggleRemark(){ cs.hasRemark = !cs.hasRemark; renderCollect(); }
 
 function collectConfirm(){
   const s = collectGates();
