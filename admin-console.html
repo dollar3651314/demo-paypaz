@@ -4087,36 +4087,43 @@ function merchantPartnerTab(b){
        '在上方选择一个渠道即可开始配置。</div></div></div>';
   }
 
-  /* 返佣配置表单 */
+  /* 返佣配置表单：只列出【已添加】的合作伙伴，不会把渠道下的全部合作伙伴都摆出来；
+     要新增哪个，从下面的下拉里选、点"添加"——下拉数据来自「渠道管理」维护的该渠道合作伙伴库。 */
   h+='<div class="el-card"><div class="el-card__header"><span class="title">'+
      (saved?'调整返佣配置':'新建返佣配置')+'</span>'+
-     '<span class="sub">'+(ch?('渠道 '+esc(ch.name)+'（充值 '+pct(d.depositFeeRate)+' / 提现 '+pct(d.withdrawFeeRate)+
-       '）下共 '+partnersOf(ch.id).length+' 个合作伙伴'):'先在上方选择渠道')+'</span>'+
+     '<span class="sub">'+(ch?('渠道 '+esc(ch.name)+'（充值 '+pct(d.depositFeeRate)+' / 提现 '+pct(d.withdrawFeeRate)+'）'):'先在上方选择渠道')+'</span>'+
      '</div><div class="el-card__body">';
   if(!ch){
     h+='<div class="muted" style="padding:26px 0;text-align:center">未选择渠道。该商户保持自然流量，不产生佣金记录。</div>';
   }else{
+    var pickedIds=Object.keys(d.picks);
+    var avail=partnersOf(ch.id).filter(function(p){ return p.status==='enable'&&d.picks[p.id]==null; });
     h+='<div id="allocBox">'+allocHtml(d)+'</div>';
-    h+='<div class="table-wrap" style="margin-top:14px"><table class="el-table"><thead><tr>'+
-       '<th style="width:46px"></th><th style="min-width:150px">合作伙伴</th>'+
+    h+='<div class="el-form-inline" style="margin-top:12px">'+
+       '<div class="el-form-item"><label class="el-form-item__label">添加合作伙伴</label>'+
+       (avail.length
+         ? '<select class="el-select" id="cfgAddPartnerSel">'+
+           avail.map(function(p){ return '<option value="'+esc(p.id)+'">'+esc(p.name)+'（'+esc(p.id)+'）</option>'; }).join('')+
+           '</select><button class="el-button" style="margin-left:8px" data-act="cfg-add-partner">+ 添加</button>'
+         : '<span class="muted small">'+(partnersOf(ch.id).length
+             ? '该渠道下的启用合作伙伴已全部添加'
+             : '该渠道下暂无合作伙伴，请先到「渠道与佣金 › 渠道管理」新增')+'</span>')+
+       '</div></div>';
+    h+='<div class="table-wrap" style="margin-top:10px"><table class="el-table"><thead><tr>'+
+       '<th style="min-width:150px">合作伙伴</th>'+
        '<th style="min-width:200px">联系方式</th><th style="width:170px">返佣比例（占手续费）</th>'+
-       '<th style="min-width:300px">按当前费率折算</th></tr></thead><tbody>';
-    var ps=partnersOf(ch.id);
-    if(!ps.length) h+='<tr><td class="empty-cell" colspan="5">该渠道下暂无合作伙伴，请先到「渠道与佣金 › 渠道管理」新增</td></tr>';
-    ps.forEach(function(p){
-      var on=d.picks[p.id]!=null;
-      var rate=on?d.picks[p.id]:'';
-      var dis=p.status!=='enable'&&!on;
+       '<th style="min-width:260px">按当前费率折算</th><th style="width:70px">操作</th></tr></thead><tbody>';
+    if(!pickedIds.length) h+='<tr><td class="empty-cell" colspan="5">尚未添加合作伙伴，从上方下拉选择后点"添加"</td></tr>';
+    pickedIds.forEach(function(pid){
+      var p=partner(pid);
+      var rate=d.picks[pid];
       h+='<tr>'+
-        '<td><span class="el-checkbox'+(on?' checked':'')+(dis?' disabled':'')+'"'+
-          (dis?'':' data-act="cfg-pick" data-id="'+esc(p.id)+'"')+'></span></td>'+
-        '<td><div class="stack"><b>'+esc(p.name)+'</b><span class="s2 mono">'+esc(p.id)+
-          (p.status==='enable'?'':' · 已停用')+'</span></div></td>'+
-        '<td class="small">'+esc(p.contact||'—')+'</td>'+
-        '<td><input class="el-input w-sm num" data-rate="'+esc(p.id)+'" value="'+esc(rate)+'"'+
-          (on?'':' disabled')+' placeholder="0.00"><span class="muted small"> %</span></td>'+
-        '<td class="small" id="ex-'+esc(p.id)+'">'+
-          (on?partnerRowExample(Number(d.depositFeeRate)||0,Number(rate)||0):'<span class="muted">未选中，该伙伴在本商户下不分佣</span>')+'</td>'+
+        '<td><div class="stack"><b>'+esc(p?p.name:pid)+'</b><span class="s2 mono">'+esc(pid)+
+          (p&&p.status!=='enable'?' · 已停用':'')+'</span></div></td>'+
+        '<td class="small">'+esc(p&&p.contact||'—')+'</td>'+
+        '<td><input class="el-input w-sm num" data-rate="'+esc(pid)+'" value="'+esc(rate)+'" placeholder="0.00"><span class="muted small"> %</span></td>'+
+        '<td class="small" id="ex-'+esc(pid)+'">'+partnerRowExample(Number(d.depositFeeRate)||0,Number(rate)||0)+'</td>'+
+        '<td><button class="el-button el-button--text danger" data-act="cfg-remove-partner" data-id="'+esc(pid)+'">移除</button></td>'+
         '</tr>';
     });
     h+='</tbody></table></div>';
@@ -4130,16 +4137,13 @@ function merchantPartnerTab(b){
   return h;
 }
 function updateAlloc(){
-  var d=state.cfg, ch=channel(d.channelId);
+  var d=state.cfg;
   var box=$('allocBox');
   if(box) box.innerHTML=allocHtml(d);
-  if(!ch) return;
-  partnersOf(ch.id).forEach(function(p){
-    var cell=$('ex-'+p.id);
+  Object.keys(d.picks).forEach(function(pid){
+    var cell=$('ex-'+pid);
     if(!cell) return;
-    cell.innerHTML=(d.picks[p.id]!=null)
-      ? partnerRowExample(Number(d.depositFeeRate)||0,Number(d.picks[p.id])||0)
-      : '<span class="muted">未选中，该伙伴在本商户下不分佣</span>';
+    cell.innerHTML=partnerRowExample(Number(d.depositFeeRate)||0,Number(d.picks[pid])||0);
   });
 }
 function saveCfg(){
@@ -4798,10 +4802,15 @@ var ACT={
     }
     render();
   },
-  'cfg-pick':function(el,d){
+  'cfg-add-partner':function(){
+    var sel=$('cfgAddPartnerSel');
+    if(!sel||!sel.value) return;
     var dr=state.cfg;
-    if(dr.picks[d.id]!=null) delete dr.picks[d.id];
-    else dr.picks[d.id]=r2(Math.max(0,100-draftSum(dr)));
+    dr.picks[sel.value]=r2(Math.max(0,100-draftSum(dr)));
+    render();
+  },
+  'cfg-remove-partner':function(el,d){
+    delete state.cfg.picks[d.id];
     render();
   },
   'save-cfg':function(){ saveCfg(); },
