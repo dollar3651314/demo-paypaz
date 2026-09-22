@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PayPaz 渠道 · 合作伙伴 · 佣金分配系统</title>
+<style>
+/* ============================================================
+   PayPaz Manage Console — element-plus / RuoYi-Vue-Plus look-alike
+   Tokens grounded in paypaz-manage-web:
+     primary #409eff | sidebar #08090a | sidebar hover #263445
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Helvetica,
+              "PingFang SC","Hiragino Sans GB","Microsoft YaHei",Arial,sans-serif;
+  font-size:14px;
+  color:#303133;
+  background:#f0f2f5;
+  -webkit-font-smoothing:antialiased;
+}
+:root{
+  --el-primary:#409eff;
+  --el-primary-light:#ecf5ff;
+  --el-success:#67c23a;
+  --el-success-light:#f0f9eb;
+  --el-warning:#e6a23c;
+  --el-warning-light:#fdf6ec;
+  --el-danger:#f56c6c;
+  --el-danger-light:#fef0f0;
+  --el-info:#909399;
+  --el-info-light:#f4f4f5;
+  --t-primary:#303133;
+  --t-regular:#606266;
+  --t-secondary:#909399;
+  --t-placeholder:#a8abb2;
+  --bd-base:#dcdfe6;
+  --bd-light:#e4e7ed;
+  --bd-lighter:#ebeef5;
+  --side-bg:#08090a;
+  --side-sub-bg:#0c0d0f;
+  --side-hover:#263445;
+  --side-text:#bfcbd9;
+}
+a{color:var(--el-primary);text-decoration:none}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#c0c4cc;border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ---------- layout shell ---------- */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{
+  width:220px;flex:0 0 220px;background:var(--side-bg);
+  box-shadow:2px 0 6px rgba(0,21,41,.35);
+  height:100%;overflow-y:auto;overflow-x:hidden;
+  transition:width .28s;
+}
+.sidebar::-webkit-scrollbar-thumb{background:#2b3542}
+.side-logo{
+  height:50px;display:flex;align-items:center;gap:9px;padding:0 14px;
+  background:#0a0b0d;border-bottom:1px solid #16181b;position:sticky;top:0;z-index:3;
+}
+.side-logo .mark{
+  width:24px;height:24px;border-radius:5px;flex:0 0 24px;
+  background:linear-gradient(140deg,#409eff,#1d6fd0);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:12px;font-weight:700;letter-spacing:-.5px;
+}
+.side-logo .txt{color:#fff;font-size:14.5px;font-weight:600;letter-spacing:.3px;white-space:nowrap}
+.side-logo .env{
+  font-size:10px;color:#8a9099;border:1px solid #2c3238;border-radius:3px;
+  padding:0 4px;line-height:15px;margin-left:auto;
+}
+.menu{padding:4px 0 30px}
+.menu-item,.menu-title{
+  display:flex;align-items:center;gap:9px;
+  height:44px;padding:0 14px;color:var(--side-text);
+  font-size:13.5px;cursor:pointer;white-space:nowrap;user-select:none;
+  border-left:3px solid transparent;
+}
+.menu-item:hover,.menu-title:hover{background:var(--side-hover);color:#fff}
+.menu-item.active{background:#0e1620;color:var(--el-primary);border-left-color:var(--el-primary)}
+.menu-item .ico,.menu-title .ico{flex:0 0 16px;display:flex}
+.menu-item .ico svg,.menu-title .ico svg{width:16px;height:16px}
+.menu-title .arrow{
+  margin-left:auto;width:0;height:0;
+  border-left:4px solid currentColor;border-top:4px solid transparent;border-bottom:4px solid transparent;
+  transition:transform .2s;opacity:.7;
+}
+.menu-group.open .menu-title .arrow{transform:rotate(90deg)}
+.submenu{display:none;background:var(--side-sub-bg)}
+.menu-group.open .submenu{display:block}
+.submenu .menu-item{height:40px;padding-left:38px;font-size:13px}
+.submenu .menu-item::before{
+  content:"";width:4px;height:4px;border-radius:50%;background:#4a5461;
+  position:absolute;margin-left:-14px;
+}
+.submenu .menu-item.active::before{background:var(--el-primary)}
+.menu-badge{
+  margin-left:auto;background:var(--el-danger);color:#fff;font-size:11px;
+  line-height:16px;min-width:16px;text-align:center;border-radius:8px;padding:0 5px;
+}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.navbar{
+  height:50px;flex:0 0 50px;background:#fff;display:flex;align-items:center;
+  padding:0 16px 0 10px;box-shadow:0 1px 4px rgba(0,21,41,.08);position:relative;z-index:5;
+}
+.hamburger{
+  width:30px;height:30px;display:flex;flex-direction:column;justify-content:center;
+  gap:4px;padding:0 6px;cursor:pointer;
+}
+.hamburger i{display:block;height:2px;background:#5a5e66;border-radius:1px}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:14px;margin-left:6px}
+.breadcrumb .bc{color:var(--t-secondary);cursor:default}
+.breadcrumb .bc.link{color:var(--t-regular);cursor:pointer}
+.breadcrumb .bc.link:hover{color:var(--el-primary)}
+.breadcrumb .sep{color:#c0c4cc}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:16px}
+.nav-right .nb{
+  display:flex;align-items:center;gap:5px;font-size:13px;color:var(--t-regular);cursor:pointer;
+}
+.nav-right .nb:hover{color:var(--el-primary)}
+.nav-right .nb svg{width:16px;height:16px}
+.avatar{
+  width:28px;height:28px;border-radius:50%;background:#409eff;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;
+}
+.dot-red{width:6px;height:6px;border-radius:50%;background:var(--el-danger);margin-left:-8px;margin-top:-10px}
+
+.tags-view{
+  height:34px;flex:0 0 34px;background:#fff;border-bottom:1px solid #d8dce5;
+  box-shadow:0 1px 3px 0 rgba(0,0,0,.12),0 0 3px 0 rgba(0,0,0,.04);
+  display:flex;align-items:center;padding:0 8px;gap:5px;overflow-x:auto;overflow-y:hidden;
+}
+.tags-view::-webkit-scrollbar{height:3px}
+.tag{
+  display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 8px;
+  border:1px solid #d8dce5;background:#fff;color:#495060;font-size:12px;
+  cursor:pointer;white-space:nowrap;flex:0 0 auto;
+}
+.tag:hover{color:var(--el-primary)}
+.tag.active{background:#42b983;color:#fff;border-color:#42b983}
+.tag.active::before{
+  content:"";width:8px;height:8px;border-radius:50%;background:#fff;display:inline-block;
+}
+.tag .x{
+  width:14px;height:14px;border-radius:50%;line-height:12px;text-align:center;
+  font-size:12px;font-style:normal;
+}
+.tag .x:hover{background:#b4bccc;color:#fff}
+.tag.active .x:hover{background:rgba(255,255,255,.35)}
+
+.app-main{flex:1;overflow-y:auto;position:relative;min-height:70vh}
+.app-container{padding:16px}
+.filter-card{margin-bottom:10px}
+.filter-card .el-card__body{padding-bottom:0}
+
+/* ---------- el-card ---------- */
+.el-card{
+  background:#fff;border:1px solid var(--bd-lighter);border-radius:4px;
+  box-shadow:0 1px 8px 0 rgba(0,0,0,.05);overflow:hidden;
+}
+.el-card + .el-card{margin-top:16px}
+.el-card__header{
+  padding:10px 15px;border-bottom:1px solid var(--bd-lighter);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:44px;
+}
+.el-card__header .title{font-size:15px;font-weight:600;color:var(--t-primary)}
+.el-card__header .sub{font-size:12px;color:var(--t-secondary)}
+.el-card__header .hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.el-card__body{padding:15px 20px 20px}
+.el-card__body.tight{padding:12px 20px 14px}
+
+/* ---------- inline filter form (el-form :inline) ---------- */
+.el-form-inline{display:flex;flex-wrap:wrap;gap:0 10px;align-items:flex-start}
+.el-form-item{display:flex;align-items:center;margin-bottom:14px}
+.el-form-item__label{
+  flex:0 0 auto;text-align:right;color:var(--t-regular);font-size:14px;font-weight:700;
+  padding-right:12px;line-height:32px;white-space:nowrap;
+}
+.el-input,.el-select{
+  height:32px;line-height:32px;font-size:13px;color:var(--t-regular);
+  border:1px solid var(--bd-base);border-radius:4px;background:#fff;
+  padding:0 11px;width:190px;outline:none;transition:border-color .2s;
+  font-family:inherit;
+}
+.el-select{
+  padding-right:26px;cursor:pointer;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c0c4cc' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 7px center;background-size:13px;
+}
+.el-input:focus,.el-select:focus{border-color:var(--el-primary)}
+.el-input::placeholder{color:var(--t-placeholder)}
+.el-input.w-sm,.el-select.w-sm{width:140px}
+.el-input.w-lg{width:250px}
+
+/* ---------- buttons ---------- */
+.el-button{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  height:32px;padding:0 15px;font-size:13px;line-height:1;border-radius:4px;
+  border:1px solid var(--bd-base);background:#fff;color:var(--t-regular);
+  cursor:pointer;white-space:nowrap;font-family:inherit;transition:.1s;
+}
+.el-button:hover{color:var(--el-primary);border-color:#c6e2ff;background:var(--el-primary-light)}
+.el-button svg{width:14px;height:14px}
+.el-button--primary{background:var(--el-primary);border-color:var(--el-primary);color:#fff}
+.el-button--primary:hover{background:#66b1ff;border-color:#66b1ff;color:#fff}
+.el-button--success{background:var(--el-success);border-color:var(--el-success);color:#fff}
+.el-button--success:hover{background:#85ce61;border-color:#85ce61;color:#fff}
+.el-button--warning{background:var(--el-warning);border-color:var(--el-warning);color:#fff}
+.el-button--warning:hover{background:#ebb563;border-color:#ebb563;color:#fff}
+.el-button--danger{background:var(--el-danger);border-color:var(--el-danger);color:#fff}
+.el-button--danger:hover{background:#f78989;border-color:#f78989;color:#fff}
+.el-button--sm{height:28px;padding:0 11px;font-size:12px}
+.el-button[disabled]{opacity:.55;cursor:not-allowed;pointer-events:none}
+.el-button--text{
+  border:none;background:transparent;color:var(--el-primary);padding:0 6px;height:auto;
+}
+.el-button--text:hover{background:transparent;color:#66b1ff;text-decoration:underline}
+.el-button--text.danger{color:var(--el-danger)}
+.el-button--text.danger:hover{color:#f78989}
+.el-button--text.warn{color:var(--el-warning)}
+.link-a{color:var(--el-primary);cursor:pointer;font-size:13px}
+.link-a:hover{text-decoration:underline}
+
+/* ---------- el-table ---------- */
+.table-wrap{width:100%;overflow-x:auto}
+.el-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;color:var(--t-regular)}
+.el-table th{
+  background:#f8f8f9;color:#515a6e;font-weight:600;text-align:left;
+  padding:10px;height:40px;border-bottom:1px solid var(--bd-lighter);white-space:nowrap;font-size:13px;
+}
+.el-table td{
+  padding:9px 10px;border-bottom:1px solid var(--bd-lighter);vertical-align:middle;
+}
+.el-table tbody tr:hover>td{background:#f5f7fa}
+.el-table tbody tr.expanded>td{background:#f5f7fa}
+.el-table td.num,.el-table th.num{text-align:right;font-variant-numeric:tabular-nums}
+.el-table td.mono,.el-table .mono{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;
+}
+.el-table .nowrap{white-space:nowrap}
+.el-table tr.expand-row>td{background:#fbfcfd;padding:0;border-bottom:1px solid var(--bd-lighter)}
+.el-table .empty-cell{text-align:center;color:var(--t-placeholder);padding:44px 0}
+.expand-toggle{
+  width:18px;height:18px;border:1px solid var(--bd-base);border-radius:2px;background:#fff;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  color:var(--t-secondary);font-size:11px;line-height:1;user-select:none;
+}
+.expand-toggle:hover{border-color:var(--el-primary);color:var(--el-primary)}
+.el-checkbox{
+  width:14px;height:14px;border:1px solid var(--bd-base);border-radius:2px;background:#fff;
+  display:inline-block;cursor:pointer;position:relative;vertical-align:middle;
+}
+.el-checkbox:hover{border-color:var(--el-primary)}
+.el-checkbox.checked{background:var(--el-primary);border-color:var(--el-primary)}
+.el-checkbox.checked::after{
+  content:"";position:absolute;left:4px;top:1px;width:4px;height:7px;
+  border:1px solid #fff;border-top:0;border-left:0;transform:rotate(45deg);
+}
+.el-checkbox.disabled{background:#edf2fc;border-color:#dcdfe6;cursor:not-allowed}
+
+/* ---------- tags / badges ---------- */
+.el-tag{
+  display:inline-flex;align-items:center;height:22px;padding:0 8px;font-size:12px;
+  border-radius:3px;line-height:1;white-space:nowrap;
+  background:var(--el-info-light);color:var(--el-info);border:1px solid #e9e9eb;
+}
+.el-tag.success{background:var(--el-success-light);color:var(--el-success);border-color:#e1f3d8}
+.el-tag.warning{background:var(--el-warning-light);color:var(--el-warning);border-color:#faecd8}
+.el-tag.danger{background:var(--el-danger-light);color:var(--el-danger);border-color:#fde2e2}
+.el-tag.primary{background:var(--el-primary-light);color:var(--el-primary);border-color:#d9ecff}
+.el-tag.sm{height:19px;font-size:11px;padding:0 6px}
+.tag-row{display:flex;gap:4px;flex-wrap:wrap}
+.flag-dot{
+  display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:1px;
+}
+.exc-flag{
+  display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--el-danger);
+  background:var(--el-danger-light);border:1px solid #fde2e2;border-radius:3px;padding:1px 6px;
+}
+.internal-col{background:#fffdf5}
+.el-table th.internal-col{background:#fdf6ec;color:#a4741f}
+
+/* ---------- pagination ---------- */
+.pagination{
+  display:flex;align-items:center;gap:8px;padding:14px 4px 2px;justify-content:flex-end;
+  font-size:13px;color:var(--t-regular);
+}
+.pagination .pg{
+  min-width:28px;height:28px;padding:0 6px;border-radius:2px;background:#f4f4f5;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;
+}
+.pagination .pg.active{background:var(--el-primary);color:#fff}
+.pagination .total{margin-right:auto;color:var(--t-secondary);font-size:13px}
+
+/* ---------- descriptions / detail grids ---------- */
+.desc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:0;border:1px solid var(--bd-lighter);border-radius:4px;overflow:hidden}
+.desc-cell{display:flex;border-bottom:1px solid var(--bd-lighter);border-right:1px solid var(--bd-lighter);min-height:40px}
+.desc-cell .k{
+  flex:0 0 108px;background:#fafafa;padding:9px 12px;color:var(--t-regular);
+  font-size:13px;font-weight:500;
+}
+.desc-cell .v{padding:9px 12px;font-size:13px;color:var(--t-primary);word-break:break-all}
+
+/* ---------- stat tiles ---------- */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.stat{
+  background:#fff;border:1px solid var(--bd-lighter);border-radius:4px;padding:16px 18px;
+  box-shadow:0 1px 8px 0 rgba(0,0,0,.05);
+}
+.stat .lbl{font-size:13px;color:var(--t-secondary);display:flex;align-items:center;gap:6px}
+.stat .val{font-size:24px;font-weight:600;color:var(--t-primary);margin-top:8px;font-variant-numeric:tabular-nums}
+.stat .val small{font-size:13px;font-weight:400;color:var(--t-secondary);margin-left:4px}
+.stat .foot{font-size:12px;color:var(--t-secondary);margin-top:6px}
+.stat .foot .up{color:var(--el-success)}
+.stat .foot .down{color:var(--el-danger)}
+.stat.accent{border-left:3px solid var(--el-primary)}
+.stat.warn{border-left:3px solid var(--el-warning)}
+.stat.danger{border-left:3px solid var(--el-danger)}
+
+/* ---------- tabs ---------- */
+.el-tabs{border-bottom:1px solid var(--bd-light);display:flex;gap:0;padding:0 20px;background:#fff;flex-wrap:wrap}
+.el-tab{
+  padding:0 20px;height:40px;line-height:40px;font-size:14px;color:var(--t-regular);
+  cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;
+}
+.el-tab:hover{color:var(--el-primary)}
+.el-tab.active{color:var(--el-primary);border-bottom-color:var(--el-primary);font-weight:500}
+
+/* ---------- expanded balance panel ---------- */
+.bal-panel{padding:14px 18px 16px 46px}
+.bal-panel .bp-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bal-panel .bp-head .t{font-size:13px;font-weight:600;color:var(--t-primary)}
+.bal-panel .bp-head .ts{font-size:12px;color:var(--t-secondary)}
+.bal-table{width:100%;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid var(--bd-lighter);border-radius:3px}
+.bal-table th{background:#f8f8f9;font-size:12px;color:#515a6e;padding:7px 10px;text-align:left;border-bottom:1px solid var(--bd-lighter);font-weight:600}
+.bal-table td{padding:7px 10px;font-size:12.5px;border-bottom:1px solid var(--bd-lighter);color:var(--t-regular)}
+.bal-table tr:last-child td{border-bottom:none}
+.bal-table td.num,.bal-table th.num{text-align:right;font-variant-numeric:tabular-nums}
+.bal-table tr.cny-row td{background:#fffdf5}
+.chain-chip{
+  display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--t-primary);
+}
+.chain-chip .cc{
+  width:18px;height:18px;border-radius:50%;background:#eef2f7;color:#5a6b80;
+  font-size:9px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;
+}
+.hint-note{
+  font-size:12px;color:var(--t-secondary);background:#f8f9fb;border-left:3px solid #c8d3e0;
+  padding:7px 12px;border-radius:0 3px 3px 0;margin-top:10px;line-height:1.6;
+}
+
+/* ---- 质押额度使用率进度条（卡商法币信用额度） ---- */
+.util-bar{
+  height:6px;border-radius:3px;background:#ebeef5;overflow:hidden;min-width:90px;margin-top:4px;
+}
+.util-bar i{display:block;height:100%;border-radius:3px;background:var(--el-success);transition:width .3s}
+.util-bar i.warn{background:var(--el-warning)}
+.util-bar i.danger{background:var(--el-danger)}
+.util-cap{font-size:11px;color:var(--t-secondary);margin-top:3px;font-variant-numeric:tabular-nums}
+.credit-note{
+  font-size:11.5px;color:var(--el-danger);background:var(--el-danger-light);
+  border:1px solid #fde2e2;border-radius:3px;padding:1px 6px;display:inline-block;margin-top:4px;
+}
+
+/* ---------- 客户付款凭证（管理端只读查阅） ---------- */
+.proof-box{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.proof-thumb{
+  width:136px;height:94px;border:1px solid var(--bd-base);border-radius:4px;overflow:hidden;
+  background:#fff;cursor:zoom-in;flex:0 0 auto;position:relative;display:block;
+}
+.proof-thumb:hover{border-color:var(--el-primary);box-shadow:0 0 0 2px var(--el-primary-light)}
+.proof-thumb img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.proof-thumb .zoom{
+  position:absolute;right:0;bottom:0;background:rgba(0,0,0,.52);color:#fff;font-size:10px;
+  padding:1px 6px;border-radius:3px 0 0 0;pointer-events:none;
+}
+.proof-meta{font-size:12px;color:var(--t-secondary);line-height:1.85;min-width:200px;flex:1}
+.proof-meta b{color:var(--t-regular);font-weight:600}
+.proof-meta .ro{color:var(--t-placeholder);font-size:11.5px}
+.proof-none{font-size:12px;color:var(--t-placeholder);line-height:1.7}
+.proof-view{width:100%;max-width:520px;display:block;margin:0 auto;
+  border:1px solid var(--bd-lighter);border-radius:4px;background:#f5f7fa}
+.proof-chip{
+  display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--el-primary);
+  background:var(--el-primary-light);border:1px solid #d9ecff;border-radius:3px;padding:0 5px;
+  line-height:17px;margin-left:2px;
+}
+
+/* ---------- pricing chain ---------- */
+.price-chain{display:flex;align-items:center;gap:5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.price-chain .pc{font-size:12px;color:var(--t-secondary)}
+.price-chain .pc b{font-weight:600;color:var(--t-regular);font-family:ui-monospace,Menlo,monospace}
+.price-chain .pc.final b{color:var(--el-primary)}
+.price-chain .ar{color:#c0c4cc;font-size:11px}
+.profit-pos{color:var(--el-success);font-weight:600;font-variant-numeric:tabular-nums}
+.profit-neg{color:var(--el-danger);font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ---------- dialog ---------- */
+.mask{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2200;
+  display:none;align-items:flex-start;justify-content:center;
+}
+.mask.open{display:flex}
+.el-dialog{
+  background:#fff;border-radius:4px;box-shadow:0 12px 32px 4px rgba(0,0,0,.04),0 8px 20px rgba(0,0,0,.08);
+  width:560px;max-width:calc(100vw - 32px);margin-top:15vh;max-height:74vh;display:flex;flex-direction:column;
+}
+.el-dialog.wide{width:860px}
+.el-dialog.xwide{width:1080px}
+.el-dialog__header{padding:18px 20px 12px;display:flex;align-items:center}
+.el-dialog__header .t{font-size:16px;color:var(--t-primary);font-weight:500}
+.el-dialog__header .close{
+  margin-left:auto;cursor:pointer;color:#909399;font-size:18px;line-height:1;padding:2px 4px;
+}
+.el-dialog__header .close:hover{color:var(--el-primary)}
+.el-dialog__body{padding:8px 20px 20px;overflow-y:auto;color:var(--t-regular);font-size:14px;flex:1}
+.el-dialog__footer{padding:12px 20px 18px;text-align:right;display:flex;justify-content:flex-end;gap:10px}
+
+/* ---------- drawer ---------- */
+.drawer-mask{
+  position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2100;display:none;
+}
+.drawer-mask.open{display:block}
+.el-drawer{
+  position:absolute;right:0;top:0;bottom:0;width:980px;max-width:96vw;background:#fff;
+  box-shadow:0 8px 10px -5px rgba(0,0,0,.2),0 16px 24px 2px rgba(0,0,0,.14);
+  display:flex;flex-direction:column;transform:translateX(0);
+}
+.el-drawer__header{
+  padding:16px 20px;border-bottom:1px solid var(--bd-lighter);display:flex;align-items:center;gap:10px;
+}
+.el-drawer__header .t{font-size:16px;font-weight:600;color:var(--t-primary)}
+.el-drawer__header .close{margin-left:auto;cursor:pointer;color:#909399;font-size:20px;line-height:1}
+.el-drawer__header .close:hover{color:var(--el-primary)}
+.el-drawer__body{flex:1;overflow-y:auto;padding:18px 20px;background:#f0f2f5}
+
+/* ---------- form rows in dialogs ---------- */
+.dlg-form .row{display:flex;align-items:center;margin-bottom:16px}
+.dlg-form .row>label{flex:0 0 118px;text-align:right;padding-right:14px;color:var(--t-regular);font-size:14px}
+.dlg-form .row .ctl{flex:1}
+.dlg-form .row .ctl .el-input,.dlg-form .row .ctl .el-select{width:100%}
+.el-switch{
+  display:inline-flex;align-items:center;width:40px;height:20px;border-radius:10px;
+  background:#dcdfe6;cursor:pointer;transition:.2s;padding:2px;
+}
+.el-switch.on{background:var(--el-primary)}
+.el-switch i{width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s;display:block}
+.el-switch.on i{transform:translateX(20px)}
+.switch-line{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--t-regular)}
+
+/* ---------- misc ---------- */
+.section-title{
+  font-size:14px;font-weight:600;color:var(--t-primary);margin:0 0 12px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-title::before{content:"";width:3px;height:14px;background:var(--el-primary);border-radius:2px}
+.section-title .sub{font-size:12px;font-weight:400;color:var(--t-secondary)}
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.toolbar .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.sel-note{font-size:12.5px;color:var(--t-regular)}
+.sel-note b{color:var(--el-primary)}
+.muted{color:var(--t-secondary)}
+.small{font-size:12px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.nowrap{white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+.stack{display:flex;flex-direction:column;gap:2px}
+.stack .s2{font-size:11.5px;color:var(--t-secondary)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.timeline{padding-left:6px}
+.tl-item{position:relative;padding:0 0 16px 20px;border-left:1px solid var(--bd-light)}
+.tl-item:last-child{border-left-color:transparent;padding-bottom:0}
+.tl-item::before{
+  content:"";position:absolute;left:-4px;top:3px;width:7px;height:7px;border-radius:50%;
+  background:#c0c4cc;
+}
+.tl-item.done::before{background:var(--el-success)}
+.tl-item.err::before{background:var(--el-danger)}
+.tl-item .tt{font-size:13px;color:var(--t-primary)}
+.tl-item .td{font-size:12px;color:var(--t-secondary);margin-top:2px}
+
+/* toast */
+.toast-wrap{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:3000;display:flex;flex-direction:column;gap:10px;align-items:center}
+.toast{
+  min-width:280px;padding:11px 16px;border-radius:4px;font-size:14px;display:flex;align-items:center;gap:8px;
+  box-shadow:0 4px 12px rgba(0,0,0,.12);animation:tin .25s ease;
+}
+.toast.success{background:var(--el-success-light);border:1px solid #e1f3d8;color:#529b2e}
+.toast.info{background:var(--el-primary-light);border:1px solid #d9ecff;color:#337ecc}
+.toast.warning{background:var(--el-warning-light);border:1px solid #faecd8;color:#b88230}
+@keyframes tin{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+
+@media (max-width:1180px){
+  .sidebar{width:64px;flex:0 0 64px}
+  .side-logo .txt,.side-logo .env{display:none}
+  .menu-item span.lbl,.menu-title span.lbl,.menu-title .arrow{display:none}
+  .submenu .menu-item{padding-left:14px}
+  .submenu .menu-item::before{display:none}
+  .submenu .menu-item span.lbl{display:inline}
+  .menu-group.open .submenu .menu-item{font-size:11px;height:34px}
+}
+
+/* ---------- 本系统新增：三处收费规则提示条 / 费率替换标注 / 返佣额度指示 / 算法分步 ---------- */
+.hint-note.rule{
+  background:var(--el-warning-light);border-left-color:var(--el-warning);color:#8a6d3b;
+  margin:0 0 12px;
+}
+.hint-note.rule b{color:#b88230;font-weight:700}
+.hint-note.rule a{color:#337ecc}
+.repl{font-size:11px;color:var(--t-placeholder);margin-top:2px;font-weight:400}
+.alloc{
+  border:1px solid var(--bd-lighter);border-radius:4px;padding:12px 14px;background:#fafbfc;
+}
+.alloc.over{border-color:#fde2e2;background:var(--el-danger-light)}
+.alloc .alloc-top{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  font-size:13px;color:var(--t-regular);margin-bottom:7px;font-variant-numeric:tabular-nums;
+}
+.alloc .alloc-top b{font-size:17px;color:var(--t-primary)}
+.alloc .alloc-top .ok{color:var(--el-success)}
+.alloc .alloc-top .bad{color:var(--el-danger);font-weight:600}
+.alloc .util-bar{margin-top:0}
+.step{border-left:2px solid var(--bd-light);padding:0 0 14px 14px;margin-left:4px}
+.step:last-child{padding-bottom:2px}
+.step .st{
+  font-size:13px;font-weight:600;color:var(--t-primary);margin:0 0 7px;position:relative;
+}
+.step .st::before{
+  content:"";position:absolute;left:-19px;top:5px;width:7px;height:7px;border-radius:50%;
+  background:var(--el-primary);
+}
+.step .sb{font-size:12.5px;color:var(--t-regular);line-height:1.7}
+.step .bal-table{margin-top:2px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="side-logo">
+      <div class="mark">PP</div>
+      <div class="txt">渠道 · 合作伙伴 · 佣金</div>
+      <div class="env">PROD</div>
+    </div>
+    <nav class="menu" id="menu"></nav>
+  </aside>
+  <div class="main">
+    <header class="navbar">
+      <div class="hamburger"><i></i><i></i><i></i></div>
+      <div class="breadcrumb" id="breadcrumb"></div>
+      <div class="nav-right">
+        <div class="nb" title="本期佣金为纯记账，不触发任何打款">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+          <span>纯记账 · 不打款</span>
+        </div>
+        <div class="nb"><a href="admin-console.html" style="color:inherit">运营管理后台</a></div>
+        <div class="nb">
+          <div class="avatar">运</div>
+          <span>ops.amos</span>
+        </div>
+      </div>
+    </header>
+    <div class="tags-view" id="tagsView"></div>
+    <section class="app-main" id="appMain"></section>
+  </div>
+</div>
+
+<div class="mask" id="dialogMask"><div class="el-dialog" id="dialogBox"></div></div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   PayPaz 渠道 · 合作伙伴 · 佣金分配系统（原型）
+   实现依据：paypaz-commission-system-design.md v0.1
+   结构沿用 admin-console.html 的 NAV / PAGE_META / PAGES / verifyRegistry 模式
+   ========================================================================= */
+
+/* =========================================================================
+   0. tiny helpers
+   ========================================================================= */
+function $(id){ return document.getElementById(id); }
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function n2(v){ return Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function pct(v){ return Number(v).toFixed(2)+'%'; }
+function r2(v){ return Math.round(Number(v)*100)/100; }
+function pad(n,w){ var s=String(n); while(s.length<w) s='0'+s; return s; }
+function rows(keys,data){
+  return data.map(function(arr){
+    var o={};
+    keys.forEach(function(k,i){ o[k]=arr[i]; });
+    return o;
+  });
+}
+function nowStr(){
+  var d=new Date();
+  return d.getFullYear()+'-'+pad(d.getMonth()+1,2)+'-'+pad(d.getDate(),2)+' '+
+         pad(d.getHours(),2)+':'+pad(d.getMinutes(),2)+':'+pad(d.getSeconds(),2);
+}
+function toast(msg,type){
+  var w=$('toastWrap');
+  var d=document.createElement('div');
+  d.className='toast '+(type||'success');
+  d.innerHTML='<span>'+esc(msg)+'</span>';
+  w.appendChild(d);
+  setTimeout(function(){ d.remove(); },3200);
+}
+var ICONS={
+  link:'<path d="M10 13a5 5 0 0 0 7.1 0l2.6-2.6a5 5 0 0 0-7.1-7.1L11 4.9"/><path d="M14 11a5 5 0 0 0-7.1 0L4.3 13.6a5 5 0 0 0 7.1 7.1L13 19.1"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  shop:'<path d="M3 9l1.6-5h14.8L21 9M3 9h18v11H3zM9 20v-6h6v6"/>',
+  coin:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9h4.2a1.9 1.9 0 0 1 0 3.8H9.5m0 0h5.4"/>'
+};
+function icon(k){
+  return '<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[k]||'')+'</svg></span>';
+}
+
+/* =========================================================================
+   1. seed data
+   ========================================================================= */
+
+/* ---- 1.1 渠道：每个渠道一套充提币收费规则，【替换】而非叠加「代币」菜单的基础费率 ---- */
+var BASE_FEE={deposit:0.10,withdraw:0.15};   /* 「代币」菜单的基础费率，仅用于对比展示 */
+var CHANNELS=rows(
+ ['id','name','depositFeeRate','withdrawFeeRate','status','createTime','note'],
+[
+ ['CH-01','Meta Trader',0.25,0.30,'enable','2025-04-18 10:02:11','MT4/MT5 生态引流，存量最大的渠道'],
+ ['CH-02','IB 经纪联盟',0.20,0.28,'enable','2025-11-06 15:41:07','多个独立 IB 拼成的联盟渠道'],
+ ['CH-03','亚太引流合作',0.35,0.40,'disable','2026-02-24 09:17:50','试点后暂停，停用后不再产生新配置']
+]);
+function channel(id){ for(var i=0;i<CHANNELS.length;i++){ if(CHANNELS[i].id===id) return CHANNELS[i]; } return null; }
+function chname(id){ var c=channel(id); return c?c.name:(id||'—'); }
+
+/* ---- 1.2 合作伙伴：挂在渠道下，walletAddress 为预留字段，本期不接打款 ---- */
+var PARTNERS=rows(
+ ['id','channelId','name','contact','walletAddress','status','createTime'],
+[
+ ['P-101','CH-01','张伟（亚太 IB）','wei.zhang@mt-ib.asia / +65 8***2201','TKq7nB4xW9pR2vL6sD8mA1yE5jH3cZfUgQ','enable','2025-04-18 10:30:22'],
+ ['P-102','CH-01','Orion Capital Ltd.','ops@orioncap.io / +44 20 ****8810','0x4A7bC2e9F1d63B58aE0c7D2f9B4a6C1E8d3F5b70','enable','2025-05-09 11:12:40'],
+ ['P-103','CH-01','李静（华南直客）','jing.li@partner.cn / +86 138****6620','','disable','2025-09-01 16:44:03'],
+ ['P-201','CH-02','汇金引流工作室','hj-studio@mail.com / +86 139****3311','TB3mV8qY2wK5eN7sR1aD9jC4hX6fLpZuTn','enable','2025-11-06 16:02:55'],
+ ['P-202','CH-02','Bright Path Media','finance@brightpath.media / +1 ***-2140','0x9E2dF7a4C8b13D50fA6e9B2c7D4a1F8E5b0C3d29','enable','2026-01-15 14:20:18'],
+ ['P-301','CH-03','南洋直客部','nanyang.direct@paypaz.tech','','enable','2026-02-24 09:40:12'],
+ ['P-302','CH-03','Kevin Tan','kevin.tan@apac-lead.sg / +65 9***7742','TD6yA1nQ8vM3wS5eK2rB7jP4hF9cXzLuTb','enable','2026-03-02 10:05:36']
+]);
+function partner(id){ for(var i=0;i<PARTNERS.length;i++){ if(PARTNERS[i].id===id) return PARTNERS[i]; } return null; }
+function pname(id){ var p=partner(id); return p?p.name:(id||'—'); }
+function partnersOf(chId){ return PARTNERS.filter(function(p){ return p.channelId===chId; }); }
+
+/* ---- 1.3 商户（broker），与 admin-console.html 同一批商户 ---- */
+var MERCHANTS=rows(
+ ['id','name','userId'],
+[
+ ['BR-1001','明汇国际支付有限公司',100241],
+ ['BR-1002','星舟数字科技（香港）有限公司',100377],
+ ['BR-1003','汇丰通商务服务有限公司',100415],
+ ['BR-1004','南洋跨境结算私人有限公司',100488],
+ ['BR-1005','恒昌资本管理有限公司',100503],
+ ['BR-1006','澜海支付科技有限公司',100519]
+]);
+function merchant(id){ for(var i=0;i<MERCHANTS.length;i++){ if(MERCHANTS[i].id===id) return MERCHANTS[i]; } return null; }
+function mname(id){ var m=merchant(id); return m?m.name:(id||'—'); }
+function mshort(id){ var m=merchant(id); return m?m.name.replace(/（.*?）/g,'').slice(0,6):(id||'—'); }
+
+/* ---- 1.4 商户的渠道配置（当前生效值；订单产生佣金时被快照进 LEDGER）----
+   rate = 返佣比例，口径是「该渠道手续费收入的百分比」，同商户下各合作伙伴之和 <= 100%。
+   addr = 该商户在该渠道下的专属充值地址（复用 SubWalletAddress.partnerCode 分流机制）。 */
+var MCFG={
+ 'BR-1001':{channelId:'CH-01',picks:[{partnerId:'P-101',rate:60},{partnerId:'P-102',rate:30}],
+            addr:'TUq2Meta1001xP7vR4dK9sB6nY3hE8jLcZ',openapi:true,time:'2025-05-10 09:20:11'},
+ 'BR-1002':{channelId:'CH-01',picks:[{partnerId:'P-102',rate:50}],
+            addr:'TVr5Meta1002yQ8wS3eL1mC7bX4kA6nFdGh',openapi:true,time:'2025-06-02 11:45:33'},
+ 'BR-1004':{channelId:'CH-02',picks:[{partnerId:'P-201',rate:40},{partnerId:'P-202',rate:35}],
+            addr:'TWs8Ibal1004zR1xT6fM4nD9cV2pB5jHeKq',openapi:true,time:'2025-12-11 15:02:47'},
+ 'BR-1006':{channelId:'CH-02',picks:[{partnerId:'P-201',rate:100}],
+            addr:'TXt3Ibal1006aS4yU9gN7pF2dW6qC1kJmLr',openapi:true,time:'2026-01-20 10:11:09'}
+};
+function mcfg(mid){ return MCFG[mid]||null; }
+function cfgRateOf(mid,pid){
+  var c=mcfg(mid); if(!c) return 0;
+  for(var i=0;i<c.picks.length;i++){ if(c.picks[i].partnerId===pid) return c.picks[i].rate; }
+  return 0;
+}
+function merchantsOfChannel(chId){
+  return Object.keys(MCFG).filter(function(m){ return MCFG[m].channelId===chId; });
+}
+function merchantsOfPartner(pid){
+  return Object.keys(MCFG).filter(function(m){
+    return MCFG[m].picks.some(function(p){ return p.partnerId===pid; });
+  });
+}
+/* 专属充值地址：原型内用确定性伪地址代替真实 SubWalletAddress 分配 */
+function genAddr(mid,chId){
+  var seed=0x811c9dc5, s=mid+'|'+chId;
+  for(var i=0;i<s.length;i++){ seed=(seed^s.charCodeAt(i))>>>0; seed=(seed*16777619)>>>0; }
+  var abc='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789';
+  var out='T';
+  for(var j=0;j<33;j++){
+    seed^=seed<<13; seed>>>=0; seed^=seed>>>17; seed^=seed<<5; seed>>>=0;
+    out+=abc[seed%abc.length];
+  }
+  return out;
+}
+
+/* ---- 1.5 订单：只保留佣金计算需要的字段。feeAmount 为当前手续费，origFee 为首次扣费金额 ---- */
+var ORDERS=rows(
+ ['orderId','orderType','merchantId','feeAmount','origFee','token','createTime','refundRef'],
+[
+ ['ORD-D-20260915-0011','DEPOSIT','BR-1001',420.00,420.00,'USDT','2026-09-15 10:22:31',''],
+ ['ORD-D-20260916-0027','DEPOSIT','BR-1001',700.00,980.00,'USDT','2026-09-16 14:05:02','RFD-20260917-0031'],
+ ['ORD-W-20260917-0044','WITHDRAW','BR-1002',310.00,310.00,'USDT','2026-09-17 09:38:14',''],
+ ['ORD-D-20260918-0052','DEPOSIT','BR-1004',640.00,640.00,'USDT','2026-09-18 13:47:56',''],
+ ['ORD-W-20260918-0061','WITHDRAW','BR-1006',150.00,150.00,'USDT','2026-09-18 17:20:03',''],
+ ['ORD-D-20260919-0073','DEPOSIT','BR-1001',1250.00,1250.00,'USDT','2026-09-19 11:02:44',''],
+ ['ORD-D-20260919-0080','DEPOSIT','BR-1004',880.00,880.00,'USDT','2026-09-19 16:55:21',''],
+ ['ORD-W-20260920-0094','WITHDRAW','BR-1002',205.00,205.00,'USDT','2026-09-20 10:14:37',''],
+ ['ORD-D-20260921-0102','DEPOSIT','BR-1006',460.00,520.00,'USDT','2026-09-21 09:05:50','RFD-20260921-0018']
+]);
+function orderById(id){ for(var i=0;i<ORDERS.length;i++){ if(ORDERS[i].orderId===id) return ORDERS[i]; } return null; }
+
+/* =========================================================================
+   2. 佣金流水（只追加不修改）+ 退款自动调整算法（设计文档 §4.2 / §4.3）
+   ========================================================================= */
+var LEDGER=[];
+var ENTRY_SEQ=0;
+function nextEntryId(){ return 'CE-'+pad(++ENTRY_SEQ,6); }
+
+/* 生成一条佣金记录：所有随配置变化的字段（feeAmount / rebateRate）在这里被快照固化 */
+function pushEntry(o){
+  var e={
+    id:nextEntryId(),
+    orderId:o.orderId, orderType:o.orderType,
+    merchantId:o.merchantId, channelId:o.channelId, partnerId:o.partnerId,
+    feeAmount:r2(o.feeAmount),          /* 手续费金额快照 */
+    rebateRate:o.rebateRate,            /* 返佣比例快照（% of 手续费） */
+    amount:r2(o.amount),                /* 本条金额，调整记录可为负 */
+    entryType:o.entryType,              /* ORIGINAL | ADJUSTMENT */
+    adjustRefOrderId:o.adjustRefOrderId||'',
+    status:o.status||'PENDING',         /* PENDING | PROCESSED */
+    processedBy:o.processedBy||'', processedAt:o.processedAt||'',
+    createTime:o.createTime||nowStr()
+  };
+  LEDGER.push(e);
+  return e;
+}
+function entriesOfOrder(orderId){
+  return LEDGER.filter(function(e){ return e.orderId===orderId; });
+}
+
+/* 订单扣费完成 → 实时按当时配置生成 ORIGINAL 记录（§4.1，系统内无等待期） */
+function genOriginal(ord,feeAmount,time){
+  var c=mcfg(ord.merchantId);
+  if(!c) return [];
+  return c.picks.map(function(p){
+    return pushEntry({
+      orderId:ord.orderId, orderType:ord.orderType, merchantId:ord.merchantId,
+      channelId:c.channelId, partnerId:p.partnerId,
+      feeAmount:feeAmount, rebateRate:p.rate,
+      amount:feeAmount*p.rate/100,
+      entryType:'ORIGINAL', createTime:time||ord.createTime
+    });
+  });
+}
+
+/* ---- §4.3 步骤 2~4：找出该订单全部记录 → 用【快照返佣比例】× 新手续费重算 → 与已产生总和求差 ---- */
+function computeAdjust(orderId,newFee){
+  var byPartner=entriesOfOrder(orderId).reduce(function(m,e){
+    if(!m[e.partnerId]){
+      m[e.partnerId]={partnerId:e.partnerId,channelId:e.channelId,merchantId:e.merchantId,
+        orderType:e.orderType,rate:null,paid:0,n:0};
+    }
+    var o=m[e.partnerId];
+    if(e.entryType==='ORIGINAL') o.rate=e.rebateRate;   /* 快照比例只认原始记录 */
+    o.paid=r2(o.paid+e.amount);
+    o.n++;
+    return m;
+  },{});
+  return Object.keys(byPartner).map(function(k){
+    var o=byPartner[k];
+    o.due=r2(newFee*(o.rate||0)/100);   /* 步骤3：应得佣金 */
+    o.diff=r2(o.due-o.paid);            /* 步骤4：差额 */
+    return o;
+  });
+}
+/* ---- §4.3 步骤 5：差额不为零 → 每个受影响伙伴各追加一条 ADJUSTMENT，原始记录永不修改 ---- */
+function applyAdjust(orderId,newFee,refId,time){
+  var plan=computeAdjust(orderId,newFee);
+  var added=plan.filter(function(o){ return o.diff!==0; }).map(function(o){
+    return pushEntry({
+      orderId:orderId, orderType:o.orderType, merchantId:o.merchantId,
+      channelId:o.channelId, partnerId:o.partnerId,
+      feeAmount:newFee, rebateRate:o.rate,
+      amount:o.diff,
+      entryType:'ADJUSTMENT', adjustRefOrderId:refId,
+      createTime:time||nowStr()
+    });
+  });
+  var ord=orderById(orderId);
+  if(ord){ ord.feeAmount=r2(newFee); ord.refundRef=refId; }
+  return added;
+}
+
+/* ---- 2.1 种子流水：先按 origFee 生成全部 ORIGINAL，再对已退款订单跑一次真实调整算法 ----
+   （种子里的历史 ADJUSTMENT 记录就是 applyAdjust 自己算出来的，不是手写死的数字） */
+ORDERS.forEach(function(o){ genOriginal(o,o.origFee,o.createTime); });
+applyAdjust('ORD-D-20260916-0027',700.00,'RFD-20260917-0031','2026-09-17 15:31:08');
+applyAdjust('ORD-D-20260921-0102',460.00,'RFD-20260921-0018','2026-09-21 14:12:26');
+/* 运营已线下处理过的几条（§4.4：标记只作流程追溯，且各条状态互相独立）*/
+['ORD-D-20260915-0011','ORD-W-20260917-0044'].forEach(function(oid){
+  entriesOfOrder(oid).forEach(function(e){
+    e.status='PROCESSED'; e.processedBy='ops.amos'; e.processedAt='2026-09-16 18:02:40';
+  });
+});
+LEDGER.forEach(function(e){
+  /* ORD-...0027 的 P-101 原始记录先被标记已处理，随后才产生退款调整记录：
+     已处理记录不回滚、不改动，新调整记录独立为 PENDING —— 正是 §4.4 要求的表现 */
+  if(e.orderId==='ORD-D-20260916-0027'&&e.partnerId==='P-101'&&e.entryType==='ORIGINAL'){
+    e.status='PROCESSED'; e.processedBy='ops.amos'; e.processedAt='2026-09-17 09:12:05';
+  }
+});
+var REFUND_SEQ=18;
+
+/* ---- 2.2 净额汇总：只从「当前可见的记录」reduce 出来，不单独存储（§4.3 步骤6） ---- */
+function netByPartner(list){
+  var m=list.reduce(function(acc,e){
+    if(!acc[e.partnerId]){
+      acc[e.partnerId]={partnerId:e.partnerId,channelId:e.channelId,
+        orig:0,adj:0,net:0,pending:0,processed:0,n:0,adjN:0,pendingIds:[]};
+    }
+    var o=acc[e.partnerId];
+    if(e.entryType==='ORIGINAL') o.orig=r2(o.orig+e.amount);
+    else { o.adj=r2(o.adj+e.amount); o.adjN++; }
+    o.net=r2(o.net+e.amount);
+    if(e.status==='PENDING'){ o.pending=r2(o.pending+e.amount); o.pendingIds.push(e.id); }
+    else o.processed=r2(o.processed+e.amount);
+    o.n++;
+    return acc;
+  },{});
+  return Object.keys(m).map(function(k){ return m[k]; })
+    .sort(function(a,b){ return b.net-a.net; });
+}
+function sumBy(list,fn){ return r2(list.reduce(function(s,e){ return s+fn(e); },0)); }
+
+/* =========================================================================
+   3. app state + nav（沿用 admin-console.html 的注册表模式）
+   ========================================================================= */
+var NAV=[
+ {key:'channel',label:'渠道管理',icon:'link'},
+ {key:'partner',label:'合作伙伴管理',icon:'user'},
+ {key:'mcfg',label:'商户渠道配置',icon:'shop'},
+ {key:'commission',label:'佣金记录',icon:'coin'}
+];
+/* 期望的一级导航顺序（供 verifyRegistry 断言，防止后续改动打乱信息架构）：
+   渠道 → 合作伙伴 → 商户配置 → 佣金记录，正好是运营的配置顺序 */
+var NAV_ORDER_EXPECT=['channel','partner','mcfg','commission'];
+/* 本系统暂无分组菜单；留空断言，防止有人把「佣金记录」拆成子菜单却忘了注册 */
+var NAV_CHILDREN_EXPECT={};
+/* 已下线 / 明确不做的页面键，不得出现在任何注册表中：
+     payout —— 本期佣金分配是纯记账，不做打款页面（§4.4）
+     settle —— 佣金不做周期结算，运营节奏在线下 */
+var RETIRED_KEYS=['payout','settle'];
+
+/* PAGE_META 是面包屑 + 页签标题的唯一来源，从 NAV 生成，导航项不可能缺标签 */
+var PAGE_META={};
+NAV.forEach(function(g){
+  if(g.children){
+    g.children.forEach(function(c){
+      PAGE_META[c.key]={title:c.label,parent:g.label,nav:c.key,group:g.key};
+    });
+  }else{
+    PAGE_META[g.key]={title:g.label,parent:null,nav:g.key};
+  }
+});
+
+var state={
+  page:'channel',
+  param:null,
+  openGroups:{},
+  tags:[{key:'channel',param:null}],
+  f:{},                       /* 每个页面的筛选条件 */
+  partnerTab:'CH-01',         /* 合作伙伴管理：当前渠道 */
+  cfg:null,                   /* 商户渠道配置：当前编辑草稿 */
+  dialog:null
+};
+function F(k){ if(!state.f[k]) state.f[k]={}; return state.f[k]; }
+
+/* =========================================================================
+   4. shell rendering
+   ========================================================================= */
+function renderMenu(){
+  var cur=PAGE_META[state.page]?PAGE_META[state.page].nav:state.page;
+  var h='';
+  NAV.forEach(function(g){
+    if(g.children){
+      var open=!!state.openGroups[g.key]||g.children.some(function(c){ return c.key===cur; });
+      h+='<div class="menu-group'+(open?' open':'')+'">';
+      h+='<div class="menu-title" data-act="group" data-k="'+g.key+'">'+icon(g.icon)+
+         '<span class="lbl">'+esc(g.label)+'</span><span class="arrow"></span></div><div class="submenu">';
+      g.children.forEach(function(c){
+        h+='<div class="menu-item'+(c.key===cur?' active':'')+'" data-act="go" data-k="'+c.key+'">'+
+           '<span class="lbl">'+esc(c.label)+'</span></div>';
+      });
+      h+='</div></div>';
+    }else{
+      h+='<div class="menu-item'+(g.key===cur?' active':'')+'" data-act="go" data-k="'+g.key+'">'+
+         icon(g.icon)+'<span class="lbl">'+esc(g.label)+'</span></div>';
+    }
+  });
+  h+='<a class="menu-item" href="admin-console.html" style="text-decoration:none">'+
+     '<span class="lbl" style="font-size:12.5px;color:#7d8794">← 返回运营管理后台</span></a>';
+  $('menu').innerHTML=h;
+}
+function renderTags(){
+  var h='';
+  state.tags.forEach(function(t,i){
+    var m=PAGE_META[t.key];
+    var active=(t.key===state.page&&(t.param||null)===(state.param||null));
+    h+='<div class="tag'+(active?' active':'')+'" data-act="tag-go" data-i="'+i+'">'+
+       '<span>'+esc(m?m.title:t.key)+'</span>'+
+       (i===0?'':'<i class="x" data-act="tag-close" data-i="'+i+'">&times;</i>')+'</div>';
+  });
+  $('tagsView').innerHTML=h;
+}
+function renderBreadcrumb(){
+  var m=PAGE_META[state.page];
+  var h='<span class="bc link" data-act="go" data-k="channel">渠道·合作伙伴·佣金</span>';
+  if(m&&m.parent) h+='<span class="sep">/</span><span class="bc">'+esc(m.parent)+'</span>';
+  h+='<span class="sep">/</span><span class="bc">'+esc(m?m.title:'未知页面')+'</span>';
+  $('breadcrumb').innerHTML=h;
+}
+function go(key,param){
+  if(!PAGE_META[key]){ toast('页面 '+key+' 未注册','warning'); return; }
+  state.page=key; state.param=param||null;
+  if(!state.tags.some(function(t){ return t.key===key&&(t.param||null)===(param||null); }))
+    state.tags.push({key:key,param:param||null});
+  render();
+  $('appMain').scrollTop=0;
+}
+
+/* =========================================================================
+   5. 通用片段
+   ========================================================================= */
+/* 三处收费规则的定位提示条（设计文档 §2）：当前页高亮，另外两处可点击跳转 */
+function feeRuleBanner(here){
+  function seg(txt,link,on){
+    if(on) return '<b>'+esc(txt)+'</b>';
+    return '<a href="'+link+'">'+esc(txt)+'</a>';
+  }
+  return '<div class="hint-note rule">系统收费规则分三处配置，互不覆盖：'+
+    seg('普通充提币费率见「代币」菜单','admin-console.html',false)+' · '+
+    seg('On Ramp 业务费率见「On Ramp」菜单','admin-console.html',false)+' · '+
+    seg(here==='channel'?'渠道客户费率见本页「渠道管理」':'渠道客户费率见「渠道管理」','#',true)+
+    '<br><span class="muted">没有配置渠道的商户走「代币」菜单的默认费率；配置了渠道的商户，其渠道来源客户按渠道费率计费，返佣从这笔手续费里出。改费率前先确认改的是哪一处。</span></div>';
+}
+function statusTag(s){
+  return s==='enable'?'<span class="el-tag success sm">启用</span>':'<span class="el-tag danger sm">停用</span>';
+}
+function filterBar(pageKey,fields){
+  var f=F(pageKey);
+  var h='<div class="el-card filter-card"><div class="el-card__body"><div class="el-form-inline">';
+  fields.forEach(function(fd){
+    var v=f[fd.k]==null?'':f[fd.k];
+    h+='<div class="el-form-item"><label class="el-form-item__label">'+esc(fd.label)+'</label>'+
+       '<select class="el-select'+(fd.w?' '+fd.w:'')+'" data-flt="'+pageKey+'" data-fk="'+fd.k+'">'+
+       '<option value="">'+esc(fd.ph||'全部')+'</option>';
+    fd.options.forEach(function(o){
+      h+='<option value="'+esc(o[0])+'"'+(String(v)===String(o[0])?' selected':'')+'>'+esc(o[1])+'</option>';
+    });
+    h+='</select></div>';
+  });
+  h+='<div class="el-form-item"><button class="el-button" data-act="reset-filter" data-k="'+pageKey+'">重置</button></div>';
+  h+='</div></div></div>';
+  return h;
+}
+function applyFilters(pageKey,data,rules){
+  var f=F(pageKey);
+  return data.filter(function(r){
+    for(var k in rules){
+      var v=f[k];
+      if(v==null||v==='') continue;
+      if(!rules[k](r,v)) return false;
+    }
+    return true;
+  });
+}
+
+/* =========================================================================
+   6. PAGE — 渠道管理
+   ========================================================================= */
+function pageChannel(){
+  var h='<div class="app-container">';
+  h+=feeRuleBanner('channel');
+  h+='<div class="el-card"><div class="el-card__header">'+
+     '<span class="title">渠道列表</span>'+
+     '<span class="sub">共 '+CHANNELS.length+' 个渠道 · 渠道费率【替换】基础费率，不是在基础费率之上加收</span>'+
+     '<span class="hdr-right"><button class="el-button el-button--primary" data-act="new-channel">+ 新增渠道</button></span>'+
+     '</div><div class="el-card__body">';
+  h+='<div class="table-wrap"><table class="el-table"><thead><tr>'+
+     '<th style="min-width:150px">渠道</th>'+
+     '<th class="num">充值手续费率</th><th class="num">提现手续费率</th>'+
+     '<th class="num">合作伙伴</th><th class="num">已配置商户</th>'+
+     '<th>状态</th><th style="min-width:150px">创建时间</th><th style="min-width:150px">操作</th>'+
+     '</tr></thead><tbody>';
+  CHANNELS.forEach(function(c){
+    var ps=partnersOf(c.id);
+    var on=ps.filter(function(p){ return p.status==='enable'; }).length;
+    h+='<tr>'+
+      '<td><div class="stack"><b>'+esc(c.name)+'</b><span class="s2 mono">'+esc(c.id)+' · '+esc(c.note)+'</span></div></td>'+
+      '<td class="num"><b>'+pct(c.depositFeeRate)+'</b><div class="repl">替换基础 '+pct(BASE_FEE.deposit)+'</div></td>'+
+      '<td class="num"><b>'+pct(c.withdrawFeeRate)+'</b><div class="repl">替换基础 '+pct(BASE_FEE.withdraw)+'</div></td>'+
+      '<td class="num"><span class="link-a" data-act="go-partner" data-k="'+esc(c.id)+'">'+ps.length+' 个</span>'+
+        '<div class="s2">启用 '+on+'</div></td>'+
+      '<td class="num">'+merchantsOfChannel(c.id).length+'</td>'+
+      '<td>'+statusTag(c.status)+'</td>'+
+      '<td class="mono">'+esc(c.createTime)+'</td>'+
+      '<td class="nowrap">'+
+        '<button class="el-button el-button--text" data-act="edit-channel" data-id="'+esc(c.id)+'">编辑费率</button>'+
+        '<button class="el-button el-button--text'+(c.status==='enable'?' danger':'')+'" data-act="toggle-channel" data-id="'+esc(c.id)+'">'+
+          (c.status==='enable'?'停用':'启用')+'</button>'+
+      '</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="hint-note">费率口径：渠道来源客户的充值/提现手续费 <b>只按本表的渠道费率计算</b>，'+
+     '不再叠加「代币」菜单的基础费率——同一笔充值要么走基础费率、要么走渠道费率，由到账地址决定，二者不会同时生效。<br>'+
+     '渠道停用后：已有配置与历史佣金记录保持不变，但不能再被选进新的商户渠道配置。</div>';
+  h+='</div></div></div>';
+  return h;
+}
+function dlgChannel(id){
+  var c=id?channel(id):{id:'',name:'',depositFeeRate:'',withdrawFeeRate:'',status:'enable'};
+  if(!c) return;
+  openDialog({
+    title:id?('编辑渠道 · '+c.name):'新增渠道',
+    body:'<div class="hint-note rule" style="margin:0 0 14px">这里配置的是<b>渠道客户费率</b>，'+
+      '保存后该渠道来源的充值/提现按此费率收费，<b>替换</b>「代币」菜单的基础费率（当前基础：充值 '+
+      pct(BASE_FEE.deposit)+' / 提现 '+pct(BASE_FEE.withdraw)+'），不叠加。</div>'+
+      '<div class="dlg-form">'+
+      '<div class="row"><label>渠道名称</label><div class="ctl">'+
+        '<input class="el-input" id="chName" value="'+esc(c.name)+'" placeholder="如 Meta Trader"></div></div>'+
+      '<div class="row"><label>充值手续费率</label><div class="ctl">'+
+        '<input class="el-input" id="chDep" value="'+esc(c.depositFeeRate)+'" placeholder="百分比，如 0.25">'+
+        '<span class="muted small"> %（替换基础费率）</span></div></div>'+
+      '<div class="row"><label>提现手续费率</label><div class="ctl">'+
+        '<input class="el-input" id="chWdr" value="'+esc(c.withdrawFeeRate)+'" placeholder="百分比，如 0.30">'+
+        '<span class="muted small"> %（替换基础费率）</span></div></div>'+
+      '<div class="row"><label>备注</label><div class="ctl">'+
+        '<input class="el-input" id="chNote" value="'+esc(c.note||'')+'" placeholder="选填"></div></div>'+
+      '<div class="row"><label>状态</label><div class="ctl switch-line">'+
+        '<span class="el-switch'+(c.status==='enable'?' on':'')+'" id="chStatus" data-act="switch"><i></i></span>'+
+        '<span class="muted small">停用后不可被选进新的商户渠道配置</span></div></div>'+
+      '</div>',
+    footer:'<button class="el-button" data-act="dlg-close">取消</button>'+
+      '<button class="el-button el-button--primary" data-act="save-channel" data-id="'+esc(id||'')+'">确定</button>'
+  });
+}
+function saveChannel(id){
+  var name=$('chName').value.trim();
+  var dep=parseFloat($('chDep').value), wdr=parseFloat($('chWdr').value);
+  if(!name){ toast('请填写渠道名称','warning'); return; }
+  if(!isFinite(dep)||dep<0||!isFinite(wdr)||wdr<0){ toast('充值/提现手续费率必须是不小于 0 的数字','warning'); return; }
+  var st=$('chStatus').classList.contains('on')?'enable':'disable';
+  var note=$('chNote').value.trim();
+  if(id){
+    var c=channel(id);
+    c.name=name; c.depositFeeRate=dep; c.withdrawFeeRate=wdr; c.status=st; c.note=note;
+  }else{
+    var n=0;
+    CHANNELS.forEach(function(x){ n=Math.max(n,parseInt(x.id.slice(3),10)); });
+    CHANNELS.push({id:'CH-'+pad(n+1,2),name:name,depositFeeRate:dep,withdrawFeeRate:wdr,
+      status:st,createTime:nowStr(),note:note||'新建渠道'});
+  }
+  closeDialog(); render();
+  toast(id?('渠道「'+name+'」费率已更新，仅对新订单生效，历史佣金记录不变'):('渠道「'+name+'」已创建'));
+}
+
+/* =========================================================================
+   7. PAGE — 合作伙伴管理
+   ========================================================================= */
+function pagePartner(){
+  if(!channel(state.partnerTab)) state.partnerTab=CHANNELS[0].id;
+  var ch=channel(state.partnerTab);
+  var list=partnersOf(ch.id);
+  var h='<div class="app-container">';
+  h+='<div class="el-card"><div class="el-tabs">';
+  CHANNELS.forEach(function(c){
+    h+='<div class="el-tab'+(c.id===state.partnerTab?' active':'')+'" data-act="partner-tab" data-k="'+esc(c.id)+'">'+
+       esc(c.name)+' <span class="muted small">('+partnersOf(c.id).length+')</span></div>';
+  });
+  h+='</div>';
+  h+='<div class="el-card__header"><span class="title">'+esc(ch.name)+' · 合作伙伴</span>'+
+     '<span class="sub">渠道费率 充值 '+pct(ch.depositFeeRate)+' / 提现 '+pct(ch.withdrawFeeRate)+
+     ' · '+(ch.status==='enable'?'渠道启用中':'渠道已停用')+'</span>'+
+     '<span class="hdr-right"><button class="el-button el-button--primary" data-act="new-partner">+ 新增合作伙伴</button></span>'+
+     '</div><div class="el-card__body">';
+  h+='<div class="table-wrap"><table class="el-table"><thead><tr>'+
+     '<th style="min-width:140px">合作伙伴</th><th style="min-width:210px">联系方式</th>'+
+     '<th style="min-width:260px">钱包地址<span class="el-tag sm" style="margin-left:6px">预留字段</span></th>'+
+     '<th class="num">已挂商户</th><th>状态</th><th style="min-width:150px">创建时间</th><th style="min-width:110px">操作</th>'+
+     '</tr></thead><tbody>';
+  if(!list.length) h+='<tr><td class="empty-cell" colspan="7">该渠道下暂无合作伙伴</td></tr>';
+  list.forEach(function(p){
+    var ms=merchantsOfPartner(p.id);
+    h+='<tr>'+
+      '<td><div class="stack"><b>'+esc(p.name)+'</b><span class="s2 mono">'+esc(p.id)+'</span></div></td>'+
+      '<td class="small">'+esc(p.contact||'—')+'</td>'+
+      '<td class="mono">'+(p.walletAddress?esc(p.walletAddress):'<span class="muted">未填写</span>')+'</td>'+
+      '<td class="num">'+ms.length+(ms.length?'<div class="s2">'+esc(ms.map(mshort).join('、'))+'</div>':'')+'</td>'+
+      '<td>'+statusTag(p.status)+'</td>'+
+      '<td class="mono">'+esc(p.createTime)+'</td>'+
+      '<td class="nowrap">'+
+        '<button class="el-button el-button--text" data-act="edit-partner" data-id="'+esc(p.id)+'">编辑</button>'+
+        '<button class="el-button el-button--text'+(p.status==='enable'?' danger':'')+'" data-act="toggle-partner" data-id="'+esc(p.id)+'">'+
+          (p.status==='enable'?'停用':'启用')+'</button>'+
+      '</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="hint-note"><b>钱包地址是预留字段，供未来自动打款使用，本期仅展示/编辑，不接实际打款。</b>'+
+     '本期佣金分配是纯记账：运营在「佣金记录」页只能把记录标记为已处理，系统不会向这些地址转出任何资金。<br>'+
+     '合作伙伴停用后：已有商户配置与历史佣金记录不变，但不能再被选进新的商户渠道配置。</div>';
+  h+='</div></div></div>';
+  return h;
+}
+function dlgPartner(id){
+  var p=id?partner(id):{id:'',channelId:state.partnerTab,name:'',contact:'',walletAddress:'',status:'enable'};
+  if(!p) return;
+  openDialog({
+    title:id?('编辑合作伙伴 · '+p.name):('新增合作伙伴 · '+chname(state.partnerTab)),
+    body:'<div class="dlg-form">'+
+      '<div class="row"><label>所属渠道</label><div class="ctl"><select class="el-select" id="ptCh">'+
+        CHANNELS.map(function(c){
+          return '<option value="'+esc(c.id)+'"'+(c.id===p.channelId?' selected':'')+'>'+esc(c.name)+
+            (c.status==='enable'?'':'（已停用）')+'</option>';
+        }).join('')+'</select></div></div>'+
+      '<div class="row"><label>名称</label><div class="ctl">'+
+        '<input class="el-input" id="ptName" value="'+esc(p.name)+'" placeholder="个人或机构名称"></div></div>'+
+      '<div class="row"><label>联系方式</label><div class="ctl">'+
+        '<input class="el-input" id="ptContact" value="'+esc(p.contact||'')+'" placeholder="邮箱 / 电话"></div></div>'+
+      '<div class="row"><label>钱包地址</label><div class="ctl">'+
+        '<input class="el-input mono" id="ptAddr" value="'+esc(p.walletAddress||'')+'" placeholder="选填">'+
+        '<div class="muted small" style="margin-top:5px;line-height:1.6">预留字段，供未来自动打款使用，'+
+        '本期仅展示/编辑，不接实际打款。</div></div></div>'+
+      '<div class="row"><label>状态</label><div class="ctl switch-line">'+
+        '<span class="el-switch'+(p.status==='enable'?' on':'')+'" id="ptStatus" data-act="switch"><i></i></span>'+
+        '<span class="muted small">停用后不可被选进新的商户渠道配置</span></div></div>'+
+      '</div>',
+    footer:'<button class="el-button" data-act="dlg-close">取消</button>'+
+      '<button class="el-button el-button--primary" data-act="save-partner" data-id="'+esc(id||'')+'">确定</button>'
+  });
+}
+function savePartner(id){
+  var name=$('ptName').value.trim();
+  if(!name){ toast('请填写合作伙伴名称','warning'); return; }
+  var chId=$('ptCh').value;
+  var st=$('ptStatus').classList.contains('on')?'enable':'disable';
+  var contact=$('ptContact').value.trim(), addr=$('ptAddr').value.trim();
+  if(id){
+    var p=partner(id);
+    p.name=name; p.channelId=chId; p.contact=contact; p.walletAddress=addr; p.status=st;
+  }else{
+    var n=parseInt(chId.slice(3),10)*100;
+    PARTNERS.forEach(function(x){ if(x.channelId===chId) n=Math.max(n,parseInt(x.id.slice(2),10)); });
+    PARTNERS.push({id:'P-'+(n+1),channelId:chId,name:name,contact:contact,
+      walletAddress:addr,status:st,createTime:nowStr()});
+  }
+  state.partnerTab=chId;
+  closeDialog(); render();
+  toast(id?('合作伙伴「'+name+'」已保存'):('合作伙伴「'+name+'」已加入渠道「'+chname(chId)+'」'));
+}
+
+/* =========================================================================
+   8. PAGE — 商户渠道配置
+   ========================================================================= */
+function cfgDraft(){
+  if(!state.cfg){
+    var mid=MERCHANTS[0].id;
+    state.cfg=draftFor(mid);
+  }
+  return state.cfg;
+}
+function draftFor(mid){
+  var c=mcfg(mid);
+  var picks={};
+  if(c) c.picks.forEach(function(p){ picks[p.partnerId]=p.rate; });
+  return {mid:mid,channelId:c?c.channelId:'',picks:picks};
+}
+function draftSum(d){
+  return r2(Object.keys(d.picks).reduce(function(s,k){ return s+(Number(d.picks[k])||0); },0));
+}
+function allocHtml(d){
+  var sum=draftSum(d);
+  var over=sum>100;
+  var pctW=Math.max(0,Math.min(100,sum));
+  return '<div class="alloc'+(over?' over':'')+'">'+
+    '<div class="alloc-top"><span>已分配 <b>'+sum.toFixed(2)+'%</b> / 可用 100.00%</span>'+
+    '<span class="'+(over?'bad':'ok')+'">'+(over?('超出 '+r2(sum-100).toFixed(2)+'%，无法保存'):('剩余 '+r2(100-sum).toFixed(2)+'%'))+'</span></div>'+
+    '<div class="util-bar"><i class="'+(over?'danger':(sum>=95?'warn':''))+'" style="width:'+pctW+'%"></i></div>'+
+    '<div class="muted small" style="margin-top:6px">返佣比例的口径是「该渠道手续费收入的百分比」。'+
+    '每个合作伙伴各自独立拿一份，互不共享；本商户下所有合作伙伴之和必须 ≤ 100%（即不能分掉超过手续费全额）。</div>'+
+    '</div>';
+}
+function partnerRowExample(ch,rate){
+  var fee=r2(10000*ch.depositFeeRate/100);
+  return '每 10,000 USDT 充值 → 渠道手续费 '+n2(fee)+' USDT → 本伙伴得 <b>'+n2(r2(fee*rate/100))+'</b> USDT';
+}
+function pageMerchantCfg(){
+  var d=cfgDraft();
+  var m=merchant(d.mid);
+  var saved=mcfg(d.mid);
+  var ch=channel(d.channelId);
+  var h='<div class="app-container">';
+  h+=feeRuleBanner('mcfg');
+  h+='<div class="el-card"><div class="el-card__body tight"><div class="el-form-inline" style="margin-bottom:-4px">'+
+     '<div class="el-form-item"><label class="el-form-item__label">选择商户</label>'+
+     '<select class="el-select w-lg" data-chg="cfg-merchant">'+
+     MERCHANTS.map(function(x){
+       var c=mcfg(x.id);
+       return '<option value="'+esc(x.id)+'"'+(x.id===d.mid?' selected':'')+'>'+esc(x.name)+
+         '（'+x.userId+'）'+(c?' · 已配置 '+chname(c.channelId):' · 自然流量')+'</option>';
+     }).join('')+'</select></div>'+
+     '<div class="el-form-item"><label class="el-form-item__label">渠道</label>'+
+     '<select class="el-select" data-chg="cfg-channel">'+
+     '<option value="">未配置（自然流量）</option>'+
+     CHANNELS.map(function(c){
+       var dis=c.status!=='enable'&&c.id!==d.channelId;
+       return '<option value="'+esc(c.id)+'"'+(c.id===d.channelId?' selected':'')+(dis?' disabled':'')+'>'+
+         esc(c.name)+(c.status==='enable'?'':'（已停用）')+'</option>';
+     }).join('')+'</select></div>'+
+     '</div></div></div>';
+
+  /* 已生效的系统状态卡（§3：OpenAPI 权限 + 专属充值地址） */
+  if(saved){
+    h+='<div class="el-card"><div class="el-card__header"><span class="title">当前生效配置 · '+esc(m.name)+'</span>'+
+       '<span class="sub">保存时间 '+esc(saved.time)+'</span></div><div class="el-card__body">'+
+       '<div class="desc-grid">'+
+       '<div class="desc-cell"><div class="k">渠道</div><div class="v"><b>'+esc(chname(saved.channelId))+'</b> '+
+         '<span class="muted small">充值 '+pct(channel(saved.channelId).depositFeeRate)+
+         ' / 提现 '+pct(channel(saved.channelId).withdrawFeeRate)+'（替换基础费率）</span></div></div>'+
+       '<div class="desc-cell"><div class="k">OpenAPI</div><div class="v">'+
+         '<span class="el-tag success">已开通</span> <span class="muted small">OpenAPI 已为该商户开通该渠道调用权限</span></div></div>'+
+       '<div class="desc-cell"><div class="k">合作伙伴</div><div class="v">'+
+         saved.picks.map(function(p){ return esc(pname(p.partnerId))+' <b>'+pct(p.rate)+'</b>'; }).join('，')+
+         ' <span class="muted small">合计 '+pct(saved.picks.reduce(function(s,p){ return s+p.rate; },0))+'</span></div></div>'+
+       '<div class="desc-cell"><div class="k">专属充值地址</div><div class="v mono">'+esc(saved.addr)+
+         ' <span class="el-tag primary sm">已生成</span></div></div>'+
+       '</div>'+
+       '<div class="hint-note">该商户名下由此渠道来源产生的客户，使用上面这个<b>专属充值地址</b>；'+
+       '自然流量客户仍使用系统默认地址。系统靠到账地址不同区分资金来源，据此决定按哪套费率收费、要不要产生佣金——'+
+       '同一个客户如果两条路都走过，会对应两个不同地址。<br>'+
+       '<span class="muted">原型说明：上面的「已开通」与地址串均为演示用的系统状态展示，未接真实 OpenAPI 与地址分配服务。</span></div>'+
+       '</div></div>';
+  }else{
+    h+='<div class="el-card"><div class="el-card__body"><div class="hint-note" style="margin:0">'+
+       '<b>'+esc(m.name)+'</b> 当前未配置任何渠道 = 自然流量：客户使用系统默认充值地址，'+
+       '按「代币」菜单的基础费率（充值 '+pct(BASE_FEE.deposit)+' / 提现 '+pct(BASE_FEE.withdraw)+'）收费，不产生佣金。'+
+       '在上方选择一个渠道即可开始配置。</div></div></div>';
+  }
+
+  /* 返佣配置表单 */
+  h+='<div class="el-card"><div class="el-card__header"><span class="title">'+
+     (saved?'调整返佣配置':'新建返佣配置')+'</span>'+
+     '<span class="sub">'+(ch?('渠道 '+esc(ch.name)+' 下共 '+partnersOf(ch.id).length+' 个合作伙伴'):'先在上方选择渠道')+'</span>'+
+     '</div><div class="el-card__body">';
+  if(!ch){
+    h+='<div class="muted" style="padding:26px 0;text-align:center">未选择渠道。该商户保持自然流量，不产生佣金记录。</div>';
+  }else{
+    h+='<div id="allocBox">'+allocHtml(d)+'</div>';
+    h+='<div class="table-wrap" style="margin-top:14px"><table class="el-table"><thead><tr>'+
+       '<th style="width:46px"></th><th style="min-width:150px">合作伙伴</th>'+
+       '<th style="min-width:200px">联系方式</th><th style="width:170px">返佣比例（占手续费）</th>'+
+       '<th style="min-width:300px">按当前渠道费率折算</th></tr></thead><tbody>';
+    var ps=partnersOf(ch.id);
+    if(!ps.length) h+='<tr><td class="empty-cell" colspan="5">该渠道下暂无合作伙伴，请先到「合作伙伴管理」新增</td></tr>';
+    ps.forEach(function(p){
+      var on=d.picks[p.id]!=null;
+      var rate=on?d.picks[p.id]:'';
+      var dis=p.status!=='enable'&&!on;
+      h+='<tr>'+
+        '<td><span class="el-checkbox'+(on?' checked':'')+(dis?' disabled':'')+'"'+
+          (dis?'':' data-act="cfg-pick" data-id="'+esc(p.id)+'"')+'></span></td>'+
+        '<td><div class="stack"><b>'+esc(p.name)+'</b><span class="s2 mono">'+esc(p.id)+
+          (p.status==='enable'?'':' · 已停用')+'</span></div></td>'+
+        '<td class="small">'+esc(p.contact||'—')+'</td>'+
+        '<td><input class="el-input w-sm num" data-rate="'+esc(p.id)+'" value="'+esc(rate)+'"'+
+          (on?'':' disabled')+' placeholder="0.00"><span class="muted small"> %</span></td>'+
+        '<td class="small" id="ex-'+esc(p.id)+'">'+
+          (on?partnerRowExample(ch,Number(rate)||0):'<span class="muted">未选中，该伙伴在本商户下不分佣</span>')+'</td>'+
+        '</tr>';
+    });
+    h+='</tbody></table></div>';
+    h+='<div class="toolbar" style="margin:14px 0 0">'+
+       '<button class="el-button el-button--primary" data-act="save-cfg">保存配置</button>'+
+       '<button class="el-button" data-act="reload-cfg">放弃修改</button>'+
+       '<span class="sel-note muted">保存只影响<b>新订单</b>的计算依据，不会修改任何历史佣金记录（历史记录只看下单那一刻的快照）。</span>'+
+       '</div>';
+  }
+  h+='</div></div></div>';
+  return h;
+}
+function updateAlloc(){
+  var d=state.cfg, ch=channel(d.channelId);
+  var box=$('allocBox');
+  if(box) box.innerHTML=allocHtml(d);
+  if(!ch) return;
+  partnersOf(ch.id).forEach(function(p){
+    var cell=$('ex-'+p.id);
+    if(!cell) return;
+    cell.innerHTML=(d.picks[p.id]!=null)
+      ? partnerRowExample(ch,Number(d.picks[p.id])||0)
+      : '<span class="muted">未选中，该伙伴在本商户下不分佣</span>';
+  });
+}
+function saveCfg(){
+  var d=state.cfg;
+  if(!d.channelId){ toast('请选择渠道','warning'); return; }
+  var pids=Object.keys(d.picks);
+  if(!pids.length){ toast('请至少选择一个合作伙伴并填写返佣比例','warning'); return; }
+  var bad=pids.filter(function(k){ var v=Number(d.picks[k]); return !isFinite(v)||v<=0; });
+  if(bad.length){ toast('「'+pname(bad[0])+'」的返佣比例必须是大于 0 的数字','warning'); return; }
+  var sum=draftSum(d);
+  /* 核心校验（设计文档 §1）：各合作伙伴返佣比例之和不得超过渠道手续费金额的 100% */
+  if(sum>100){
+    toast('保存被拒绝：已分配 '+sum.toFixed(2)+'%，超出渠道手续费的 100%（超 '+r2(sum-100).toFixed(2)+
+      '%）。返佣总额不能大于该渠道收到的手续费。','warning');
+    return;
+  }
+  var first=!mcfg(d.mid);
+  MCFG[d.mid]={
+    channelId:d.channelId,
+    picks:pids.map(function(k){ return {partnerId:k,rate:r2(Number(d.picks[k]))}; }),
+    addr:(mcfg(d.mid)&&mcfg(d.mid).channelId===d.channelId)?mcfg(d.mid).addr:genAddr(d.mid,d.channelId),
+    openapi:true,
+    time:nowStr()
+  };
+  state.cfg=draftFor(d.mid);
+  render();
+  toast(first
+    ? ('配置已保存：OpenAPI 已为「'+mshort(d.mid)+'」开通「'+chname(d.channelId)+'」调用权限，并已生成该渠道专属充值地址')
+    : ('配置已更新（已分配 '+sum.toFixed(2)+'%）；仅对新订单生效，历史佣金记录不变'));
+}
+
+/* =========================================================================
+   9. PAGE — 佣金记录（流水 + 按合作伙伴净额 + 退款调整模拟）
+   ========================================================================= */
+var ENTRY_TYPE={ORIGINAL:'原始',ADJUSTMENT:'调整'};
+function visibleLedger(){
+  return applyFilters('commission',LEDGER,{
+    merchantId:function(r,v){ return r.merchantId===v; },
+    channelId:function(r,v){ return r.channelId===v; },
+    partnerId:function(r,v){ return r.partnerId===v; },
+    status:function(r,v){ return r.status===v; },
+    entryType:function(r,v){ return r.entryType===v; }
+  });
+}
+function amtCls(v){ return v<0?'profit-neg':(v>0?'profit-pos':''); }
+function signed(v){ return (v>0?'+':'')+n2(v); }
+function pageCommission(){
+  var list=visibleLedger();
+  var nets=netByPartner(list);
+  var h='<div class="app-container">';
+  h+=filterBar('commission',[
+    {k:'merchantId',label:'商户',w:'w-lg',options:MERCHANTS.map(function(m){ return [m.id,m.name]; })},
+    {k:'channelId',label:'渠道',options:CHANNELS.map(function(c){ return [c.id,c.name]; })},
+    {k:'partnerId',label:'合作伙伴',options:PARTNERS.map(function(p){ return [p.id,p.name+'（'+chname(p.channelId)+'）']; })},
+    {k:'status',label:'状态',w:'w-sm',options:[['PENDING','待处理'],['PROCESSED','已处理']]},
+    {k:'entryType',label:'记录类型',w:'w-sm',options:[['ORIGINAL','原始'],['ADJUSTMENT','调整']]}
+  ]);
+
+  /* 顶部统计：全部由当前可见记录 reduce 得出 */
+  var net=sumBy(list,function(e){ return e.amount; });
+  var pend=sumBy(list.filter(function(e){ return e.status==='PENDING'; }),function(e){ return e.amount; });
+  var adj=sumBy(list.filter(function(e){ return e.entryType==='ADJUSTMENT'; }),function(e){ return e.amount; });
+  h+='<div class="stat-row" style="margin-bottom:16px">'+
+     '<div class="stat accent"><div class="lbl">可见记录净额</div><div class="val">'+n2(net)+'<small>USDT</small></div>'+
+       '<div class="foot">'+list.length+' 条记录 reduce 汇总</div></div>'+
+     '<div class="stat warn"><div class="lbl">其中待处理净额</div><div class="val">'+n2(pend)+'<small>USDT</small></div>'+
+       '<div class="foot">运营尚未标记处理</div></div>'+
+     '<div class="stat'+(adj<0?' danger':'')+'"><div class="lbl">调整记录合计</div><div class="val">'+signed(adj)+'<small>USDT</small></div>'+
+       '<div class="foot">退款等事件导致的自动调整</div></div>'+
+     '<div class="stat"><div class="lbl">涉及合作伙伴</div><div class="val">'+nets.length+'<small>个</small></div>'+
+       '<div class="foot">下方净额视图逐个列出</div></div>'+
+     '</div>';
+
+  /* 净额视图（§4.3 步骤6）：运营看净额，不心算历次调整 */
+  h+='<div class="el-card"><div class="el-card__header"><span class="title">合作伙伴净额视图</span>'+
+     '<span class="sub">原始 + 全部调整加总后的净额，由下方可见记录实时 reduce 得出，不单独存储</span></div>'+
+     '<div class="el-card__body">';
+  h+='<div class="table-wrap"><table class="el-table"><thead><tr>'+
+     '<th style="min-width:150px">合作伙伴</th><th>渠道</th>'+
+     '<th class="num">原始合计</th><th class="num">调整合计</th><th class="num">净额</th>'+
+     '<th class="num">待处理净额</th><th class="num">已处理</th><th class="num">记录数</th>'+
+     '<th style="min-width:210px">操作</th></tr></thead><tbody>';
+  if(!nets.length) h+='<tr><td class="empty-cell" colspan="9">当前筛选条件下没有佣金记录</td></tr>';
+  nets.forEach(function(o){
+    h+='<tr>'+
+      '<td><div class="stack"><b>'+esc(pname(o.partnerId))+'</b><span class="s2 mono">'+esc(o.partnerId)+'</span></div></td>'+
+      '<td class="small">'+esc(chname(o.channelId))+'</td>'+
+      '<td class="num">'+n2(o.orig)+'</td>'+
+      '<td class="num '+amtCls(o.adj)+'">'+(o.adjN?signed(o.adj)+'<div class="s2">'+o.adjN+' 条调整</div>':'—')+'</td>'+
+      '<td class="num"><b>'+n2(o.net)+'</b></td>'+
+      '<td class="num">'+n2(o.pending)+'</td>'+
+      '<td class="num muted">'+n2(o.processed)+'</td>'+
+      '<td class="num">'+o.n+'</td>'+
+      '<td>'+(o.pendingIds.length
+        ? '<button class="el-button el-button--sm" data-act="mark-partner" data-id="'+esc(o.partnerId)+'">'+
+          '标记该伙伴 '+o.pendingIds.length+' 条待处理为已处理（不触发任何打款）</button>'
+        : '<span class="muted small">无待处理记录</span>')+'</td>'+
+      '</tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="hint-note">「标记已处理」<b>仅作流程追溯，不触发任何资金动作</b>——本期佣金分配是纯记账，'+
+     '实际下发由运营线下把控。已标记已处理的记录，即使之后该订单产生新的调整记录，也不会被改动或撤销状态；'+
+     '新的调整记录会作为独立的待处理记录出现在上表里。</div>';
+  h+='</div></div>';
+
+  /* 退款 → 手续费变化 → 佣金自动调整 模拟入口（§4.3） */
+  var oids=list.reduce(function(a,e){ if(a.indexOf(e.orderId)<0) a.push(e.orderId); return a; },[]);
+  h+='<div class="el-card"><div class="el-card__header"><span class="title">订单视角 · 退款调整模拟</span>'+
+     '<span class="sub">选一笔订单模拟退款导致手续费变化，观察系统如何自动追加 ADJUSTMENT 记录</span></div>'+
+     '<div class="el-card__body">';
+  h+='<div class="table-wrap"><table class="el-table"><thead><tr>'+
+     '<th style="min-width:180px">订单号</th><th>类型</th><th style="min-width:130px">商户</th><th>渠道</th>'+
+     '<th class="num">首次手续费</th><th class="num">当前手续费</th>'+
+     '<th class="num">已产生佣金净额</th><th class="num">记录数</th><th>调整来源</th><th style="min-width:130px">操作</th>'+
+     '</tr></thead><tbody>';
+  if(!oids.length) h+='<tr><td class="empty-cell" colspan="10">当前筛选条件下没有订单</td></tr>';
+  oids.forEach(function(oid){
+    var ord=orderById(oid);
+    var es=entriesOfOrder(oid);
+    var nt=sumBy(es,function(e){ return e.amount; });
+    h+='<tr>'+
+      '<td class="mono">'+esc(oid)+'</td>'+
+      '<td>'+(ord.orderType==='DEPOSIT'?'<span class="el-tag primary sm">充值</span>':'<span class="el-tag warning sm">提币</span>')+'</td>'+
+      '<td class="small">'+esc(mshort(ord.merchantId))+'</td>'+
+      '<td class="small">'+esc(chname(es[0].channelId))+'</td>'+
+      '<td class="num">'+n2(ord.origFee)+'</td>'+
+      '<td class="num"><b>'+n2(ord.feeAmount)+'</b>'+
+        (ord.feeAmount!==ord.origFee?'<div class="s2 profit-neg">已降 '+n2(r2(ord.origFee-ord.feeAmount))+'</div>':'')+'</td>'+
+      '<td class="num">'+n2(nt)+'</td>'+
+      '<td class="num">'+es.length+'</td>'+
+      '<td class="small mono">'+(ord.refundRef?esc(ord.refundRef):'—')+'</td>'+
+      '<td><button class="el-button el-button--sm el-button--warning" data-act="sim-refund" data-id="'+esc(oid)+'">模拟退款，调整手续费</button></td>'+
+      '</tr>';
+  });
+  h+='</tbody></table></div></div></div>';
+
+  /* 原始流水表 */
+  h+='<div class="el-card"><div class="el-card__header"><span class="title">佣金流水（CommissionEntry）</span>'+
+     '<span class="sub">只追加不修改 · 当前可见 '+list.length+' / 全部 '+LEDGER.length+' 条</span></div>'+
+     '<div class="el-card__body">';
+  h+='<div class="table-wrap"><table class="el-table"><thead><tr>'+
+     '<th>佣金ID</th><th style="min-width:180px">订单号 / 类型</th><th style="min-width:120px">商户</th>'+
+     '<th>渠道</th><th style="min-width:130px">合作伙伴</th>'+
+     '<th class="num">手续费快照</th><th class="num">返佣比例快照</th><th class="num">本条金额</th>'+
+     '<th>记录类型</th><th style="min-width:150px">调整来源</th><th>状态</th>'+
+     '<th style="min-width:160px">处理人 / 时间</th><th style="min-width:150px">创建时间</th><th style="min-width:110px">操作</th>'+
+     '</tr></thead><tbody>';
+  if(!list.length) h+='<tr><td class="empty-cell" colspan="14">当前筛选条件下没有佣金记录</td></tr>';
+  list.slice().sort(function(a,b){
+    if(a.createTime!==b.createTime) return a.createTime<b.createTime?1:-1;
+    return a.id<b.id?1:-1;
+  }).forEach(function(e){
+    h+='<tr>'+
+      '<td class="mono">'+esc(e.id)+'</td>'+
+      '<td><div class="stack"><span class="mono">'+esc(e.orderId)+'</span>'+
+        '<span class="s2">'+(e.orderType==='DEPOSIT'?'充值 DEPOSIT':'提币 WITHDRAW')+'</span></div></td>'+
+      '<td class="small">'+esc(mshort(e.merchantId))+'</td>'+
+      '<td class="small">'+esc(chname(e.channelId))+'</td>'+
+      '<td class="small">'+esc(pname(e.partnerId))+'</td>'+
+      '<td class="num">'+n2(e.feeAmount)+'</td>'+
+      '<td class="num">'+pct(e.rebateRate)+'</td>'+
+      '<td class="num '+amtCls(e.amount)+'"><b>'+signed(e.amount)+'</b></td>'+
+      '<td>'+(e.entryType==='ORIGINAL'
+        ? '<span class="el-tag sm">原始 ORIGINAL</span>'
+        : '<span class="el-tag warning sm">调整 ADJUSTMENT</span>')+'</td>'+
+      '<td class="mono small">'+(e.adjustRefOrderId?esc(e.adjustRefOrderId):'—')+'</td>'+
+      '<td>'+(e.status==='PROCESSED'
+        ? '<span class="el-tag success sm">已处理</span>'
+        : '<span class="el-tag warning sm">待处理</span>')+'</td>'+
+      '<td class="small">'+(e.processedBy?esc(e.processedBy)+'<div class="s2 mono">'+esc(e.processedAt)+'</div>':'—')+'</td>'+
+      '<td class="mono small">'+esc(e.createTime)+'</td>'+
+      '<td>'+(e.status==='PENDING'
+        ? '<button class="el-button el-button--text" data-act="mark-entry" data-id="'+esc(e.id)+'">标记已处理</button>'
+        : '<span class="muted small">—</span>')+'</td>'+
+      '</tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="hint-note">每条记录都<b>快照</b>了当时的手续费金额与返佣比例。商户后续更换渠道、更换合作伙伴、'+
+     '调整返佣比例，只影响新订单，不会修改任何历史记录。调整记录金额可为负数，且永不覆盖原始记录。</div>';
+  h+='</div></div></div>';
+  return h;
+}
+
+/* ---- 退款模拟对话框：把 §4.3 的 6 步算法逐步展示出来 ---- */
+function dlgRefund(orderId){
+  var ord=orderById(orderId);
+  if(!ord){ toast('订单不存在','warning'); return; }
+  var suggest=r2(ord.feeAmount*0.6);
+  openDialog({
+    cls:'xwide',
+    title:'模拟退款导致手续费变化 · '+orderId,
+    body:'<div class="hint-note rule" style="margin:0 0 14px">'+
+      '本操作模拟「订单已扣除的手续费因退款等原因发生变化」这一<b>外部事件</b>，'+
+      '然后由系统自动完成佣金调整——运营无需重新计算任何金额。原始佣金记录不会被修改。</div>'+
+      '<div class="dlg-form" style="margin-bottom:6px">'+
+      '<div class="row"><label>当前手续费</label><div class="ctl">'+
+        '<input class="el-input" value="'+n2(ord.feeAmount)+' USDT（首次扣费 '+n2(ord.origFee)+'）" disabled></div></div>'+
+      '<div class="row"><label>退款后手续费</label><div class="ctl">'+
+        '<input class="el-input" id="rfFee" value="'+suggest+'" placeholder="新的手续费金额">'+
+        '<span class="muted small"> USDT</span>'+
+        '<button class="el-button el-button--sm" style="margin-left:10px" data-act="refund-calc" data-id="'+esc(orderId)+'">按 §4.3 重算</button>'+
+        '</div></div></div>'+
+      '<div id="rfPreview">'+refundPreview(orderId,suggest)+'</div>',
+    footer:'<button class="el-button" data-act="dlg-close">取消</button>'+
+      '<button class="el-button el-button--warning" data-act="refund-apply" data-id="'+esc(orderId)+'">'+
+      '执行步骤5：追加调整记录</button>'
+  });
+}
+function refundPreview(orderId,newFee){
+  var ord=orderById(orderId);
+  newFee=Number(newFee);
+  if(!isFinite(newFee)||newFee<0) return '<div class="hint-note">请输入合法的新手续费金额。</div>';
+  var es=entriesOfOrder(orderId);
+  var plan=computeAdjust(orderId,newFee);
+  var h='';
+  /* 步骤1 */
+  h+='<div class="step"><div class="st">步骤 1 · 触发事件</div><div class="sb">'+
+     '订单 <span class="mono">'+esc(orderId)+'</span> 的'+(ord.orderType==='DEPOSIT'?'充值':'提币')+
+     '手续费发生变化：<b>'+n2(ord.feeAmount)+' → '+n2(newFee)+' USDT</b>'+
+     '（差额 <span class="'+amtCls(r2(newFee-ord.feeAmount))+'">'+signed(r2(newFee-ord.feeAmount))+'</span>）。'+
+     '具体退款流程如何触发不在本系统范围内。</div></div>';
+  /* 步骤2 */
+  h+='<div class="step"><div class="st">步骤 2 · 找出该订单已生成的全部佣金记录（'+es.length+' 条，涉及 '+plan.length+' 个合作伙伴）</div>'+
+     '<div class="sb"><table class="bal-table"><thead><tr><th>佣金ID</th><th>合作伙伴</th>'+
+     '<th class="num">手续费快照</th><th class="num">比例快照</th><th class="num">金额</th><th>类型</th><th>状态</th></tr></thead><tbody>';
+  es.forEach(function(e){
+    h+='<tr><td class="mono">'+esc(e.id)+'</td><td>'+esc(pname(e.partnerId))+'</td>'+
+      '<td class="num">'+n2(e.feeAmount)+'</td><td class="num">'+pct(e.rebateRate)+'</td>'+
+      '<td class="num '+amtCls(e.amount)+'">'+signed(e.amount)+'</td>'+
+      '<td>'+esc(ENTRY_TYPE[e.entryType])+'</td>'+
+      '<td>'+(e.status==='PROCESSED'?'<span class="el-tag success sm">已处理</span>':'<span class="el-tag warning sm">待处理</span>')+'</td></tr>';
+  });
+  h+='</tbody></table></div></div>';
+  /* 步骤3 + 4 */
+  h+='<div class="step"><div class="st">步骤 3 · 用【订单当时快照的返佣比例】× 新手续费 重算应得佣金 ｜ '+
+     '步骤 4 · 应得 − 迄今已产生总和 = 差额</div>'+
+     '<div class="sb"><table class="bal-table"><thead><tr><th>合作伙伴</th><th class="num">快照返佣比例</th>'+
+     '<th class="num">应得佣金（新手续费 × 快照比例）</th><th class="num">已产生总和（原始+历次调整）</th>'+
+     '<th class="num">差额</th><th>结论</th></tr></thead><tbody>';
+  plan.forEach(function(o){
+    h+='<tr><td><b>'+esc(pname(o.partnerId))+'</b></td>'+
+      '<td class="num">'+pct(o.rate)+'</td>'+
+      '<td class="num">'+n2(newFee)+' × '+pct(o.rate)+' = <b>'+n2(o.due)+'</b></td>'+
+      '<td class="num">'+n2(o.paid)+'<span class="muted"> （'+o.n+' 条）</span></td>'+
+      '<td class="num '+amtCls(o.diff)+'"><b>'+signed(o.diff)+'</b></td>'+
+      '<td class="small">'+(o.diff===0?'差额为 0，不产生记录':'追加 1 条 ADJUSTMENT')+'</td></tr>';
+  });
+  h+='</tbody></table>'+
+     '<div class="muted small" style="margin-top:6px">注意：这里用的是<b>快照比例</b>，不是合作伙伴现在最新的返佣比例——'+
+     '即使运营刚刚改过配置，这笔订单的调整依然按下单那一刻的比例算。</div></div></div>';
+  /* 步骤5 预览 */
+  var will=plan.filter(function(o){ return o.diff!==0; });
+  h+='<div class="step"><div class="st">步骤 5 · 将要追加的调整记录（点击下方按钮执行；原始记录永不修改）</div><div class="sb">';
+  if(!will.length){
+    h+='<span class="muted">差额全为 0，无需追加任何记录。</span>';
+  }else{
+    h+='<table class="bal-table"><thead><tr><th>合作伙伴</th><th class="num">手续费快照</th><th class="num">比例快照</th>'+
+       '<th class="num">金额</th><th>类型</th><th>调整来源</th><th>状态</th></tr></thead><tbody>';
+    will.forEach(function(o){
+      h+='<tr><td>'+esc(pname(o.partnerId))+'</td><td class="num">'+n2(newFee)+'</td>'+
+        '<td class="num">'+pct(o.rate)+'</td>'+
+        '<td class="num '+amtCls(o.diff)+'"><b>'+signed(o.diff)+'</b></td>'+
+        '<td><span class="el-tag warning sm">ADJUSTMENT</span></td>'+
+        '<td class="mono small">RFD-（本次退款事件）</td>'+
+        '<td><span class="el-tag warning sm">待处理</span></td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  h+='</div></div>';
+  /* 步骤6 before/after */
+  h+='<div class="step"><div class="st">步骤 6 · 运营在佣金界面看到的是净额，不需要心算历次调整</div><div class="sb">'+
+     '<table class="bal-table"><thead><tr><th>合作伙伴</th><th class="num">调整前净额</th>'+
+     '<th class="num">本次差额</th><th class="num">调整后净额</th></tr></thead><tbody>';
+  plan.forEach(function(o){
+    h+='<tr><td>'+esc(pname(o.partnerId))+'</td>'+
+      '<td class="num">'+n2(o.paid)+'</td>'+
+      '<td class="num '+amtCls(o.diff)+'">'+signed(o.diff)+'</td>'+
+      '<td class="num"><b>'+n2(o.due)+'</b></td></tr>';
+  });
+  h+='</tbody></table></div></div>';
+  return h;
+}
+function refundApply(orderId){
+  var ord=orderById(orderId);
+  var newFee=Number($('rfFee')?$('rfFee').value:NaN);
+  if(!isFinite(newFee)||newFee<0){ toast('请输入合法的新手续费金额','warning'); return; }
+  if(newFee>ord.origFee){
+    toast('新手续费不能高于首次扣费金额 '+n2(ord.origFee)+'（退款只会让手续费变少）','warning');
+    return;
+  }
+  var refId='RFD-'+nowStr().slice(0,10).replace(/-/g,'')+'-'+pad(++REFUND_SEQ,4);
+  var added=applyAdjust(orderId,newFee,refId,nowStr());
+  closeDialog();
+  render();
+  if(!added.length){
+    toast('差额为 0，未产生任何调整记录（原始记录保持不变）','info');
+  }else{
+    toast('退款事件 '+refId+' 已处理：手续费 '+n2(ord.origFee)+' → '+n2(newFee)+
+      '，自动追加 '+added.length+' 条 ADJUSTMENT 记录（'+
+      added.map(function(e){ return pname(e.partnerId)+' '+signed(e.amount); }).join('，')+
+      '）；原始记录及其已处理状态均未改动');
+  }
+}
+
+/* =========================================================================
+   10. dialog + actions
+   ========================================================================= */
+function openDialog(o){
+  state.dialog=o;
+  var box=$('dialogBox');
+  box.className='el-dialog'+(o.cls?' '+o.cls:'');
+  box.innerHTML='<div class="el-dialog__header"><span class="t">'+esc(o.title)+'</span>'+
+    '<span class="close" data-act="dlg-close">&times;</span></div>'+
+    '<div class="el-dialog__body">'+o.body+'</div>'+
+    '<div class="el-dialog__footer">'+(o.footer||'')+'</div>';
+  $('dialogMask').classList.add('open');
+}
+function closeDialog(){ $('dialogMask').classList.remove('open'); state.dialog=null; }
+
+var ACT={
+  go:function(el,d){ go(d.k,null); },
+  group:function(el,d){ state.openGroups[d.k]=!state.openGroups[d.k]; renderMenu(); },
+  'tag-go':function(el,d){
+    var t=state.tags[+d.i];
+    if(t){ state.page=t.key; state.param=t.param; render(); }
+  },
+  'tag-close':function(el,d){
+    var i=+d.i, closing=state.tags[i];
+    state.tags.splice(i,1);
+    if(closing.key===state.page){
+      var nt=state.tags[Math.min(i,state.tags.length-1)]||state.tags[0];
+      state.page=nt.key; state.param=nt.param;
+    }
+    render();
+  },
+  'reset-filter':function(el,d){ state.f[d.k]={}; render(); },
+  switch:function(el){ el.classList.toggle('on'); },
+  /* 渠道 */
+  'new-channel':function(){ dlgChannel(''); },
+  'edit-channel':function(el,d){ dlgChannel(d.id); },
+  'save-channel':function(el,d){ saveChannel(d.id||''); },
+  'toggle-channel':function(el,d){
+    var c=channel(d.id);
+    c.status=(c.status==='enable')?'disable':'enable';
+    render();
+    toast('渠道「'+c.name+'」已'+(c.status==='enable'?'启用':'停用（已有配置与历史佣金不变，但不能再被选进新配置）'));
+  },
+  'go-partner':function(el,d){ state.partnerTab=d.k; go('partner',null); },
+  /* 合作伙伴 */
+  'partner-tab':function(el,d){ state.partnerTab=d.k; render(); },
+  'new-partner':function(){ dlgPartner(''); },
+  'edit-partner':function(el,d){ dlgPartner(d.id); },
+  'save-partner':function(el,d){ savePartner(d.id||''); },
+  'toggle-partner':function(el,d){
+    var p=partner(d.id);
+    p.status=(p.status==='enable')?'disable':'enable';
+    render();
+    toast('合作伙伴「'+p.name+'」已'+(p.status==='enable'?'启用':'停用（历史佣金记录不受影响）'));
+  },
+  /* 商户渠道配置 */
+  'cfg-merchant':function(el){ state.cfg=draftFor(el.value); render(); },
+  'cfg-channel':function(el){
+    var d=state.cfg;
+    if(el.value!==d.channelId){ d.channelId=el.value; d.picks={}; }
+    render();
+  },
+  'cfg-pick':function(el,d){
+    var dr=state.cfg;
+    if(dr.picks[d.id]!=null) delete dr.picks[d.id];
+    else dr.picks[d.id]=r2(Math.max(0,100-draftSum(dr)));
+    render();
+  },
+  'save-cfg':function(){ saveCfg(); },
+  'reload-cfg':function(){ state.cfg=draftFor(state.cfg.mid); render(); toast('已放弃未保存的修改','info'); },
+  /* 佣金记录 */
+  'mark-entry':function(el,d){
+    var e=null;
+    LEDGER.forEach(function(x){ if(x.id===d.id) e=x; });
+    if(!e||e.status==='PROCESSED') return;
+    e.status='PROCESSED'; e.processedBy='ops.amos'; e.processedAt=nowStr();
+    render();
+    toast('佣金记录 '+e.id+' 已标记为已处理（仅流程追溯，未触发任何打款）；该订单的其他记录状态不受影响');
+  },
+  'mark-partner':function(el,d){
+    var ids=netByPartner(visibleLedger()).filter(function(o){ return o.partnerId===d.id; })
+      .reduce(function(a,o){ return a.concat(o.pendingIds); },[]);
+    if(!ids.length) return;
+    var t=nowStr(), n=0;
+    LEDGER.forEach(function(e){
+      if(ids.indexOf(e.id)<0||e.status==='PROCESSED') return;
+      e.status='PROCESSED'; e.processedBy='ops.amos'; e.processedAt=t; n++;
+    });
+    render();
+    toast('已把「'+pname(d.id)+'」当前筛选范围内 '+n+' 条待处理记录标记为已处理（不触发任何打款）；'+
+      '若之后该订单再产生调整，会作为新的待处理记录出现，不会改动这些记录');
+  },
+  'sim-refund':function(el,d){ dlgRefund(d.id); },
+  'refund-calc':function(el,d){
+    var v=$('rfFee')?$('rfFee').value:'';
+    $('rfPreview').innerHTML=refundPreview(d.id,v);
+    toast('已按快照比例重算差额，确认无误后点「执行步骤5」','info');
+  },
+  'refund-apply':function(el,d){ refundApply(d.id); },
+  'dlg-close':function(){ closeDialog(); }
+};
+
+/* =========================================================================
+   11. event wiring
+   ========================================================================= */
+document.addEventListener('click',function(ev){
+  var el=ev.target.closest('[data-act]');
+  if(!el) return;
+  var fn=ACT[el.getAttribute('data-act')];
+  if(!fn){ console.warn('未注册的 action:',el.getAttribute('data-act')); return; }
+  ev.stopPropagation();
+  fn(el,el.dataset);
+});
+document.addEventListener('change',function(ev){
+  var el=ev.target;
+  if(!el.dataset) return;
+  if(el.dataset.chg){
+    var fn=ACT[el.dataset.chg];
+    if(fn) fn(el,el.dataset); else console.warn('未注册的 change action:',el.dataset.chg);
+    return;
+  }
+  if(el.dataset.flt){
+    F(el.dataset.flt)[el.dataset.fk]=el.value;
+    render();
+  }
+});
+/* 返佣比例输入：只就地刷新分配指示器与折算示例，不整页重渲染（避免输入框失焦） */
+document.addEventListener('input',function(ev){
+  var el=ev.target;
+  if(!el.dataset||!el.dataset.rate||!state.cfg) return;
+  var v=el.value.trim();
+  state.cfg.picks[el.dataset.rate]=(v===''?0:Number(v));
+  updateAlloc();
+});
+$('dialogMask').addEventListener('click',function(ev){ if(ev.target===this) closeDialog(); });
+document.addEventListener('keydown',function(ev){ if(ev.key==='Escape') closeDialog(); });
+
+/* =========================================================================
+   12. router + boot + 自检
+   ========================================================================= */
+var PAGES={
+  'channel':pageChannel,
+  'partner':pagePartner,
+  'mcfg':pageMerchantCfg,
+  'commission':pageCommission
+};
+function render(){
+  renderMenu();
+  renderTags();
+  renderBreadcrumb();
+  var fn=PAGES[state.page];
+  $('appMain').innerHTML = fn ? fn()
+    : '<div class="app-container"><div class="el-card"><div class="el-card__body">页面 '+
+      esc(state.page)+' 未实现</div></div></div>';
+}
+
+/* 每个导航/页面键都必须同时有 PAGE_META 标签与 PAGES 渲染函数，
+   否则面包屑/页签会渲染出 undefined —— 这个自检在同系列原型里抓到过多次漏标签的问题 */
+function verifyRegistry(){
+  var problems=[];
+  Object.keys(PAGE_META).forEach(function(k){
+    if(!PAGE_META[k]||!PAGE_META[k].title) problems.push('PAGE_META['+k+'] 缺少 title');
+    if(typeof PAGES[k]!=='function') problems.push('PAGES['+k+'] 缺少渲染函数');
+  });
+  Object.keys(PAGES).forEach(function(k){
+    if(!PAGE_META[k]) problems.push('PAGE_META['+k+'] 缺失（面包屑会显示 undefined）');
+  });
+  var seen={};
+  function leaf(k,label){
+    if(seen[k]) problems.push('导航键 '+k+' 重复出现');
+    seen[k]=true;
+    if(!PAGE_META[k]) problems.push('导航项 '+k+'（'+label+'）未注册 PAGE_META');
+    if(typeof PAGES[k]!=='function') problems.push('导航项 '+k+'（'+label+'）未注册渲染函数');
+  }
+  NAV.forEach(function(g){
+    if(g.children){
+      if(seen[g.key]) problems.push('导航键 '+g.key+' 重复出现');
+      seen[g.key]=true;
+      g.children.forEach(function(c){ leaf(c.key,c.label); });
+    }else leaf(g.key,g.label);
+  });
+  var actual=NAV.map(function(g){ return g.key; });
+  if(actual.join(',')!==NAV_ORDER_EXPECT.join(','))
+    problems.push('一级导航顺序不符：期望 ['+NAV_ORDER_EXPECT.join(' > ')+']，实际 ['+actual.join(' > ')+']');
+  Object.keys(NAV_CHILDREN_EXPECT).forEach(function(gk){
+    var g=null;
+    NAV.forEach(function(x){ if(x.key===gk) g=x; });
+    if(!g||!g.children){ problems.push('分组 '+gk+' 应为父级菜单（缺少 children）'); return; }
+    var kids=g.children.map(function(c){ return c.key; });
+    if(kids.join(',')!==NAV_CHILDREN_EXPECT[gk].join(','))
+      problems.push('分组 '+gk+' 子项不符');
+  });
+  NAV.forEach(function(g){
+    if(!g.children) return;
+    if(PAGE_META[g.key]) problems.push('父级分组 '+g.key+' 不应注册 PAGE_META');
+    if(PAGES[g.key]) problems.push('父级分组 '+g.key+' 不应注册渲染函数');
+  });
+  RETIRED_KEYS.forEach(function(k){
+    if(seen[k]) problems.push('已下线页面 '+k+' 仍出现在 NAV 中');
+    if(PAGE_META[k]) problems.push('已下线页面 '+k+' 仍残留 PAGE_META');
+    if(PAGES[k]) problems.push('已下线页面 '+k+' 仍残留渲染函数');
+  });
+  if(problems.length){
+    console.error('[registry check] 发现问题:',problems);
+    toast('导航注册表异常: '+problems[0],'warning');
+  }else{
+    console.log('[registry check] OK — '+Object.keys(PAGE_META).length+
+      ' 个页面键全部具备标签与渲染函数；一级导航顺序 ['+actual.join(' > ')+']');
+  }
+  return problems;
+}
+
+/* 业务规则自检：种子数据与佣金算法必须满足设计文档的三条硬约束 */
+function verifyData(){
+  var bad=[];
+  /* 1) 任一商户下各合作伙伴返佣比例之和 <= 100%（渠道手续费的全额） */
+  Object.keys(MCFG).forEach(function(mid){
+    var c=MCFG[mid];
+    var s=r2(c.picks.reduce(function(a,p){ return a+p.rate; },0));
+    if(s>100) bad.push(mname(mid)+' 返佣比例合计 '+s+'% > 100%');
+    c.picks.forEach(function(p){
+      var pt=partner(p.partnerId);
+      if(!pt) bad.push(mname(mid)+' 引用了不存在的合作伙伴 '+p.partnerId);
+      else if(pt.channelId!==c.channelId) bad.push(mname(mid)+' 的合作伙伴 '+pt.name+' 不属于所配渠道');
+    });
+  });
+  /* 2) 每条佣金记录的引用都必须存在，且金额 = 手续费快照 × 比例快照（调整记录为差额，单独校验） */
+  LEDGER.forEach(function(e){
+    if(!merchant(e.merchantId)||!channel(e.channelId)||!partner(e.partnerId))
+      bad.push(e.id+' 引用了不存在的商户/渠道/合作伙伴');
+    if(e.entryType==='ORIGINAL'&&e.amount!==r2(e.feeAmount*e.rebateRate/100))
+      bad.push(e.id+' 原始金额与快照不一致');
+    if(e.entryType==='ADJUSTMENT'&&!e.adjustRefOrderId)
+      bad.push(e.id+' 调整记录缺少 adjustRefOrderId');
+  });
+  /* 3) 调整算法的不变式：每个订单每个合作伙伴的净额 === 当前手续费 × 快照比例 */
+  ORDERS.forEach(function(o){
+    var byP=entriesOfOrder(o.orderId).reduce(function(m,e){
+      if(!m[e.partnerId]) m[e.partnerId]={rate:null,net:0};
+      if(e.entryType==='ORIGINAL') m[e.partnerId].rate=e.rebateRate;
+      m[e.partnerId].net=r2(m[e.partnerId].net+e.amount);
+      return m;
+    },{});
+    Object.keys(byP).forEach(function(pid){
+      var want=r2(o.feeAmount*byP[pid].rate/100);
+      if(byP[pid].net!==want)
+        bad.push(o.orderId+' / '+pname(pid)+' 净额 '+byP[pid].net+' ≠ 当前手续费×快照比例 '+want);
+    });
+  });
+  if(bad.length){
+    console.error('[data check] 发现问题:',bad);
+    toast('业务数据自检异常: '+bad[0],'warning');
+  }else{
+    console.log('[data check] OK — '+Object.keys(MCFG).length+' 份商户渠道配置比例合计均 ≤100%；'+
+      LEDGER.length+' 条佣金记录快照一致；'+ORDERS.length+
+      ' 笔订单的「原始+调整」净额均等于 当前手续费 × 快照返佣比例');
+  }
+  return bad;
+}
+
+verifyRegistry();
+verifyData();
+render();
+</script>
+</body>
+</html>

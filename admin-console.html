@@ -554,6 +554,16 @@ function esc(s){
   });
 }
 function n2(v){ return Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+/* 三类收费规则的位置提示条：代币(基础费率) / On Ramp(本地渠道费率) / 合作伙伴(渠道客户费率，见 commission-admin.html) */
+function feeRuleMarker(current){
+  var seg = function(key, label, href){
+    if(key === current) return '<b>'+label+'</b>';
+    return href ? '<a href="'+href+'">'+label+'</a>' : label;
+  };
+  return '<div class="hint-note">系统收费规则分三处配置：普通充提币费率见「'+seg('token','代币')+
+    '」菜单，On Ramp 业务费率见「'+seg('onramp','On Ramp')+'」菜单，渠道客户费率见「'+
+    seg('partner','合作伙伴', 'commission-admin.html')+'」菜单（新增，另见 commission-admin.html）。</div>';
+}
 function n0(v){ return Number(v).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function n4(v){ return Number(v).toFixed(4); }
 function rows(keys,data){
@@ -2532,7 +2542,8 @@ function pageTxOnramp(){
         '<span class="sub">手续费收入: <b style="color:#e6a23c">'+n2(fee)+' CNY</b></span>'+
         '<span class="sub">平台利润合计: <b style="color:#409eff">'+n2(sp+fee)+' CNY</b></span>'+
         '<div class="hdr-right"><span class="el-tag warning sm">浅黄列为管理端专属</span>'+
-        '<button class="el-button" data-act="noop">导出</button></div>';
+        '<button class="el-button" data-act="noop">导出</button></div>'+
+        '<div style="flex-basis:100%">'+feeRuleMarker('onramp')+'</div>';
     },
     expand:{render:function(r){ return rampExpand(r,true); }},
     cols:localOrderCols('on')
@@ -3421,7 +3432,8 @@ function pageToken(){
   var h='<div class="app-container" style="padding-bottom:0">';
   h+='<div class="el-card" style="margin-bottom:0"><div class="el-card__header">'+
      '<span class="title">币种管理</span>'+
-     '<span class="sub">平台支持的稳定币与法币，统一在此维护启用状态与交易参数</span></div>';
+     '<span class="sub">平台支持的稳定币与法币，统一在此维护启用状态与交易参数</span></div>'+
+     '<div style="padding:0 20px;">'+feeRuleMarker('token')+'</div>';
   h+='<div class="el-tabs">';
   TOKEN_TABS.forEach(function(t){
     h+='<div class="el-tab'+(t[0]===tab?' active':'')+'" data-act="token-tab" data-k="'+t[0]+'">'+
