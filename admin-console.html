@@ -586,10 +586,12 @@ function esc(s){
   });
 }
 function n2(v){ return Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-/* 三类收费规则的位置提示条：代币(基础费率) / On Ramp(本地渠道费率) / 商户管理›合作伙伴管理(渠道客户费率)
-   三处互不叠加：普通充提币走「代币」默认费率，On Ramp 走独立费率，配置了渠道的商户走「商户管理›合作伙伴
-   管理」里为该商户单独录入的费率（替换基础费率，返佣从这笔手续费里出）。费率是商户级别的谈判结果，
-   不是渠道的固定属性，所以配置入口在「商户管理」而不是「渠道管理」——渠道管理只维护渠道自己的基本信息。 */
+/* 三类收费规则的位置提示条：代币(基础费率) / On Ramp(本地渠道费率) / 商户详情›合作伙伴(渠道客户费率)
+   三处互不叠加：普通充提币走「代币」默认费率，On Ramp 走独立费率，配置了渠道的商户走「商户详情›合作
+   伙伴」标签页里为该商户单独录入的费率（替换基础费率，返佣从这笔手续费里出）。费率是商户级别的谈判
+   结果，不是渠道的固定属性，所以配置入口在具体某个商户的详情页里，不在「渠道管理」——渠道管理只维护
+   渠道/合作伙伴自己的基本信息。第三段没有固定的下钻页面（需要先选到具体商户），所以链接落到商户列表，
+   由使用者自己选商户后进入其详情页的「合作伙伴」标签页。 */
 function feeRuleMarker(current){
   var seg = function(key, label, navKey){
     if(key === current) return '<b>'+label+'</b>';
@@ -597,8 +599,8 @@ function feeRuleMarker(current){
   };
   return '<div class="hint-note rule">系统收费规则分三处配置，互不叠加：普通充提币费率见「'+
     seg('token','代币','token')+'」菜单，On Ramp 业务费率见「'+seg('onramp','On Ramp','tx-onramp')+
-    '」菜单，渠道客户费率见「'+seg('mcfg','商户管理 › 合作伙伴管理','merchant-partner')+
-    '」菜单（按商户单独录入，替换基础费率，返佣从这笔手续费里出）。</div>';
+    '」菜单，渠道客户费率见「'+seg('mcfg','商户详情 › 合作伙伴','merchant')+
+    '」标签页（按商户单独录入，替换基础费率，返佣从这笔手续费里出）。</div>';
 }
 function n0(v){ return Number(v).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function n4(v){ return Number(v).toFixed(4); }
@@ -1517,10 +1519,7 @@ function sumBy(list,fn){ return r2(list.reduce(function(s,e){ return s+fn(e); },
    ========================================================================= */
 var NAV=[
  {key:'dashboard',label:'仪表盘',icon:'dash'},
- {key:'merchant',label:'商户管理',icon:'shop',children:[
-   {key:'merchant-list',label:'商户列表'},
-   {key:'merchant-partner',label:'合作伙伴管理'}
- ]},
+ {key:'merchant',label:'商户管理',icon:'shop'},
  {key:'cardm',label:'卡商管理',icon:'card',children:[
    {key:'cardm-list',label:'卡商列表'},
    {key:'cardm-ledger',label:'银行卡往来明细'}
@@ -1536,7 +1535,6 @@ var NAV=[
  {key:'token',label:'币种管理',icon:'coin'},
  {key:'commission',label:'渠道与佣金',icon:'link',children:[
    {key:'comm-channel',label:'渠道管理'},
-   {key:'comm-partner',label:'合作伙伴管理'},
    {key:'comm-ledger',label:'佣金记录'}
  ]},
  {key:'risk',label:'风控管理',icon:'shield',stub:true},
@@ -1545,18 +1543,16 @@ var NAV=[
 /* 期望的一级导航顺序（供 verifyRegistry 断言，防止后续改动打乱信息架构） */
 var NAV_ORDER_EXPECT=['dashboard','merchant','cardm','tx','token','commission','risk','system'];
 /* 期望的分组子项（供 verifyRegistry 断言）：
-   商户管理 由「商户列表」+「合作伙伴管理」组成——渠道/合作伙伴/费率与商户的绑定操作放在商户管理下，
-   因为操作起点始终是"这个商户要怎么配"（渠道管理/合作伙伴管理只提供基础选项，不涉及绑定与费率）。
    卡商管理 由「卡商列表」+「银行卡往来明细」两个下级页面组成——银行卡往来明细属于
    某个具体卡商的下级信息，因此挂在卡商管理之下而不是做成一级菜单。
-   渠道与佣金 由 渠道管理 → 合作伙伴管理 → 佣金记录 三个子页面组成，只维护渠道/合作伙伴的基本信息
-   与佣金流水查看；真正的绑定+费率+返佣配置在「商户管理 › 合作伙伴管理」（原型合并自独立的
-   commission-admin.html）。 */
+   渠道与佣金 由「渠道管理」（渠道的增删改 + 该渠道下合作伙伴的增删改，合在一个页面里）和
+   「佣金记录」两个子页面组成，只维护渠道/合作伙伴的基本信息与佣金流水查看；真正的绑定+费率+
+   返佣配置在「商户管理 › 商户详情 › 合作伙伴」标签页（对某个具体商户配置时，直接在该商户的
+   详情里做，不需要额外的商户选择器，也不会跟这里的"合作伙伴基本信息管理"重名混淆）。 */
 var NAV_CHILDREN_EXPECT={
-  merchant:['merchant-list','merchant-partner'],
   cardm:['cardm-list','cardm-ledger'],
   tx:['tx-deposit','tx-withdraw','tx-onramp','tx-offramp','tx-fiatin','tx-fiatout'],
-  commission:['comm-channel','comm-partner','comm-ledger']
+  commission:['comm-channel','comm-ledger']
 };
 /* 已下线的页面键，不得再出现在任何注册表中：
      fx     —— 换汇记录已并入 On Ramp / Off Ramp
@@ -1577,7 +1573,7 @@ NAV.forEach(function(g){
   }
 });
 /* non-nav (drill-down) pages must be registered here too */
-PAGE_META['merchant-detail']={title:'商户详情',parent:'商户管理',nav:'merchant-list'};
+PAGE_META['merchant-detail']={title:'商户详情',parent:'商户管理',nav:'merchant'};
 
 var state={
   page:'dashboard',
@@ -1960,7 +1956,7 @@ function pageDashboard(){
        : '剩余可用额度低于 20%，需关注其追加质押情况 · ')+
      '<span class="link-a" data-act="go-credit-alert">去处理</span></div></div>';
   h+='<div class="tl-item done"><div class="tt">商户 <b>恒昌资本管理有限公司</b> 处于创建中</div>'+
-     '<div class="td">等待邮箱激活与首次 KYC 提交 · <span class="link-a" data-act="go" data-k="merchant-list">去查看</span></div></div>';
+     '<div class="td">等待邮箱激活与首次 KYC 提交 · <span class="link-a" data-act="go" data-k="merchant">去查看</span></div></div>';
   h+='</div></div></div>';
   h+='</div>';
 
@@ -2024,14 +2020,14 @@ function balancePanel(b,compact){
 }
 function pageMerchant(){
   var cfg={
-    pageKey:'merchant-list',
+    pageKey:'merchant',
     rowKey:'id',
     fields:[
       {k:'q',label:'名称 / ID',ph:'商户名称或 userId',w:'w-lg'},
       {k:'status',label:'状态',type:'select',options:[['enable','启用中'],['disable','已禁用'],['creating','创建中']]}
     ],
     getData:function(){
-      return applyFilters('merchant-list',BROKERS,{
+      return applyFilters('merchant',BROKERS,{
         q:function(r,v){
           v=String(v).toLowerCase();
           return r.businessName.toLowerCase().indexOf(v)>=0||String(r.userId).indexOf(v)>=0||
@@ -2348,7 +2344,7 @@ function pageMerchantDetail(){
   if(!b){ state.listCfg=null; return '<div class="app-container"><div class="el-card"><div class="el-card__body">未找到该商户</div></div></div>'; }
   var tab=state.tab.md||'ledger';
   var h='<div class="app-container" style="padding-bottom:0">';
-  h+='<button class="el-button el-button--warning" data-act="go" data-k="merchant-list" style="margin-bottom:12px">返回</button>';
+  h+='<button class="el-button el-button--warning" data-act="go" data-k="merchant" style="margin-bottom:12px">返回</button>';
   h+='<div class="el-card" style="margin-bottom:0"><div class="el-card__header">'+
      '<span class="title">'+esc(b.businessName)+'</span>'+
      '<span class="sub mono">userId '+b.userId+' · '+esc(b.id)+'</span>'+tag(MERCHANT_STATUS[b.status])+
@@ -2357,7 +2353,7 @@ function pageMerchantDetail(){
   h+='<div class="el-tabs">';
   MD_TABS.forEach(function(t){
     h+='<div class="el-tab'+(t[0]===tab?' active':'')+'" data-act="md-tab" data-k="'+t[0]+'">'+esc(t[1])+
-       (t[0]==='ledger'||t[0]==='ramprate'
+       (t[0]==='ledger'||t[0]==='ramprate'||t[0]==='partner'
          ?' <span class="el-tag primary sm" style="margin-left:6px">NEW</span>':'')+'</div>';
   });
   h+='</div></div></div>';
@@ -2368,14 +2364,7 @@ function pageMerchantDetail(){
   if(tab==='ramprate'){
     h+=rampRateTab(b);
   }else if(tab==='partner'){
-    h+='<div class="el-card"><div class="el-card__header"><span class="title">合作伙伴通道统计</span></div>'+
-       '<div class="el-card__body">'+simpleTable(['代币','网络','类型','合作伙伴','笔数','金额'],[
-        ['USDT','TRON','充币','P01 直连','128','1,284,000.00'],
-        ['USDT','TRON','提币','P01 直连','96','842,500.00'],
-        ['USDT','ETH','充币','P02 Meta Trader','41','520,000.00'],
-        ['CNY','本地渠道','法币直存','CM 网络','212','4,820,000.00'],
-        ['CNY','本地渠道','法币直取','CM 网络','118','3,150,000.00']
-       ])+'</div></div>';
+    h+=merchantPartnerTab(b);
   }else if(tab==='apikeys'){
     h+='<div class="el-card"><div class="el-card__header"><span class="title">API keys</span>'+
        '<span class="sub">最多创建 20 个 API</span>'+
@@ -3872,11 +3861,58 @@ function pageChannel(){
       '</td></tr>';
   });
   h+='</tbody></table></div>';
-  h+='<div class="hint-note">这里只维护渠道的基本信息（名称/状态），不配置费率——'+
-     '费率是商户与渠道谈判的结果，按商户单独在「<span class="link-a" data-act="go" data-k="merchant-partner">商户管理 › 合作伙伴管理</span>」录入，'+
+  h+='<div class="hint-note">这里只维护渠道与合作伙伴的基本信息（名称/联系方式/钱包地址/状态），不配置费率——'+
+     '费率是商户与渠道谈判的结果，按商户单独在「商户详情 › 合作伙伴」标签页录入，'+
      '同一渠道下不同商户可以配到不同的费率。<br>'+
      '渠道停用后：已有配置与历史佣金记录保持不变，但不能再被选进新的商户渠道配置。</div>';
-  h+='</div></div></div>';
+  h+='</div>';
+  h+=partnerSection();
+  h+='</div>';
+  return h;
+}
+/* 某个渠道下的合作伙伴管理，与上面的渠道列表合在同一个页面/菜单里——
+   一个地方既能管渠道、也能管渠道下的合作伙伴，state.partnerTab 记录当前选中的渠道 */
+function partnerSection(){
+  if(!channel(state.partnerTab)) state.partnerTab=CHANNELS[0].id;
+  var ch=channel(state.partnerTab);
+  var list=partnersOf(ch.id);
+  var h='<div class="el-card" style="margin-top:16px"><div class="el-tabs">';
+  CHANNELS.forEach(function(c){
+    h+='<div class="el-tab'+(c.id===state.partnerTab?' active':'')+'" data-act="partner-tab" data-k="'+esc(c.id)+'">'+
+       esc(c.name)+' <span class="muted small">('+partnersOf(c.id).length+')</span></div>';
+  });
+  h+='</div>';
+  h+='<div class="el-card__header"><span class="title">'+esc(ch.name)+' · 合作伙伴</span>'+
+     '<span class="sub">'+(ch.status==='enable'?'渠道启用中':'渠道已停用')+
+     ' · 费率由「商户详情 › 合作伙伴」按商户单独配置</span>'+
+     '<span class="hdr-right"><button class="el-button el-button--primary" data-act="new-partner">+ 新增合作伙伴</button></span>'+
+     '</div><div class="el-card__body">';
+  h+='<div class="table-wrap"><table class="el-table"><thead><tr>'+
+     '<th style="min-width:140px">合作伙伴</th><th style="min-width:210px">联系方式</th>'+
+     '<th style="min-width:260px">钱包地址<span class="el-tag sm" style="margin-left:6px">预留字段</span></th>'+
+     '<th class="num">已挂商户</th><th>状态</th><th style="min-width:150px">创建时间</th><th style="min-width:110px">操作</th>'+
+     '</tr></thead><tbody>';
+  if(!list.length) h+='<tr><td class="empty-cell" colspan="7">该渠道下暂无合作伙伴</td></tr>';
+  list.forEach(function(p){
+    var ms=merchantsOfPartner(p.id);
+    h+='<tr>'+
+      '<td><div class="stack"><b>'+esc(p.name)+'</b><span class="s2 mono">'+esc(p.id)+'</span></div></td>'+
+      '<td class="small">'+esc(p.contact||'—')+'</td>'+
+      '<td class="mono">'+(p.walletAddress?esc(p.walletAddress):'<span class="muted">未填写</span>')+'</td>'+
+      '<td class="num">'+ms.length+(ms.length?'<div class="s2">'+esc(ms.map(bshort).join('、'))+'</div>':'')+'</td>'+
+      '<td>'+statusTag(p.status)+'</td>'+
+      '<td class="mono">'+esc(p.createTime)+'</td>'+
+      '<td class="nowrap">'+
+        '<button class="el-button el-button--text" data-act="edit-partner" data-id="'+esc(p.id)+'">编辑</button>'+
+        '<button class="el-button el-button--text'+(p.status==='enable'?' danger':'')+'" data-act="toggle-partner" data-id="'+esc(p.id)+'">'+
+          (p.status==='enable'?'停用':'启用')+'</button>'+
+      '</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="hint-note"><b>钱包地址是预留字段，供未来自动打款使用，本期仅展示/编辑，不接实际打款。</b>'+
+     '本期佣金分配是纯记账：运营在「佣金记录」页只能把记录标记为已处理，系统不会向这些地址转出任何资金。<br>'+
+     '合作伙伴停用后：已有商户配置与历史佣金记录不变，但不能再被选进新的商户渠道配置。</div>';
+  h+='</div></div>';
   return h;
 }
 function dlgChannel(id){
@@ -3915,52 +3951,8 @@ function saveChannel(id){
 }
 
 /* =========================================================================
-   7. PAGE — 合作伙伴管理
+   7. DIALOG — 合作伙伴增改（管理入口见 partnerSection()，与渠道列表合在同一页面）
    ========================================================================= */
-function pagePartner(){
-  if(!channel(state.partnerTab)) state.partnerTab=CHANNELS[0].id;
-  var ch=channel(state.partnerTab);
-  var list=partnersOf(ch.id);
-  var h='<div class="app-container">';
-  h+='<div class="el-card"><div class="el-tabs">';
-  CHANNELS.forEach(function(c){
-    h+='<div class="el-tab'+(c.id===state.partnerTab?' active':'')+'" data-act="partner-tab" data-k="'+esc(c.id)+'">'+
-       esc(c.name)+' <span class="muted small">('+partnersOf(c.id).length+')</span></div>';
-  });
-  h+='</div>';
-  h+='<div class="el-card__header"><span class="title">'+esc(ch.name)+' · 合作伙伴</span>'+
-     '<span class="sub">'+(ch.status==='enable'?'渠道启用中':'渠道已停用')+
-     ' · 费率由「商户管理 › 合作伙伴管理」按商户单独配置</span>'+
-     '<span class="hdr-right"><button class="el-button el-button--primary" data-act="new-partner">+ 新增合作伙伴</button></span>'+
-     '</div><div class="el-card__body">';
-  h+='<div class="table-wrap"><table class="el-table"><thead><tr>'+
-     '<th style="min-width:140px">合作伙伴</th><th style="min-width:210px">联系方式</th>'+
-     '<th style="min-width:260px">钱包地址<span class="el-tag sm" style="margin-left:6px">预留字段</span></th>'+
-     '<th class="num">已挂商户</th><th>状态</th><th style="min-width:150px">创建时间</th><th style="min-width:110px">操作</th>'+
-     '</tr></thead><tbody>';
-  if(!list.length) h+='<tr><td class="empty-cell" colspan="7">该渠道下暂无合作伙伴</td></tr>';
-  list.forEach(function(p){
-    var ms=merchantsOfPartner(p.id);
-    h+='<tr>'+
-      '<td><div class="stack"><b>'+esc(p.name)+'</b><span class="s2 mono">'+esc(p.id)+'</span></div></td>'+
-      '<td class="small">'+esc(p.contact||'—')+'</td>'+
-      '<td class="mono">'+(p.walletAddress?esc(p.walletAddress):'<span class="muted">未填写</span>')+'</td>'+
-      '<td class="num">'+ms.length+(ms.length?'<div class="s2">'+esc(ms.map(bshort).join('、'))+'</div>':'')+'</td>'+
-      '<td>'+statusTag(p.status)+'</td>'+
-      '<td class="mono">'+esc(p.createTime)+'</td>'+
-      '<td class="nowrap">'+
-        '<button class="el-button el-button--text" data-act="edit-partner" data-id="'+esc(p.id)+'">编辑</button>'+
-        '<button class="el-button el-button--text'+(p.status==='enable'?' danger':'')+'" data-act="toggle-partner" data-id="'+esc(p.id)+'">'+
-          (p.status==='enable'?'停用':'启用')+'</button>'+
-      '</td></tr>';
-  });
-  h+='</tbody></table></div>';
-  h+='<div class="hint-note"><b>钱包地址是预留字段，供未来自动打款使用，本期仅展示/编辑，不接实际打款。</b>'+
-     '本期佣金分配是纯记账：运营在「佣金记录」页只能把记录标记为已处理，系统不会向这些地址转出任何资金。<br>'+
-     '合作伙伴停用后：已有商户配置与历史佣金记录不变，但不能再被选进新的商户渠道配置。</div>';
-  h+='</div></div></div>';
-  return h;
-}
 function dlgPartner(id){
   var p=id?partner(id):{id:'',channelId:state.partnerTab,name:'',contact:'',walletAddress:'',status:'enable'};
   if(!p) return;
@@ -4011,13 +4003,6 @@ function savePartner(id){
 /* =========================================================================
    8. PAGE — 商户渠道配置
    ========================================================================= */
-function cfgDraft(){
-  if(!state.cfg){
-    var mid=BROKERS[0].id;
-    state.cfg=draftFor(mid);
-  }
-  return state.cfg;
-}
 function draftFor(mid){
   var c=mcfg(mid);
   var picks={};
@@ -4046,21 +4031,16 @@ function partnerRowExample(depRate,rate){
   var fee=r2(10000*depRate/100);
   return '每 10,000 USDT 充值 → 手续费 '+n2(fee)+' USDT → 本伙伴得 <b>'+n2(r2(fee*rate/100))+'</b> USDT';
 }
-function pageMerchantCfg(){
-  var d=cfgDraft();
-  var m=broker(d.mid);
-  var saved=mcfg(d.mid);
+/* 商户详情 ›「合作伙伴」标签页：绑定渠道 + 该商户自己的费率 + 各合作伙伴返佣比例。
+   不需要商户选择器——已经在这个商户自己的详情页里，state.cfg 按 b.id 是否匹配来判断
+   要不要重新取一份草稿（避免同一商户内切标签页/编辑输入时把未保存的修改冲掉）。 */
+function merchantPartnerTab(b){
+  if(!state.cfg||state.cfg.mid!==b.id) state.cfg=draftFor(b.id);
+  var d=state.cfg;
+  var saved=mcfg(b.id);
   var ch=channel(d.channelId);
-  var h='<div class="app-container">';
-  h+=feeRuleMarker('mcfg');
+  var h=feeRuleMarker('mcfg');
   h+='<div class="el-card"><div class="el-card__body tight"><div class="el-form-inline" style="margin-bottom:-4px">'+
-     '<div class="el-form-item"><label class="el-form-item__label">选择商户</label>'+
-     '<select class="el-select w-lg" data-chg="cfg-merchant">'+
-     BROKERS.map(function(x){
-       var c=mcfg(x.id);
-       return '<option value="'+esc(x.id)+'"'+(x.id===d.mid?' selected':'')+'>'+esc(x.businessName)+
-         '（'+x.userId+'）'+(c?' · 已配置 '+chname(c.channelId):' · 自然流量')+'</option>';
-     }).join('')+'</select></div>'+
      '<div class="el-form-item"><label class="el-form-item__label">渠道</label>'+
      '<select class="el-select" data-chg="cfg-channel">'+
      '<option value="">未配置（自然流量）</option>'+
@@ -4081,7 +4061,7 @@ function pageMerchantCfg(){
 
   /* 已生效的系统状态卡（§3：OpenAPI 权限 + 专属充值地址） */
   if(saved){
-    h+='<div class="el-card"><div class="el-card__header"><span class="title">当前生效配置 · '+esc(m.businessName)+'</span>'+
+    h+='<div class="el-card"><div class="el-card__header"><span class="title">当前生效配置</span>'+
        '<span class="sub">保存时间 '+esc(saved.time)+'</span></div><div class="el-card__body">'+
        '<div class="desc-grid">'+
        '<div class="desc-cell"><div class="k">渠道</div><div class="v"><b>'+esc(chname(saved.channelId))+'</b> '+
@@ -4102,7 +4082,7 @@ function pageMerchantCfg(){
        '</div></div>';
   }else{
     h+='<div class="el-card"><div class="el-card__body"><div class="hint-note" style="margin:0">'+
-       '<b>'+esc(m.businessName)+'</b> 当前未配置任何渠道 = 自然流量：客户使用系统默认充值地址，'+
+       '该商户<b>当前未配置任何渠道</b> = 自然流量：客户使用系统默认充值地址，'+
        '按「代币」菜单的基础费率（充值 '+pct(BASE_FEE.deposit)+' / 提现 '+pct(BASE_FEE.withdraw)+'）收费，不产生佣金。'+
        '在上方选择一个渠道即可开始配置。</div></div></div>';
   }
@@ -4122,7 +4102,7 @@ function pageMerchantCfg(){
        '<th style="min-width:200px">联系方式</th><th style="width:170px">返佣比例（占手续费）</th>'+
        '<th style="min-width:300px">按当前费率折算</th></tr></thead><tbody>';
     var ps=partnersOf(ch.id);
-    if(!ps.length) h+='<tr><td class="empty-cell" colspan="5">该渠道下暂无合作伙伴，请先到「合作伙伴管理」新增</td></tr>';
+    if(!ps.length) h+='<tr><td class="empty-cell" colspan="5">该渠道下暂无合作伙伴，请先到「渠道与佣金 › 渠道管理」新增</td></tr>';
     ps.forEach(function(p){
       var on=d.picks[p.id]!=null;
       var rate=on?d.picks[p.id]:'';
@@ -4146,7 +4126,7 @@ function pageMerchantCfg(){
        '<span class="sel-note muted">保存只影响<b>新订单</b>的计算依据，不会修改任何历史佣金记录（历史记录只看下单那一刻的快照）。</span>'+
        '</div>';
   }
-  h+='</div></div></div>';
+  h+='</div></div>';
   return h;
 }
 function updateAlloc(){
@@ -4799,7 +4779,7 @@ var ACT={
     render();
     toast('渠道「'+c.name+'」已'+(c.status==='enable'?'启用':'停用（已有配置与历史佣金不变，但不能再被选进新配置）'));
   },
-  'go-partner':function(el,d){ state.partnerTab=d.k; go('comm-partner',null); },
+  'go-partner':function(el,d){ state.partnerTab=d.k; render(); },
   'partner-tab':function(el,d){ state.partnerTab=d.k; render(); },
   'new-partner':function(){ dlgPartner(''); },
   'edit-partner':function(el,d){ dlgPartner(d.id); },
@@ -4810,7 +4790,6 @@ var ACT={
     render();
     toast('合作伙伴「'+p.name+'」已'+(p.status==='enable'?'启用':'停用（历史佣金记录不受影响）'));
   },
-  'cfg-merchant':function(el){ state.cfg=draftFor(el.value); render(); },
   'cfg-channel':function(el){
     var d=state.cfg;
     if(el.value!==d.channelId){
@@ -4927,8 +4906,7 @@ document.addEventListener('input',function(ev){
    ========================================================================= */
 var PAGES={
   'dashboard':pageDashboard,
-  'merchant-list':pageMerchant,
-  'merchant-partner':pageMerchantCfg,
+  'merchant':pageMerchant,
   'merchant-detail':pageMerchantDetail,
   'tx-deposit':pageTxDeposit,
   'tx-withdraw':pageTxWithdraw,
@@ -4940,7 +4918,6 @@ var PAGES={
   'cardm-ledger':pageCardLedger,
   'token':pageToken,
   'comm-channel':pageChannel,
-  'comm-partner':pagePartner,
   'comm-ledger':pageCommission,
   'risk':pageStub,
   'system':pageStub
