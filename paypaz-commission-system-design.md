@@ -1,7 +1,7 @@
 # PayPaz 渠道 · 合作伙伴 · 佣金分配系统 设计文档
 
-版本：v0.1
-状态：设计讨论已定稿，正在配套原型
+版本：v0.2
+状态：设计讨论已定稿，原型已合并进 admin-console.html 统一原型
 
 ## 0. 背景
 
@@ -9,9 +9,11 @@
 
 ## 1. 核心概念
 
-- **渠道（Channel）**：比如"Meta Trader"，是一类合作来源的统称。每个渠道配置一套自己的充提币收费规则（替换而非叠加基础费率）。
-- **合作伙伴（Partner）**：挂在某个渠道下的具体个人/机构，有名称、联系方式，预留钱包地址字段（供未来自动打款用，本期不接真实打款）。
-- **商户的渠道配置**：为某个商户（broker）选择一个渠道 + 该渠道下的若干合作伙伴，为每个合作伙伴单独设置返佣比例。同一商户下所有合作伙伴的返佣比例之和，不能超过渠道收费规则产生的手续费金额。
+- **渠道（Channel）**：比如"Meta Trader"，是一类合作来源的统称，只记录名称、状态等基本信息，本身**不带费率**。
+- **合作伙伴（Partner）**：挂在某个渠道下的具体个人/机构，记录名称、联系方式、状态，预留钱包地址字段（供未来自动打款用，本期不接真实打款）。渠道管理与合作伙伴管理两个菜单只维护这些基本信息与"合作伙伴属于哪个渠道"的关联关系，不涉及费率或商户绑定。
+- **商户的渠道配置（费率 + 返佣，在「商户管理 › 合作伙伴管理」配置）**：为某个商户（broker）选择一个渠道，**并为这个商户单独录入该渠道下的充值/提现手续费率**（同一渠道下不同商户的费率可以不同，是商户与渠道谈好的结果，不是渠道的固定属性），再选择该渠道下的若干合作伙伴，为每个合作伙伴单独设置返佣比例。同一商户下所有合作伙伴的返佣比例之和，不能超过这个商户自己这笔费率产生的手续费金额。
+  - 之所以把费率从"渠道"移到"商户的渠道配置"：费率本质是商户与渠道谈判的结果，不同商户走同一个渠道也可能谈到不同的价格；渠道本身只是一个分类/口径，不应该替商户预设死一个费率。
+  - 这也是为什么这块配置放在「商户管理」菜单下而不是独立的「渠道与佣金」菜单——操作的起点始终是"这个商户要怎么配"，渠道管理/合作伙伴管理只是给这个配置提供基础选项（有哪些渠道、渠道下有哪些合作伙伴）。
 
 ## 2. 三类收费规则的边界
 
@@ -21,7 +23,7 @@
 |---|---|---|
 | 「代币」菜单 | 没有配置任何渠道的自然流量商户 | 默认规则，本系统不改动 |
 | 「On Ramp」菜单 | On Ramp 业务的商户+币对 | 独立计费，本系统不改动 |
-| 「合作伙伴」菜单（本系统新增） | 配置了渠道的商户，其渠道来源的客户 | 本系统新增的收费规则，返佣从这里面出 |
+| 「商户管理 › 合作伙伴管理」菜单（本系统新增） | 配置了渠道的商户，其渠道来源的客户 | 本系统新增的收费规则，按商户单独录入，替换基础费率，返佣从这笔手续费里出 |
 
 三个菜单页面顶部都应带一条一致的提示条，注明"系统收费规则分三处配置"，当前页高亮，另外两处可点击跳转，避免运营人员找错地方改错费率。
 
@@ -84,11 +86,10 @@ CommissionEntry:
 CREATE TABLE channel (
     id              BIGINT PRIMARY KEY AUTO_INCREMENT,
     name            VARCHAR(64)  NOT NULL COMMENT '如 Meta Trader',
-    deposit_fee_rate  DECIMAL(8,4) NOT NULL COMMENT '该渠道客户的充值手续费率，替换基础费率',
-    withdraw_fee_rate DECIMAL(8,4) NOT NULL COMMENT '该渠道客户的提现手续费率，替换基础费率',
     status          TINYINT NOT NULL DEFAULT 1,
+    note            VARCHAR(255) NULL,
     create_time     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-) COMMENT '渠道';
+) COMMENT '渠道：只做基本信息与分类，不带费率——费率是商户级别的谈判结果，见 merchant_channel_partner';
 
 CREATE TABLE partner (
     id              BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -99,18 +100,28 @@ CREATE TABLE partner (
     status          TINYINT NOT NULL DEFAULT 1,
     create_time     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_channel (channel_id)
-) COMMENT '渠道下的合作伙伴';
+) COMMENT '渠道下的合作伙伴：基本信息，不带费率/返佣';
 
 CREATE TABLE merchant_channel_partner (
     id              BIGINT PRIMARY KEY AUTO_INCREMENT,
     merchant_id     BIGINT NOT NULL,
     channel_id      BIGINT NOT NULL,
-    partner_id      BIGINT NOT NULL,
-    rebate_rate     DECIMAL(8,4) NOT NULL COMMENT '该商户下，该合作伙伴的返佣比例；同商户同渠道下所有合作伙伴之和 <= 渠道手续费产生的金额',
+    deposit_fee_rate  DECIMAL(8,4) NOT NULL COMMENT '该商户在该渠道下的充值手续费率，替换基础费率；商户与渠道谈判所得，同渠道下不同商户可以不同',
+    withdraw_fee_rate DECIMAL(8,4) NOT NULL COMMENT '该商户在该渠道下的提现手续费率，替换基础费率，含义同上',
     status          TINYINT NOT NULL DEFAULT 1,
     create_time     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     KEY idx_merchant (merchant_id)
-) COMMENT '商户-渠道-合作伙伴返佣配置（当前生效值，订单产生时被快照进commission_entry）';
+) COMMENT '商户的渠道配置（费率），在「商户管理 › 合作伙伴管理」维护；下面的 partner_id/rebate_rate 挂在这条配置上';
+
+CREATE TABLE merchant_channel_partner_rebate (
+    id                       BIGINT PRIMARY KEY AUTO_INCREMENT,
+    merchant_channel_id      BIGINT NOT NULL COMMENT '指向 merchant_channel_partner.id',
+    partner_id               BIGINT NOT NULL,
+    rebate_rate              DECIMAL(8,4) NOT NULL COMMENT '返佣比例，口径是该商户这笔渠道手续费的百分比；同一商户下所有合作伙伴之和 <= 100%',
+    create_time              DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_mc (merchant_channel_id),
+    KEY idx_partner (partner_id)
+) COMMENT '商户-渠道配置下，各合作伙伴的返佣比例（一个商户可以同时挂多个合作伙伴，各自独立按比例分成，互不分摊）';
 
 CREATE TABLE commission_entry (
     id              BIGINT PRIMARY KEY AUTO_INCREMENT,
@@ -134,8 +145,8 @@ CREATE TABLE commission_entry (
 ) COMMENT '佣金流水，只追加不修改';
 ```
 
-## 6. 待细化 / Open Questions
+## 6. 已确认结论
 
-- 佣金处理页面展示"净额"时，是按合作伙伴汇总，还是也支持按商户、按渠道、按时间段切片查看——原型先做按合作伙伴的净额视图，其余切片作为后续增强。
-- 商户可以同时挂几个合作伙伴，原型先不设上限，只做"总和不超过渠道手续费金额"的校验。
-- 渠道下线（合作伙伴不再合作）后，历史佣金记录、历史地址如何处理——本期不涉及，只做"渠道/合作伙伴可停用，停用后不再产生新配置"。
+- **净额视图的切片维度**：「佣金记录」页的净额视图支持按合作伙伴、按商户、按渠道、按时间段四种维度切换查看，不止合作伙伴一种。"标记已处理"这个操作只在按合作伙伴视图下有意义（因为付款对象是合作伙伴），其余三种维度是纯查看视角。
+- **商户挂多个合作伙伴的上限**：不设上限，只做"同一商户下所有合作伙伴返佣比例之和 <= 100%（即不超过这个商户自己那笔渠道手续费的金额）"这一条校验。
+- **渠道/合作伙伴下线后历史数据如何处理**：本期完全不涉及历史数据清理或迁移。渠道/合作伙伴只能停用（停用后不能被选进任何新配置），已有的商户配置、专属充值地址、历史佣金记录永久保留、不做任何改动。
