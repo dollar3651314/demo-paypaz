@@ -505,6 +505,38 @@ a{color:var(--el-primary);text-decoration:none}
   .submenu .menu-item span.lbl{display:inline}
   .menu-group.open .submenu .menu-item{font-size:11px;height:34px}
 }
+
+/* ---------- 渠道/合作伙伴/佣金：三处收费规则提示条 / 费率替换标注 / 返佣额度指示 / 算法分步 ---------- */
+.hint-note.rule{
+  background:var(--el-warning-light);border-left-color:var(--el-warning);color:#8a6d3b;
+  margin:0 0 12px;
+}
+.hint-note.rule b{color:#b88230;font-weight:700}
+.hint-note.rule a{color:#337ecc}
+.repl{font-size:11px;color:var(--t-placeholder);margin-top:2px;font-weight:400}
+.alloc{
+  border:1px solid var(--bd-lighter);border-radius:4px;padding:12px 14px;background:#fafbfc;
+}
+.alloc.over{border-color:#fde2e2;background:var(--el-danger-light)}
+.alloc .alloc-top{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  font-size:13px;color:var(--t-regular);margin-bottom:7px;font-variant-numeric:tabular-nums;
+}
+.alloc .alloc-top b{font-size:17px;color:var(--t-primary)}
+.alloc .alloc-top .ok{color:var(--el-success)}
+.alloc .alloc-top .bad{color:var(--el-danger);font-weight:600}
+.alloc .util-bar{margin-top:0}
+.step{border-left:2px solid var(--bd-light);padding:0 0 14px 14px;margin-left:4px}
+.step:last-child{padding-bottom:2px}
+.step .st{
+  font-size:13px;font-weight:600;color:var(--t-primary);margin:0 0 7px;position:relative;
+}
+.step .st::before{
+  content:"";position:absolute;left:-19px;top:5px;width:7px;height:7px;border-radius:50%;
+  background:var(--el-primary);
+}
+.step .sb{font-size:12.5px;color:var(--t-regular);line-height:1.7}
+.step .bal-table{margin-top:2px}
 </style>
 </head>
 <body>
@@ -554,18 +586,26 @@ function esc(s){
   });
 }
 function n2(v){ return Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-/* 三类收费规则的位置提示条：代币(基础费率) / On Ramp(本地渠道费率) / 合作伙伴(渠道客户费率，见 commission-admin.html) */
+/* 三类收费规则的位置提示条：代币(基础费率) / On Ramp(本地渠道费率) / 渠道与佣金(渠道客户费率)
+   三处互不叠加：普通充提币走「代币」默认费率，On Ramp 走独立费率，配置了渠道的商户走渠道费率
+   （替换基础费率，返佣从这笔手续费里出，具体分配见「商户渠道配置」）。current 为 channel/mcfg 时
+   都算命中第三段（这两页同属「渠道与佣金」）。 */
 function feeRuleMarker(current){
-  var seg = function(key, label, href){
-    if(key === current) return '<b>'+label+'</b>';
-    return href ? '<a href="'+href+'">'+label+'</a>' : label;
+  var seg = function(key, label, navKey){
+    if(key === current || (key==='partner' && (current==='channel'||current==='mcfg')))
+      return '<b>'+label+'</b>';
+    return navKey ? '<span class="link-a" data-act="go" data-k="'+navKey+'">'+label+'</span>' : label;
   };
-  return '<div class="hint-note">系统收费规则分三处配置：普通充提币费率见「'+seg('token','代币')+
-    '」菜单，On Ramp 业务费率见「'+seg('onramp','On Ramp')+'」菜单，渠道客户费率见「'+
-    seg('partner','合作伙伴', 'commission-admin.html')+'」菜单（新增，另见 commission-admin.html）。</div>';
+  return '<div class="hint-note rule">系统收费规则分三处配置，互不叠加：普通充提币费率见「'+
+    seg('token','代币','token')+'」菜单，On Ramp 业务费率见「'+seg('onramp','On Ramp','tx-onramp')+
+    '」菜单，渠道客户费率见「'+seg('partner','渠道管理','comm-channel')+
+    '」菜单（配置了渠道的商户改走渠道费率，返佣从这笔手续费里出，分配规则见「商户渠道配置」）。</div>';
 }
 function n0(v){ return Number(v).toLocaleString('en-US',{maximumFractionDigits:0}); }
 function n4(v){ return Number(v).toFixed(4); }
+function r2(v){ return Math.round(Number(v)*100)/100; }
+function pct(v){ return Number(v).toFixed(2)+'%'; }
+function pad(n,w){ var s=String(n); while(s.length<w) s='0'+s; return s; }
 function rows(keys,data){
   return data.map(function(arr){
     var o={};
@@ -590,7 +630,8 @@ var ICONS={
   coin:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9h4.2a1.9 1.9 0 0 1 0 3.8H9.5m0 0h5.4"/>',
   shield:'<path d="M12 3l8 3v6c0 5-3.5 8.2-8 9-4.5-.8-8-4-8-9V6z"/>',
   gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M18.8 5.2L16.7 7.3M7.3 16.7L5.2 18.8"/>',
-  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>'
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.1 0l2.6-2.6a5 5 0 0 0-7.1-7.1L11 4.9"/><path d="M14 11a5 5 0 0 0-7.1 0L4.3 13.6a5 5 0 0 0 7.1 7.1L13 19.1"/>'
 };
 function icon(k){
   return '<span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+(ICONS[k]||'')+'</svg></span>';
@@ -1237,6 +1278,217 @@ function stuckLegs(r){
 }
 
 /* =========================================================================
+   2b. 渠道 · 合作伙伴 · 佣金分配（合并自原独立原型 commission-admin.html，
+       设计文档见 paypaz-commission-system-design.md）
+   ========================================================================= */
+
+/* ---- 渠道：每个渠道一套充提币收费规则，【替换】而非叠加「代币」菜单的基础费率 ---- */
+var BASE_FEE={deposit:0.10,withdraw:0.15};   /* 「代币」菜单的基础费率，仅用于对比展示 */
+var CHANNELS=rows(
+ ['id','name','depositFeeRate','withdrawFeeRate','status','createTime','note'],
+[
+ ['CH-01','Meta Trader',0.25,0.30,'enable','2025-04-18 10:02:11','MT4/MT5 生态引流，存量最大的渠道'],
+ ['CH-02','IB 经纪联盟',0.20,0.28,'enable','2025-11-06 15:41:07','多个独立 IB 拼成的联盟渠道'],
+ ['CH-03','亚太引流合作',0.35,0.40,'disable','2026-02-24 09:17:50','试点后暂停，停用后不再产生新配置']
+]);
+function channel(id){ for(var i=0;i<CHANNELS.length;i++){ if(CHANNELS[i].id===id) return CHANNELS[i]; } return null; }
+function chname(id){ var c=channel(id); return c?c.name:(id||'—'); }
+
+/* ---- 合作伙伴：挂在渠道下，walletAddress 为预留字段，本期不接打款 ---- */
+var PARTNERS=rows(
+ ['id','channelId','name','contact','walletAddress','status','createTime'],
+[
+ ['P-101','CH-01','张伟（亚太 IB）','wei.zhang@mt-ib.asia / +65 8***2201','TKq7nB4xW9pR2vL6sD8mA1yE5jH3cZfUgQ','enable','2025-04-18 10:30:22'],
+ ['P-102','CH-01','Orion Capital Ltd.','ops@orioncap.io / +44 20 ****8810','0x4A7bC2e9F1d63B58aE0c7D2f9B4a6C1E8d3F5b70','enable','2025-05-09 11:12:40'],
+ ['P-103','CH-01','李静（华南直客）','jing.li@partner.cn / +86 138****6620','','disable','2025-09-01 16:44:03'],
+ ['P-201','CH-02','汇金引流工作室','hj-studio@mail.com / +86 139****3311','TB3mV8qY2wK5eN7sR1aD9jC4hX6fLpZuTn','enable','2025-11-06 16:02:55'],
+ ['P-202','CH-02','Bright Path Media','finance@brightpath.media / +1 ***-2140','0x9E2dF7a4C8b13D50fA6e9B2c7D4a1F8E5b0C3d29','enable','2026-01-15 14:20:18'],
+ ['P-301','CH-03','南洋直客部','nanyang.direct@paypaz.tech','','enable','2026-02-24 09:40:12'],
+ ['P-302','CH-03','Kevin Tan','kevin.tan@apac-lead.sg / +65 9***7742','TD6yA1nQ8vM3wS5eK2rB7jP4hF9cXzLuTb','enable','2026-03-02 10:05:36']
+]);
+function partner(id){ for(var i=0;i<PARTNERS.length;i++){ if(PARTNERS[i].id===id) return PARTNERS[i]; } return null; }
+function pname(id){ var p=partner(id); return p?p.name:(id||'—'); }
+function partnersOf(chId){ return PARTNERS.filter(function(p){ return p.channelId===chId; }); }
+
+/* ---- 商户的渠道配置（当前生效值；订单产生佣金时被快照进 LEDGER）。商户复用本文件已有的 BROKERS ----
+   rate = 返佣比例，口径是「该渠道手续费收入的百分比」，同商户下各合作伙伴之和 <= 100%。
+   addr = 该商户在该渠道下的专属充值地址（复用 SubWalletAddress.partnerCode 分流机制）。 */
+var MCFG={
+ 'BR-1001':{channelId:'CH-01',picks:[{partnerId:'P-101',rate:60},{partnerId:'P-102',rate:30}],
+            addr:'TUq2Meta1001xP7vR4dK9sB6nY3hE8jLcZ',openapi:true,time:'2025-05-10 09:20:11'},
+ 'BR-1002':{channelId:'CH-01',picks:[{partnerId:'P-102',rate:50}],
+            addr:'TVr5Meta1002yQ8wS3eL1mC7bX4kA6nFdGh',openapi:true,time:'2025-06-02 11:45:33'},
+ 'BR-1004':{channelId:'CH-02',picks:[{partnerId:'P-201',rate:40},{partnerId:'P-202',rate:35}],
+            addr:'TWs8Ibal1004zR1xT6fM4nD9cV2pB5jHeKq',openapi:true,time:'2025-12-11 15:02:47'},
+ 'BR-1006':{channelId:'CH-02',picks:[{partnerId:'P-201',rate:100}],
+            addr:'TXt3Ibal1006aS4yU9gN7pF2dW6qC1kJmLr',openapi:true,time:'2026-01-20 10:11:09'}
+};
+function mcfg(mid){ return MCFG[mid]||null; }
+function cfgRateOf(mid,pid){
+  var c=mcfg(mid); if(!c) return 0;
+  for(var i=0;i<c.picks.length;i++){ if(c.picks[i].partnerId===pid) return c.picks[i].rate; }
+  return 0;
+}
+function merchantsOfChannel(chId){
+  return Object.keys(MCFG).filter(function(m){ return MCFG[m].channelId===chId; });
+}
+function merchantsOfPartner(pid){
+  return Object.keys(MCFG).filter(function(m){
+    return MCFG[m].picks.some(function(p){ return p.partnerId===pid; });
+  });
+}
+/* 专属充值地址：原型内用确定性伪地址代替真实 SubWalletAddress 分配 */
+function genAddr(mid,chId){
+  var seed=0x811c9dc5, s=mid+'|'+chId;
+  for(var i=0;i<s.length;i++){ seed=(seed^s.charCodeAt(i))>>>0; seed=(seed*16777619)>>>0; }
+  var abc='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789';
+  var out='T';
+  for(var j=0;j<33;j++){
+    seed^=seed<<13; seed>>>=0; seed^=seed>>>17; seed^=seed<<5; seed>>>=0;
+    out+=abc[seed%abc.length];
+  }
+  return out;
+}
+
+/* ---- 订单：只保留佣金计算需要的字段。feeAmount 为当前手续费，origFee 为首次扣费金额 ---- */
+var ORDERS=rows(
+ ['orderId','orderType','merchantId','feeAmount','origFee','token','createTime','refundRef'],
+[
+ ['ORD-D-20260915-0011','DEPOSIT','BR-1001',420.00,420.00,'USDT','2026-09-15 10:22:31',''],
+ ['ORD-D-20260916-0027','DEPOSIT','BR-1001',700.00,980.00,'USDT','2026-09-16 14:05:02','RFD-20260917-0031'],
+ ['ORD-W-20260917-0044','WITHDRAW','BR-1002',310.00,310.00,'USDT','2026-09-17 09:38:14',''],
+ ['ORD-D-20260918-0052','DEPOSIT','BR-1004',640.00,640.00,'USDT','2026-09-18 13:47:56',''],
+ ['ORD-W-20260918-0061','WITHDRAW','BR-1006',150.00,150.00,'USDT','2026-09-18 17:20:03',''],
+ ['ORD-D-20260919-0073','DEPOSIT','BR-1001',1250.00,1250.00,'USDT','2026-09-19 11:02:44',''],
+ ['ORD-D-20260919-0080','DEPOSIT','BR-1004',880.00,880.00,'USDT','2026-09-19 16:55:21',''],
+ ['ORD-W-20260920-0094','WITHDRAW','BR-1002',205.00,205.00,'USDT','2026-09-20 10:14:37',''],
+ ['ORD-D-20260921-0102','DEPOSIT','BR-1006',460.00,520.00,'USDT','2026-09-21 09:05:50','RFD-20260921-0018']
+]);
+function orderById(id){ for(var i=0;i<ORDERS.length;i++){ if(ORDERS[i].orderId===id) return ORDERS[i]; } return null; }
+var ENTRY_TYPE={ORIGINAL:'原始',ADJUSTMENT:'调整'};
+
+/* ---- 佣金流水（只追加不修改）+ 退款自动调整算法（设计文档 §4.2 / §4.3） ---- */
+var LEDGER=[];
+var ENTRY_SEQ=0;
+function nextEntryId(){ return 'CE-'+pad(++ENTRY_SEQ,6); }
+
+/* 生成一条佣金记录：所有随配置变化的字段（feeAmount / rebateRate）在这里被快照固化 */
+function pushEntry(o){
+  var e={
+    id:nextEntryId(),
+    orderId:o.orderId, orderType:o.orderType,
+    merchantId:o.merchantId, channelId:o.channelId, partnerId:o.partnerId,
+    feeAmount:r2(o.feeAmount),          /* 手续费金额快照 */
+    rebateRate:o.rebateRate,            /* 返佣比例快照（% of 手续费） */
+    amount:r2(o.amount),                /* 本条金额，调整记录可为负 */
+    entryType:o.entryType,              /* ORIGINAL | ADJUSTMENT */
+    adjustRefOrderId:o.adjustRefOrderId||'',
+    status:o.status||'PENDING',         /* PENDING | PROCESSED */
+    processedBy:o.processedBy||'', processedAt:o.processedAt||'',
+    createTime:o.createTime||nowStr()
+  };
+  LEDGER.push(e);
+  return e;
+}
+function entriesOfOrder(orderId){
+  return LEDGER.filter(function(e){ return e.orderId===orderId; });
+}
+
+/* 订单扣费完成 → 实时按当时配置生成 ORIGINAL 记录（§4.1，系统内无等待期） */
+function genOriginal(ord,feeAmount,time){
+  var c=mcfg(ord.merchantId);
+  if(!c) return [];
+  return c.picks.map(function(p){
+    return pushEntry({
+      orderId:ord.orderId, orderType:ord.orderType, merchantId:ord.merchantId,
+      channelId:c.channelId, partnerId:p.partnerId,
+      feeAmount:feeAmount, rebateRate:p.rate,
+      amount:feeAmount*p.rate/100,
+      entryType:'ORIGINAL', createTime:time||ord.createTime
+    });
+  });
+}
+
+/* ---- §4.3 步骤 2~4：找出该订单全部记录 → 用【快照返佣比例】× 新手续费重算 → 与已产生总和求差 ---- */
+function computeAdjust(orderId,newFee){
+  var byPartner=entriesOfOrder(orderId).reduce(function(m,e){
+    if(!m[e.partnerId]){
+      m[e.partnerId]={partnerId:e.partnerId,channelId:e.channelId,merchantId:e.merchantId,
+        orderType:e.orderType,rate:null,paid:0,n:0};
+    }
+    var o=m[e.partnerId];
+    if(e.entryType==='ORIGINAL') o.rate=e.rebateRate;   /* 快照比例只认原始记录 */
+    o.paid=r2(o.paid+e.amount);
+    o.n++;
+    return m;
+  },{});
+  return Object.keys(byPartner).map(function(k){
+    var o=byPartner[k];
+    o.due=r2(newFee*(o.rate||0)/100);   /* 步骤3：应得佣金 */
+    o.diff=r2(o.due-o.paid);            /* 步骤4：差额 */
+    return o;
+  });
+}
+/* ---- §4.3 步骤 5：差额不为零 → 每个受影响伙伴各追加一条 ADJUSTMENT，原始记录永不修改 ---- */
+function applyAdjust(orderId,newFee,refId,time){
+  var plan=computeAdjust(orderId,newFee);
+  var added=plan.filter(function(o){ return o.diff!==0; }).map(function(o){
+    return pushEntry({
+      orderId:orderId, orderType:o.orderType, merchantId:o.merchantId,
+      channelId:o.channelId, partnerId:o.partnerId,
+      feeAmount:newFee, rebateRate:o.rate,
+      amount:o.diff,
+      entryType:'ADJUSTMENT', adjustRefOrderId:refId,
+      createTime:time||nowStr()
+    });
+  });
+  var ord=orderById(orderId);
+  if(ord){ ord.feeAmount=r2(newFee); ord.refundRef=refId; }
+  return added;
+}
+
+/* ---- 种子流水：先按 origFee 生成全部 ORIGINAL，再对已退款订单跑一次真实调整算法 ----
+   （种子里的历史 ADJUSTMENT 记录就是 applyAdjust 自己算出来的，不是手写死的数字） */
+ORDERS.forEach(function(o){ genOriginal(o,o.origFee,o.createTime); });
+applyAdjust('ORD-D-20260916-0027',700.00,'RFD-20260917-0031','2026-09-17 15:31:08');
+applyAdjust('ORD-D-20260921-0102',460.00,'RFD-20260921-0018','2026-09-21 14:12:26');
+/* 运营已线下处理过的几条（§4.4：标记只作流程追溯，且各条状态互相独立）*/
+['ORD-D-20260915-0011','ORD-W-20260917-0044'].forEach(function(oid){
+  entriesOfOrder(oid).forEach(function(e){
+    e.status='PROCESSED'; e.processedBy='ops.amos'; e.processedAt='2026-09-16 18:02:40';
+  });
+});
+LEDGER.forEach(function(e){
+  /* ORD-...0027 的 P-101 原始记录先被标记已处理，随后才产生退款调整记录：
+     已处理记录不回滚、不改动，新调整记录独立为 PENDING —— 正是 §4.4 要求的表现 */
+  if(e.orderId==='ORD-D-20260916-0027'&&e.partnerId==='P-101'&&e.entryType==='ORIGINAL'){
+    e.status='PROCESSED'; e.processedBy='ops.amos'; e.processedAt='2026-09-17 09:12:05';
+  }
+});
+var REFUND_SEQ=18;
+
+/* ---- 净额汇总：只从「当前可见的记录」reduce 出来，不单独存储（§4.3 步骤6） ---- */
+function netByPartner(list){
+  var m=list.reduce(function(acc,e){
+    if(!acc[e.partnerId]){
+      acc[e.partnerId]={partnerId:e.partnerId,channelId:e.channelId,
+        orig:0,adj:0,net:0,pending:0,processed:0,n:0,adjN:0,pendingIds:[]};
+    }
+    var o=acc[e.partnerId];
+    if(e.entryType==='ORIGINAL') o.orig=r2(o.orig+e.amount);
+    else { o.adj=r2(o.adj+e.amount); o.adjN++; }
+    o.net=r2(o.net+e.amount);
+    if(e.status==='PENDING'){ o.pending=r2(o.pending+e.amount); o.pendingIds.push(e.id); }
+    else o.processed=r2(o.processed+e.amount);
+    o.n++;
+    return acc;
+  },{});
+  return Object.keys(m).map(function(k){ return m[k]; })
+    .sort(function(a,b){ return b.net-a.net; });
+}
+function sumBy(list,fn){ return r2(list.reduce(function(s,e){ return s+fn(e); },0)); }
+
+/* =========================================================================
    3. app state + nav
    ========================================================================= */
 var NAV=[
@@ -1255,23 +1507,33 @@ var NAV=[
    {key:'tx-fiatout',label:'法币直取'}
  ]},
  {key:'token',label:'币种管理',icon:'coin'},
+ {key:'commission',label:'渠道与佣金',icon:'link',children:[
+   {key:'comm-channel',label:'渠道管理'},
+   {key:'comm-partner',label:'合作伙伴管理'},
+   {key:'comm-mcfg',label:'商户渠道配置'},
+   {key:'comm-ledger',label:'佣金记录'}
+ ]},
  {key:'risk',label:'风控管理',icon:'shield',stub:true},
  {key:'system',label:'系统管理',icon:'gear',stub:true}
 ];
 /* 期望的一级导航顺序（供 verifyRegistry 断言，防止后续改动打乱信息架构） */
-var NAV_ORDER_EXPECT=['dashboard','merchant','cardm','tx','token','risk','system'];
+var NAV_ORDER_EXPECT=['dashboard','merchant','cardm','tx','token','commission','risk','system'];
 /* 期望的分组子项（供 verifyRegistry 断言）：
    卡商管理 由「卡商列表」+「银行卡往来明细」两个下级页面组成——银行卡往来明细属于
-   某个具体卡商的下级信息，因此挂在卡商管理之下而不是做成一级菜单。 */
+   某个具体卡商的下级信息，因此挂在卡商管理之下而不是做成一级菜单。
+   渠道与佣金 由 渠道管理 → 合作伙伴管理 → 商户渠道配置 → 佣金记录 四个子页面组成，
+   正好是运营配置渠道分佣的操作顺序（原型合并自独立的 commission-admin.html）。 */
 var NAV_CHILDREN_EXPECT={
   cardm:['cardm-list','cardm-ledger'],
-  tx:['tx-deposit','tx-withdraw','tx-onramp','tx-offramp','tx-fiatin','tx-fiatout']
+  tx:['tx-deposit','tx-withdraw','tx-onramp','tx-offramp','tx-fiatin','tx-fiatout'],
+  commission:['comm-channel','comm-partner','comm-mcfg','comm-ledger']
 };
 /* 已下线的页面键，不得再出现在任何注册表中：
      fx     —— 换汇记录已并入 On Ramp / Off Ramp
      settle —— 法币净额对账被「质押 → 法币信用额度」模型整体取代：
-               平台可直接处置违约卡商的质押物，无需再做周期性净额清算 */
-var RETIRED_KEYS=['fx','settle'];
+               平台可直接处置违约卡商的质押物，无需再做周期性净额清算
+     payout —— 佣金下发（真实打款）本期不做，佣金分配纯记账（见 §4.4） */
+var RETIRED_KEYS=['fx','settle','payout'];
 /* PAGE_META is the single source of truth for breadcrumb + tag titles.
    Built from NAV so a nav entry can never be missing a label. */
 var PAGE_META={};
@@ -1298,6 +1560,8 @@ var state={
   pg:{},         /* pagination per page key */
   tab:{},        /* active tab per context */
   cardLedger:{cmId:null,cardId:null},  /* 银行卡往来明细：当前选中的卡商 / 银行卡 */
+  partnerTab:'CH-01',    /* 合作伙伴管理：当前渠道 tab */
+  cfg:null,              /* 商户渠道配置：当前编辑草稿 */
   listCfg:null,
   dialog:null,
   drawer:null
@@ -1419,6 +1683,27 @@ function applyFilters(pageKey,data,rules){
     }
     return true;
   });
+}
+/* 渠道/合作伙伴/佣金记录用的轻量筛选条：下拉即触发，走独立的 data-flt 变更监听（见事件绑定段） */
+function filterBar(pageKey,fields){
+  var f=F(pageKey);
+  var h='<div class="el-card filter-card"><div class="el-card__body"><div class="el-form-inline">';
+  fields.forEach(function(fd){
+    var v=f[fd.k]==null?'':f[fd.k];
+    h+='<div class="el-form-item"><label class="el-form-item__label">'+esc(fd.label)+'</label>'+
+       '<select class="el-select'+(fd.w?' '+fd.w:'')+'" data-flt="'+pageKey+'" data-fk="'+fd.k+'">'+
+       '<option value="">'+esc(fd.ph||'全部')+'</option>';
+    fd.options.forEach(function(o){
+      h+='<option value="'+esc(o[0])+'"'+(String(v)===String(o[0])?' selected':'')+'>'+esc(o[1])+'</option>';
+    });
+    h+='</select></div>';
+  });
+  h+='<div class="el-form-item"><button class="el-button" data-act="reset-filter" data-k="'+pageKey+'">重置</button></div>';
+  h+='</div></div></div>';
+  return h;
+}
+function statusTag(s){
+  return s==='enable'?'<span class="el-tag success sm">启用</span>':'<span class="el-tag danger sm">停用</span>';
 }
 function eq(field){ return function(r,v){ return String(r[field])===String(v); }; }
 function like(field){
@@ -3525,6 +3810,633 @@ function toggleFiat(ccy){
 }
 
 /* =========================================================================
+   12b. PAGE — 渠道管理 / 合作伙伴管理 / 商户渠道配置 / 佣金记录
+        （合并自原独立原型 commission-admin.html）
+   ========================================================================= */
+function pageChannel(){
+  var h='<div class="app-container">';
+  h+=feeRuleMarker('channel');
+  h+='<div class="el-card"><div class="el-card__header">'+
+     '<span class="title">渠道列表</span>'+
+     '<span class="sub">共 '+CHANNELS.length+' 个渠道 · 渠道费率【替换】基础费率，不是在基础费率之上加收</span>'+
+     '<span class="hdr-right"><button class="el-button el-button--primary" data-act="new-channel">+ 新增渠道</button></span>'+
+     '</div><div class="el-card__body">';
+  h+='<div class="table-wrap"><table class="el-table"><thead><tr>'+
+     '<th style="min-width:150px">渠道</th>'+
+     '<th class="num">充值手续费率</th><th class="num">提现手续费率</th>'+
+     '<th class="num">合作伙伴</th><th class="num">已配置商户</th>'+
+     '<th>状态</th><th style="min-width:150px">创建时间</th><th style="min-width:150px">操作</th>'+
+     '</tr></thead><tbody>';
+  CHANNELS.forEach(function(c){
+    var ps=partnersOf(c.id);
+    var on=ps.filter(function(p){ return p.status==='enable'; }).length;
+    h+='<tr>'+
+      '<td><div class="stack"><b>'+esc(c.name)+'</b><span class="s2 mono">'+esc(c.id)+' · '+esc(c.note)+'</span></div></td>'+
+      '<td class="num"><b>'+pct(c.depositFeeRate)+'</b><div class="repl">替换基础 '+pct(BASE_FEE.deposit)+'</div></td>'+
+      '<td class="num"><b>'+pct(c.withdrawFeeRate)+'</b><div class="repl">替换基础 '+pct(BASE_FEE.withdraw)+'</div></td>'+
+      '<td class="num"><span class="link-a" data-act="go-partner" data-k="'+esc(c.id)+'">'+ps.length+' 个</span>'+
+        '<div class="s2">启用 '+on+'</div></td>'+
+      '<td class="num">'+merchantsOfChannel(c.id).length+'</td>'+
+      '<td>'+statusTag(c.status)+'</td>'+
+      '<td class="mono">'+esc(c.createTime)+'</td>'+
+      '<td class="nowrap">'+
+        '<button class="el-button el-button--text" data-act="edit-channel" data-id="'+esc(c.id)+'">编辑费率</button>'+
+        '<button class="el-button el-button--text'+(c.status==='enable'?' danger':'')+'" data-act="toggle-channel" data-id="'+esc(c.id)+'">'+
+          (c.status==='enable'?'停用':'启用')+'</button>'+
+      '</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="hint-note">费率口径：渠道来源客户的充值/提现手续费 <b>只按本表的渠道费率计算</b>，'+
+     '不再叠加「代币」菜单的基础费率——同一笔充值要么走基础费率、要么走渠道费率，由到账地址决定，二者不会同时生效。<br>'+
+     '渠道停用后：已有配置与历史佣金记录保持不变，但不能再被选进新的商户渠道配置。</div>';
+  h+='</div></div></div>';
+  return h;
+}
+function dlgChannel(id){
+  var c=id?channel(id):{id:'',name:'',depositFeeRate:'',withdrawFeeRate:'',status:'enable'};
+  if(!c) return;
+  openDialog({
+    title:id?('编辑渠道 · '+c.name):'新增渠道',
+    body:'<div class="hint-note rule" style="margin:0 0 14px">这里配置的是<b>渠道客户费率</b>，'+
+      '保存后该渠道来源的充值/提现按此费率收费，<b>替换</b>「代币」菜单的基础费率（当前基础：充值 '+
+      pct(BASE_FEE.deposit)+' / 提现 '+pct(BASE_FEE.withdraw)+'），不叠加。</div>'+
+      '<div class="dlg-form">'+
+      '<div class="row"><label>渠道名称</label><div class="ctl">'+
+        '<input class="el-input" id="chName" value="'+esc(c.name)+'" placeholder="如 Meta Trader"></div></div>'+
+      '<div class="row"><label>充值手续费率</label><div class="ctl">'+
+        '<input class="el-input" id="chDep" value="'+esc(c.depositFeeRate)+'" placeholder="百分比，如 0.25">'+
+        '<span class="muted small"> %（替换基础费率）</span></div></div>'+
+      '<div class="row"><label>提现手续费率</label><div class="ctl">'+
+        '<input class="el-input" id="chWdr" value="'+esc(c.withdrawFeeRate)+'" placeholder="百分比，如 0.30">'+
+        '<span class="muted small"> %（替换基础费率）</span></div></div>'+
+      '<div class="row"><label>备注</label><div class="ctl">'+
+        '<input class="el-input" id="chNote" value="'+esc(c.note||'')+'" placeholder="选填"></div></div>'+
+      '<div class="row"><label>状态</label><div class="ctl switch-line">'+
+        '<span class="el-switch'+(c.status==='enable'?' on':'')+'" id="chStatus" data-act="switch"><i></i></span>'+
+        '<span class="muted small">停用后不可被选进新的商户渠道配置</span></div></div>'+
+      '</div>',
+    footer:'<button class="el-button" data-act="dlg-close">取消</button>'+
+      '<button class="el-button el-button--primary" data-act="save-channel" data-id="'+esc(id||'')+'">确定</button>'
+  });
+}
+function saveChannel(id){
+  var name=$('chName').value.trim();
+  var dep=parseFloat($('chDep').value), wdr=parseFloat($('chWdr').value);
+  if(!name){ toast('请填写渠道名称','warning'); return; }
+  if(!isFinite(dep)||dep<0||!isFinite(wdr)||wdr<0){ toast('充值/提现手续费率必须是不小于 0 的数字','warning'); return; }
+  var st=$('chStatus').classList.contains('on')?'enable':'disable';
+  var note=$('chNote').value.trim();
+  if(id){
+    var c=channel(id);
+    c.name=name; c.depositFeeRate=dep; c.withdrawFeeRate=wdr; c.status=st; c.note=note;
+  }else{
+    var n=0;
+    CHANNELS.forEach(function(x){ n=Math.max(n,parseInt(x.id.slice(3),10)); });
+    CHANNELS.push({id:'CH-'+pad(n+1,2),name:name,depositFeeRate:dep,withdrawFeeRate:wdr,
+      status:st,createTime:nowStr(),note:note||'新建渠道'});
+  }
+  closeDialog(); render();
+  toast(id?('渠道「'+name+'」费率已更新，仅对新订单生效，历史佣金记录不变'):('渠道「'+name+'」已创建'));
+}
+
+/* =========================================================================
+   7. PAGE — 合作伙伴管理
+   ========================================================================= */
+function pagePartner(){
+  if(!channel(state.partnerTab)) state.partnerTab=CHANNELS[0].id;
+  var ch=channel(state.partnerTab);
+  var list=partnersOf(ch.id);
+  var h='<div class="app-container">';
+  h+='<div class="el-card"><div class="el-tabs">';
+  CHANNELS.forEach(function(c){
+    h+='<div class="el-tab'+(c.id===state.partnerTab?' active':'')+'" data-act="partner-tab" data-k="'+esc(c.id)+'">'+
+       esc(c.name)+' <span class="muted small">('+partnersOf(c.id).length+')</span></div>';
+  });
+  h+='</div>';
+  h+='<div class="el-card__header"><span class="title">'+esc(ch.name)+' · 合作伙伴</span>'+
+     '<span class="sub">渠道费率 充值 '+pct(ch.depositFeeRate)+' / 提现 '+pct(ch.withdrawFeeRate)+
+     ' · '+(ch.status==='enable'?'渠道启用中':'渠道已停用')+'</span>'+
+     '<span class="hdr-right"><button class="el-button el-button--primary" data-act="new-partner">+ 新增合作伙伴</button></span>'+
+     '</div><div class="el-card__body">';
+  h+='<div class="table-wrap"><table class="el-table"><thead><tr>'+
+     '<th style="min-width:140px">合作伙伴</th><th style="min-width:210px">联系方式</th>'+
+     '<th style="min-width:260px">钱包地址<span class="el-tag sm" style="margin-left:6px">预留字段</span></th>'+
+     '<th class="num">已挂商户</th><th>状态</th><th style="min-width:150px">创建时间</th><th style="min-width:110px">操作</th>'+
+     '</tr></thead><tbody>';
+  if(!list.length) h+='<tr><td class="empty-cell" colspan="7">该渠道下暂无合作伙伴</td></tr>';
+  list.forEach(function(p){
+    var ms=merchantsOfPartner(p.id);
+    h+='<tr>'+
+      '<td><div class="stack"><b>'+esc(p.name)+'</b><span class="s2 mono">'+esc(p.id)+'</span></div></td>'+
+      '<td class="small">'+esc(p.contact||'—')+'</td>'+
+      '<td class="mono">'+(p.walletAddress?esc(p.walletAddress):'<span class="muted">未填写</span>')+'</td>'+
+      '<td class="num">'+ms.length+(ms.length?'<div class="s2">'+esc(ms.map(bshort).join('、'))+'</div>':'')+'</td>'+
+      '<td>'+statusTag(p.status)+'</td>'+
+      '<td class="mono">'+esc(p.createTime)+'</td>'+
+      '<td class="nowrap">'+
+        '<button class="el-button el-button--text" data-act="edit-partner" data-id="'+esc(p.id)+'">编辑</button>'+
+        '<button class="el-button el-button--text'+(p.status==='enable'?' danger':'')+'" data-act="toggle-partner" data-id="'+esc(p.id)+'">'+
+          (p.status==='enable'?'停用':'启用')+'</button>'+
+      '</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="hint-note"><b>钱包地址是预留字段，供未来自动打款使用，本期仅展示/编辑，不接实际打款。</b>'+
+     '本期佣金分配是纯记账：运营在「佣金记录」页只能把记录标记为已处理，系统不会向这些地址转出任何资金。<br>'+
+     '合作伙伴停用后：已有商户配置与历史佣金记录不变，但不能再被选进新的商户渠道配置。</div>';
+  h+='</div></div></div>';
+  return h;
+}
+function dlgPartner(id){
+  var p=id?partner(id):{id:'',channelId:state.partnerTab,name:'',contact:'',walletAddress:'',status:'enable'};
+  if(!p) return;
+  openDialog({
+    title:id?('编辑合作伙伴 · '+p.name):('新增合作伙伴 · '+chname(state.partnerTab)),
+    body:'<div class="dlg-form">'+
+      '<div class="row"><label>所属渠道</label><div class="ctl"><select class="el-select" id="ptCh">'+
+        CHANNELS.map(function(c){
+          return '<option value="'+esc(c.id)+'"'+(c.id===p.channelId?' selected':'')+'>'+esc(c.name)+
+            (c.status==='enable'?'':'（已停用）')+'</option>';
+        }).join('')+'</select></div></div>'+
+      '<div class="row"><label>名称</label><div class="ctl">'+
+        '<input class="el-input" id="ptName" value="'+esc(p.name)+'" placeholder="个人或机构名称"></div></div>'+
+      '<div class="row"><label>联系方式</label><div class="ctl">'+
+        '<input class="el-input" id="ptContact" value="'+esc(p.contact||'')+'" placeholder="邮箱 / 电话"></div></div>'+
+      '<div class="row"><label>钱包地址</label><div class="ctl">'+
+        '<input class="el-input mono" id="ptAddr" value="'+esc(p.walletAddress||'')+'" placeholder="选填">'+
+        '<div class="muted small" style="margin-top:5px;line-height:1.6">预留字段，供未来自动打款使用，'+
+        '本期仅展示/编辑，不接实际打款。</div></div></div>'+
+      '<div class="row"><label>状态</label><div class="ctl switch-line">'+
+        '<span class="el-switch'+(p.status==='enable'?' on':'')+'" id="ptStatus" data-act="switch"><i></i></span>'+
+        '<span class="muted small">停用后不可被选进新的商户渠道配置</span></div></div>'+
+      '</div>',
+    footer:'<button class="el-button" data-act="dlg-close">取消</button>'+
+      '<button class="el-button el-button--primary" data-act="save-partner" data-id="'+esc(id||'')+'">确定</button>'
+  });
+}
+function savePartner(id){
+  var name=$('ptName').value.trim();
+  if(!name){ toast('请填写合作伙伴名称','warning'); return; }
+  var chId=$('ptCh').value;
+  var st=$('ptStatus').classList.contains('on')?'enable':'disable';
+  var contact=$('ptContact').value.trim(), addr=$('ptAddr').value.trim();
+  if(id){
+    var p=partner(id);
+    p.name=name; p.channelId=chId; p.contact=contact; p.walletAddress=addr; p.status=st;
+  }else{
+    var n=parseInt(chId.slice(3),10)*100;
+    PARTNERS.forEach(function(x){ if(x.channelId===chId) n=Math.max(n,parseInt(x.id.slice(2),10)); });
+    PARTNERS.push({id:'P-'+(n+1),channelId:chId,name:name,contact:contact,
+      walletAddress:addr,status:st,createTime:nowStr()});
+  }
+  state.partnerTab=chId;
+  closeDialog(); render();
+  toast(id?('合作伙伴「'+name+'」已保存'):('合作伙伴「'+name+'」已加入渠道「'+chname(chId)+'」'));
+}
+
+/* =========================================================================
+   8. PAGE — 商户渠道配置
+   ========================================================================= */
+function cfgDraft(){
+  if(!state.cfg){
+    var mid=BROKERS[0].id;
+    state.cfg=draftFor(mid);
+  }
+  return state.cfg;
+}
+function draftFor(mid){
+  var c=mcfg(mid);
+  var picks={};
+  if(c) c.picks.forEach(function(p){ picks[p.partnerId]=p.rate; });
+  return {mid:mid,channelId:c?c.channelId:'',picks:picks};
+}
+function draftSum(d){
+  return r2(Object.keys(d.picks).reduce(function(s,k){ return s+(Number(d.picks[k])||0); },0));
+}
+function allocHtml(d){
+  var sum=draftSum(d);
+  var over=sum>100;
+  var pctW=Math.max(0,Math.min(100,sum));
+  return '<div class="alloc'+(over?' over':'')+'">'+
+    '<div class="alloc-top"><span>已分配 <b>'+sum.toFixed(2)+'%</b> / 可用 100.00%</span>'+
+    '<span class="'+(over?'bad':'ok')+'">'+(over?('超出 '+r2(sum-100).toFixed(2)+'%，无法保存'):('剩余 '+r2(100-sum).toFixed(2)+'%'))+'</span></div>'+
+    '<div class="util-bar"><i class="'+(over?'danger':(sum>=95?'warn':''))+'" style="width:'+pctW+'%"></i></div>'+
+    '<div class="muted small" style="margin-top:6px">返佣比例的口径是「该渠道手续费收入的百分比」。'+
+    '每个合作伙伴各自独立拿一份，互不共享；本商户下所有合作伙伴之和必须 ≤ 100%（即不能分掉超过手续费全额）。</div>'+
+    '</div>';
+}
+function partnerRowExample(ch,rate){
+  var fee=r2(10000*ch.depositFeeRate/100);
+  return '每 10,000 USDT 充值 → 渠道手续费 '+n2(fee)+' USDT → 本伙伴得 <b>'+n2(r2(fee*rate/100))+'</b> USDT';
+}
+function pageMerchantCfg(){
+  var d=cfgDraft();
+  var m=broker(d.mid);
+  var saved=mcfg(d.mid);
+  var ch=channel(d.channelId);
+  var h='<div class="app-container">';
+  h+=feeRuleMarker('mcfg');
+  h+='<div class="el-card"><div class="el-card__body tight"><div class="el-form-inline" style="margin-bottom:-4px">'+
+     '<div class="el-form-item"><label class="el-form-item__label">选择商户</label>'+
+     '<select class="el-select w-lg" data-chg="cfg-merchant">'+
+     BROKERS.map(function(x){
+       var c=mcfg(x.id);
+       return '<option value="'+esc(x.id)+'"'+(x.id===d.mid?' selected':'')+'>'+esc(x.businessName)+
+         '（'+x.userId+'）'+(c?' · 已配置 '+chname(c.channelId):' · 自然流量')+'</option>';
+     }).join('')+'</select></div>'+
+     '<div class="el-form-item"><label class="el-form-item__label">渠道</label>'+
+     '<select class="el-select" data-chg="cfg-channel">'+
+     '<option value="">未配置（自然流量）</option>'+
+     CHANNELS.map(function(c){
+       var dis=c.status!=='enable'&&c.id!==d.channelId;
+       return '<option value="'+esc(c.id)+'"'+(c.id===d.channelId?' selected':'')+(dis?' disabled':'')+'>'+
+         esc(c.name)+(c.status==='enable'?'':'（已停用）')+'</option>';
+     }).join('')+'</select></div>'+
+     '</div></div></div>';
+
+  /* 已生效的系统状态卡（§3：OpenAPI 权限 + 专属充值地址） */
+  if(saved){
+    h+='<div class="el-card"><div class="el-card__header"><span class="title">当前生效配置 · '+esc(m.businessName)+'</span>'+
+       '<span class="sub">保存时间 '+esc(saved.time)+'</span></div><div class="el-card__body">'+
+       '<div class="desc-grid">'+
+       '<div class="desc-cell"><div class="k">渠道</div><div class="v"><b>'+esc(chname(saved.channelId))+'</b> '+
+         '<span class="muted small">充值 '+pct(channel(saved.channelId).depositFeeRate)+
+         ' / 提现 '+pct(channel(saved.channelId).withdrawFeeRate)+'（替换基础费率）</span></div></div>'+
+       '<div class="desc-cell"><div class="k">OpenAPI</div><div class="v">'+
+         '<span class="el-tag success">已开通</span> <span class="muted small">OpenAPI 已为该商户开通该渠道调用权限</span></div></div>'+
+       '<div class="desc-cell"><div class="k">合作伙伴</div><div class="v">'+
+         saved.picks.map(function(p){ return esc(pname(p.partnerId))+' <b>'+pct(p.rate)+'</b>'; }).join('，')+
+         ' <span class="muted small">合计 '+pct(saved.picks.reduce(function(s,p){ return s+p.rate; },0))+'</span></div></div>'+
+       '<div class="desc-cell"><div class="k">专属充值地址</div><div class="v mono">'+esc(saved.addr)+
+         ' <span class="el-tag primary sm">已生成</span></div></div>'+
+       '</div>'+
+       '<div class="hint-note">该商户名下由此渠道来源产生的客户，使用上面这个<b>专属充值地址</b>；'+
+       '自然流量客户仍使用系统默认地址。系统靠到账地址不同区分资金来源，据此决定按哪套费率收费、要不要产生佣金——'+
+       '同一个客户如果两条路都走过，会对应两个不同地址。<br>'+
+       '<span class="muted">原型说明：上面的「已开通」与地址串均为演示用的系统状态展示，未接真实 OpenAPI 与地址分配服务。</span></div>'+
+       '</div></div>';
+  }else{
+    h+='<div class="el-card"><div class="el-card__body"><div class="hint-note" style="margin:0">'+
+       '<b>'+esc(m.businessName)+'</b> 当前未配置任何渠道 = 自然流量：客户使用系统默认充值地址，'+
+       '按「代币」菜单的基础费率（充值 '+pct(BASE_FEE.deposit)+' / 提现 '+pct(BASE_FEE.withdraw)+'）收费，不产生佣金。'+
+       '在上方选择一个渠道即可开始配置。</div></div></div>';
+  }
+
+  /* 返佣配置表单 */
+  h+='<div class="el-card"><div class="el-card__header"><span class="title">'+
+     (saved?'调整返佣配置':'新建返佣配置')+'</span>'+
+     '<span class="sub">'+(ch?('渠道 '+esc(ch.name)+' 下共 '+partnersOf(ch.id).length+' 个合作伙伴'):'先在上方选择渠道')+'</span>'+
+     '</div><div class="el-card__body">';
+  if(!ch){
+    h+='<div class="muted" style="padding:26px 0;text-align:center">未选择渠道。该商户保持自然流量，不产生佣金记录。</div>';
+  }else{
+    h+='<div id="allocBox">'+allocHtml(d)+'</div>';
+    h+='<div class="table-wrap" style="margin-top:14px"><table class="el-table"><thead><tr>'+
+       '<th style="width:46px"></th><th style="min-width:150px">合作伙伴</th>'+
+       '<th style="min-width:200px">联系方式</th><th style="width:170px">返佣比例（占手续费）</th>'+
+       '<th style="min-width:300px">按当前渠道费率折算</th></tr></thead><tbody>';
+    var ps=partnersOf(ch.id);
+    if(!ps.length) h+='<tr><td class="empty-cell" colspan="5">该渠道下暂无合作伙伴，请先到「合作伙伴管理」新增</td></tr>';
+    ps.forEach(function(p){
+      var on=d.picks[p.id]!=null;
+      var rate=on?d.picks[p.id]:'';
+      var dis=p.status!=='enable'&&!on;
+      h+='<tr>'+
+        '<td><span class="el-checkbox'+(on?' checked':'')+(dis?' disabled':'')+'"'+
+          (dis?'':' data-act="cfg-pick" data-id="'+esc(p.id)+'"')+'></span></td>'+
+        '<td><div class="stack"><b>'+esc(p.name)+'</b><span class="s2 mono">'+esc(p.id)+
+          (p.status==='enable'?'':' · 已停用')+'</span></div></td>'+
+        '<td class="small">'+esc(p.contact||'—')+'</td>'+
+        '<td><input class="el-input w-sm num" data-rate="'+esc(p.id)+'" value="'+esc(rate)+'"'+
+          (on?'':' disabled')+' placeholder="0.00"><span class="muted small"> %</span></td>'+
+        '<td class="small" id="ex-'+esc(p.id)+'">'+
+          (on?partnerRowExample(ch,Number(rate)||0):'<span class="muted">未选中，该伙伴在本商户下不分佣</span>')+'</td>'+
+        '</tr>';
+    });
+    h+='</tbody></table></div>';
+    h+='<div class="toolbar" style="margin:14px 0 0">'+
+       '<button class="el-button el-button--primary" data-act="save-cfg">保存配置</button>'+
+       '<button class="el-button" data-act="reload-cfg">放弃修改</button>'+
+       '<span class="sel-note muted">保存只影响<b>新订单</b>的计算依据，不会修改任何历史佣金记录（历史记录只看下单那一刻的快照）。</span>'+
+       '</div>';
+  }
+  h+='</div></div></div>';
+  return h;
+}
+function updateAlloc(){
+  var d=state.cfg, ch=channel(d.channelId);
+  var box=$('allocBox');
+  if(box) box.innerHTML=allocHtml(d);
+  if(!ch) return;
+  partnersOf(ch.id).forEach(function(p){
+    var cell=$('ex-'+p.id);
+    if(!cell) return;
+    cell.innerHTML=(d.picks[p.id]!=null)
+      ? partnerRowExample(ch,Number(d.picks[p.id])||0)
+      : '<span class="muted">未选中，该伙伴在本商户下不分佣</span>';
+  });
+}
+function saveCfg(){
+  var d=state.cfg;
+  if(!d.channelId){ toast('请选择渠道','warning'); return; }
+  var pids=Object.keys(d.picks);
+  if(!pids.length){ toast('请至少选择一个合作伙伴并填写返佣比例','warning'); return; }
+  var bad=pids.filter(function(k){ var v=Number(d.picks[k]); return !isFinite(v)||v<=0; });
+  if(bad.length){ toast('「'+pname(bad[0])+'」的返佣比例必须是大于 0 的数字','warning'); return; }
+  var sum=draftSum(d);
+  /* 核心校验（设计文档 §1）：各合作伙伴返佣比例之和不得超过渠道手续费金额的 100% */
+  if(sum>100){
+    toast('保存被拒绝：已分配 '+sum.toFixed(2)+'%，超出渠道手续费的 100%（超 '+r2(sum-100).toFixed(2)+
+      '%）。返佣总额不能大于该渠道收到的手续费。','warning');
+    return;
+  }
+  var first=!mcfg(d.mid);
+  MCFG[d.mid]={
+    channelId:d.channelId,
+    picks:pids.map(function(k){ return {partnerId:k,rate:r2(Number(d.picks[k]))}; }),
+    addr:(mcfg(d.mid)&&mcfg(d.mid).channelId===d.channelId)?mcfg(d.mid).addr:genAddr(d.mid,d.channelId),
+    openapi:true,
+    time:nowStr()
+  };
+  state.cfg=draftFor(d.mid);
+  render();
+  toast(first
+    ? ('配置已保存：OpenAPI 已为「'+bshort(d.mid)+'」开通「'+chname(d.channelId)+'」调用权限，并已生成该渠道专属充值地址')
+    : ('配置已更新（已分配 '+sum.toFixed(2)+'%）；仅对新订单生效，历史佣金记录不变'));
+}
+
+/* =========================================================================
+   9. PAGE — 佣金记录（流水 + 按合作伙伴净额 + 退款调整模拟）
+   ========================================================================= */
+function visibleLedger(){
+  return applyFilters('commission',LEDGER,{
+    merchantId:function(r,v){ return r.merchantId===v; },
+    channelId:function(r,v){ return r.channelId===v; },
+    partnerId:function(r,v){ return r.partnerId===v; },
+    status:function(r,v){ return r.status===v; },
+    entryType:function(r,v){ return r.entryType===v; }
+  });
+}
+function amtCls(v){ return v<0?'profit-neg':(v>0?'profit-pos':''); }
+function signed(v){ return (v>0?'+':'')+n2(v); }
+function pageCommission(){
+  var list=visibleLedger();
+  var nets=netByPartner(list);
+  var h='<div class="app-container">';
+  h+=filterBar('commission',[
+    {k:'merchantId',label:'商户',w:'w-lg',options:brokerOptions()},
+    {k:'channelId',label:'渠道',options:CHANNELS.map(function(c){ return [c.id,c.name]; })},
+    {k:'partnerId',label:'合作伙伴',options:PARTNERS.map(function(p){ return [p.id,p.name+'（'+chname(p.channelId)+'）']; })},
+    {k:'status',label:'状态',w:'w-sm',options:[['PENDING','待处理'],['PROCESSED','已处理']]},
+    {k:'entryType',label:'记录类型',w:'w-sm',options:[['ORIGINAL','原始'],['ADJUSTMENT','调整']]}
+  ]);
+
+  /* 顶部统计：全部由当前可见记录 reduce 得出 */
+  var net=sumBy(list,function(e){ return e.amount; });
+  var pend=sumBy(list.filter(function(e){ return e.status==='PENDING'; }),function(e){ return e.amount; });
+  var adj=sumBy(list.filter(function(e){ return e.entryType==='ADJUSTMENT'; }),function(e){ return e.amount; });
+  h+='<div class="stat-row" style="margin-bottom:16px">'+
+     '<div class="stat accent"><div class="lbl">可见记录净额</div><div class="val">'+n2(net)+'<small>USDT</small></div>'+
+       '<div class="foot">'+list.length+' 条记录 reduce 汇总</div></div>'+
+     '<div class="stat warn"><div class="lbl">其中待处理净额</div><div class="val">'+n2(pend)+'<small>USDT</small></div>'+
+       '<div class="foot">运营尚未标记处理</div></div>'+
+     '<div class="stat'+(adj<0?' danger':'')+'"><div class="lbl">调整记录合计</div><div class="val">'+signed(adj)+'<small>USDT</small></div>'+
+       '<div class="foot">退款等事件导致的自动调整</div></div>'+
+     '<div class="stat"><div class="lbl">涉及合作伙伴</div><div class="val">'+nets.length+'<small>个</small></div>'+
+       '<div class="foot">下方净额视图逐个列出</div></div>'+
+     '</div>';
+
+  /* 净额视图（§4.3 步骤6）：运营看净额，不心算历次调整 */
+  h+='<div class="el-card"><div class="el-card__header"><span class="title">合作伙伴净额视图</span>'+
+     '<span class="sub">原始 + 全部调整加总后的净额，由下方可见记录实时 reduce 得出，不单独存储</span></div>'+
+     '<div class="el-card__body">';
+  h+='<div class="table-wrap"><table class="el-table"><thead><tr>'+
+     '<th style="min-width:150px">合作伙伴</th><th>渠道</th>'+
+     '<th class="num">原始合计</th><th class="num">调整合计</th><th class="num">净额</th>'+
+     '<th class="num">待处理净额</th><th class="num">已处理</th><th class="num">记录数</th>'+
+     '<th style="min-width:210px">操作</th></tr></thead><tbody>';
+  if(!nets.length) h+='<tr><td class="empty-cell" colspan="9">当前筛选条件下没有佣金记录</td></tr>';
+  nets.forEach(function(o){
+    h+='<tr>'+
+      '<td><div class="stack"><b>'+esc(pname(o.partnerId))+'</b><span class="s2 mono">'+esc(o.partnerId)+'</span></div></td>'+
+      '<td class="small">'+esc(chname(o.channelId))+'</td>'+
+      '<td class="num">'+n2(o.orig)+'</td>'+
+      '<td class="num '+amtCls(o.adj)+'">'+(o.adjN?signed(o.adj)+'<div class="s2">'+o.adjN+' 条调整</div>':'—')+'</td>'+
+      '<td class="num"><b>'+n2(o.net)+'</b></td>'+
+      '<td class="num">'+n2(o.pending)+'</td>'+
+      '<td class="num muted">'+n2(o.processed)+'</td>'+
+      '<td class="num">'+o.n+'</td>'+
+      '<td>'+(o.pendingIds.length
+        ? '<button class="el-button el-button--sm" data-act="mark-partner" data-id="'+esc(o.partnerId)+'">'+
+          '标记该伙伴 '+o.pendingIds.length+' 条待处理为已处理（不触发任何打款）</button>'
+        : '<span class="muted small">无待处理记录</span>')+'</td>'+
+      '</tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="hint-note">「标记已处理」<b>仅作流程追溯，不触发任何资金动作</b>——本期佣金分配是纯记账，'+
+     '实际下发由运营线下把控。已标记已处理的记录，即使之后该订单产生新的调整记录，也不会被改动或撤销状态；'+
+     '新的调整记录会作为独立的待处理记录出现在上表里。</div>';
+  h+='</div></div>';
+
+  /* 退款 → 手续费变化 → 佣金自动调整 模拟入口（§4.3） */
+  var oids=list.reduce(function(a,e){ if(a.indexOf(e.orderId)<0) a.push(e.orderId); return a; },[]);
+  h+='<div class="el-card"><div class="el-card__header"><span class="title">订单视角 · 退款调整模拟</span>'+
+     '<span class="sub">选一笔订单模拟退款导致手续费变化，观察系统如何自动追加 ADJUSTMENT 记录</span></div>'+
+     '<div class="el-card__body">';
+  h+='<div class="table-wrap"><table class="el-table"><thead><tr>'+
+     '<th style="min-width:180px">订单号</th><th>类型</th><th style="min-width:130px">商户</th><th>渠道</th>'+
+     '<th class="num">首次手续费</th><th class="num">当前手续费</th>'+
+     '<th class="num">已产生佣金净额</th><th class="num">记录数</th><th>调整来源</th><th style="min-width:130px">操作</th>'+
+     '</tr></thead><tbody>';
+  if(!oids.length) h+='<tr><td class="empty-cell" colspan="10">当前筛选条件下没有订单</td></tr>';
+  oids.forEach(function(oid){
+    var ord=orderById(oid);
+    var es=entriesOfOrder(oid);
+    var nt=sumBy(es,function(e){ return e.amount; });
+    h+='<tr>'+
+      '<td class="mono">'+esc(oid)+'</td>'+
+      '<td>'+(ord.orderType==='DEPOSIT'?'<span class="el-tag primary sm">充值</span>':'<span class="el-tag warning sm">提币</span>')+'</td>'+
+      '<td class="small">'+esc(bshort(ord.merchantId))+'</td>'+
+      '<td class="small">'+esc(chname(es[0].channelId))+'</td>'+
+      '<td class="num">'+n2(ord.origFee)+'</td>'+
+      '<td class="num"><b>'+n2(ord.feeAmount)+'</b>'+
+        (ord.feeAmount!==ord.origFee?'<div class="s2 profit-neg">已降 '+n2(r2(ord.origFee-ord.feeAmount))+'</div>':'')+'</td>'+
+      '<td class="num">'+n2(nt)+'</td>'+
+      '<td class="num">'+es.length+'</td>'+
+      '<td class="small mono">'+(ord.refundRef?esc(ord.refundRef):'—')+'</td>'+
+      '<td><button class="el-button el-button--sm el-button--warning" data-act="sim-refund" data-id="'+esc(oid)+'">模拟退款，调整手续费</button></td>'+
+      '</tr>';
+  });
+  h+='</tbody></table></div></div></div>';
+
+  /* 原始流水表 */
+  h+='<div class="el-card"><div class="el-card__header"><span class="title">佣金流水（CommissionEntry）</span>'+
+     '<span class="sub">只追加不修改 · 当前可见 '+list.length+' / 全部 '+LEDGER.length+' 条</span></div>'+
+     '<div class="el-card__body">';
+  h+='<div class="table-wrap"><table class="el-table"><thead><tr>'+
+     '<th>佣金ID</th><th style="min-width:180px">订单号 / 类型</th><th style="min-width:120px">商户</th>'+
+     '<th>渠道</th><th style="min-width:130px">合作伙伴</th>'+
+     '<th class="num">手续费快照</th><th class="num">返佣比例快照</th><th class="num">本条金额</th>'+
+     '<th>记录类型</th><th style="min-width:150px">调整来源</th><th>状态</th>'+
+     '<th style="min-width:160px">处理人 / 时间</th><th style="min-width:150px">创建时间</th><th style="min-width:110px">操作</th>'+
+     '</tr></thead><tbody>';
+  if(!list.length) h+='<tr><td class="empty-cell" colspan="14">当前筛选条件下没有佣金记录</td></tr>';
+  list.slice().sort(function(a,b){
+    if(a.createTime!==b.createTime) return a.createTime<b.createTime?1:-1;
+    return a.id<b.id?1:-1;
+  }).forEach(function(e){
+    h+='<tr>'+
+      '<td class="mono">'+esc(e.id)+'</td>'+
+      '<td><div class="stack"><span class="mono">'+esc(e.orderId)+'</span>'+
+        '<span class="s2">'+(e.orderType==='DEPOSIT'?'充值 DEPOSIT':'提币 WITHDRAW')+'</span></div></td>'+
+      '<td class="small">'+esc(bshort(e.merchantId))+'</td>'+
+      '<td class="small">'+esc(chname(e.channelId))+'</td>'+
+      '<td class="small">'+esc(pname(e.partnerId))+'</td>'+
+      '<td class="num">'+n2(e.feeAmount)+'</td>'+
+      '<td class="num">'+pct(e.rebateRate)+'</td>'+
+      '<td class="num '+amtCls(e.amount)+'"><b>'+signed(e.amount)+'</b></td>'+
+      '<td>'+(e.entryType==='ORIGINAL'
+        ? '<span class="el-tag sm">原始 ORIGINAL</span>'
+        : '<span class="el-tag warning sm">调整 ADJUSTMENT</span>')+'</td>'+
+      '<td class="mono small">'+(e.adjustRefOrderId?esc(e.adjustRefOrderId):'—')+'</td>'+
+      '<td>'+(e.status==='PROCESSED'
+        ? '<span class="el-tag success sm">已处理</span>'
+        : '<span class="el-tag warning sm">待处理</span>')+'</td>'+
+      '<td class="small">'+(e.processedBy?esc(e.processedBy)+'<div class="s2 mono">'+esc(e.processedAt)+'</div>':'—')+'</td>'+
+      '<td class="mono small">'+esc(e.createTime)+'</td>'+
+      '<td>'+(e.status==='PENDING'
+        ? '<button class="el-button el-button--text" data-act="mark-entry" data-id="'+esc(e.id)+'">标记已处理</button>'
+        : '<span class="muted small">—</span>')+'</td>'+
+      '</tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="hint-note">每条记录都<b>快照</b>了当时的手续费金额与返佣比例。商户后续更换渠道、更换合作伙伴、'+
+     '调整返佣比例，只影响新订单，不会修改任何历史记录。调整记录金额可为负数，且永不覆盖原始记录。</div>';
+  h+='</div></div></div>';
+  return h;
+}
+
+/* ---- 退款模拟对话框：把 §4.3 的 6 步算法逐步展示出来 ---- */
+function dlgRefund(orderId){
+  var ord=orderById(orderId);
+  if(!ord){ toast('订单不存在','warning'); return; }
+  var suggest=r2(ord.feeAmount*0.6);
+  openDialog({
+    cls:'xwide',
+    title:'模拟退款导致手续费变化 · '+orderId,
+    body:'<div class="hint-note rule" style="margin:0 0 14px">'+
+      '本操作模拟「订单已扣除的手续费因退款等原因发生变化」这一<b>外部事件</b>，'+
+      '然后由系统自动完成佣金调整——运营无需重新计算任何金额。原始佣金记录不会被修改。</div>'+
+      '<div class="dlg-form" style="margin-bottom:6px">'+
+      '<div class="row"><label>当前手续费</label><div class="ctl">'+
+        '<input class="el-input" value="'+n2(ord.feeAmount)+' USDT（首次扣费 '+n2(ord.origFee)+'）" disabled></div></div>'+
+      '<div class="row"><label>退款后手续费</label><div class="ctl">'+
+        '<input class="el-input" id="rfFee" value="'+suggest+'" placeholder="新的手续费金额">'+
+        '<span class="muted small"> USDT</span>'+
+        '<button class="el-button el-button--sm" style="margin-left:10px" data-act="refund-calc" data-id="'+esc(orderId)+'">按 §4.3 重算</button>'+
+        '</div></div></div>'+
+      '<div id="rfPreview">'+refundPreview(orderId,suggest)+'</div>',
+    footer:'<button class="el-button" data-act="dlg-close">取消</button>'+
+      '<button class="el-button el-button--warning" data-act="refund-apply" data-id="'+esc(orderId)+'">'+
+      '执行步骤5：追加调整记录</button>'
+  });
+}
+function refundPreview(orderId,newFee){
+  var ord=orderById(orderId);
+  newFee=Number(newFee);
+  if(!isFinite(newFee)||newFee<0) return '<div class="hint-note">请输入合法的新手续费金额。</div>';
+  var es=entriesOfOrder(orderId);
+  var plan=computeAdjust(orderId,newFee);
+  var h='';
+  /* 步骤1 */
+  h+='<div class="step"><div class="st">步骤 1 · 触发事件</div><div class="sb">'+
+     '订单 <span class="mono">'+esc(orderId)+'</span> 的'+(ord.orderType==='DEPOSIT'?'充值':'提币')+
+     '手续费发生变化：<b>'+n2(ord.feeAmount)+' → '+n2(newFee)+' USDT</b>'+
+     '（差额 <span class="'+amtCls(r2(newFee-ord.feeAmount))+'">'+signed(r2(newFee-ord.feeAmount))+'</span>）。'+
+     '具体退款流程如何触发不在本系统范围内。</div></div>';
+  /* 步骤2 */
+  h+='<div class="step"><div class="st">步骤 2 · 找出该订单已生成的全部佣金记录（'+es.length+' 条，涉及 '+plan.length+' 个合作伙伴）</div>'+
+     '<div class="sb"><table class="bal-table"><thead><tr><th>佣金ID</th><th>合作伙伴</th>'+
+     '<th class="num">手续费快照</th><th class="num">比例快照</th><th class="num">金额</th><th>类型</th><th>状态</th></tr></thead><tbody>';
+  es.forEach(function(e){
+    h+='<tr><td class="mono">'+esc(e.id)+'</td><td>'+esc(pname(e.partnerId))+'</td>'+
+      '<td class="num">'+n2(e.feeAmount)+'</td><td class="num">'+pct(e.rebateRate)+'</td>'+
+      '<td class="num '+amtCls(e.amount)+'">'+signed(e.amount)+'</td>'+
+      '<td>'+esc(ENTRY_TYPE[e.entryType])+'</td>'+
+      '<td>'+(e.status==='PROCESSED'?'<span class="el-tag success sm">已处理</span>':'<span class="el-tag warning sm">待处理</span>')+'</td></tr>';
+  });
+  h+='</tbody></table></div></div>';
+  /* 步骤3 + 4 */
+  h+='<div class="step"><div class="st">步骤 3 · 用【订单当时快照的返佣比例】× 新手续费 重算应得佣金 ｜ '+
+     '步骤 4 · 应得 − 迄今已产生总和 = 差额</div>'+
+     '<div class="sb"><table class="bal-table"><thead><tr><th>合作伙伴</th><th class="num">快照返佣比例</th>'+
+     '<th class="num">应得佣金（新手续费 × 快照比例）</th><th class="num">已产生总和（原始+历次调整）</th>'+
+     '<th class="num">差额</th><th>结论</th></tr></thead><tbody>';
+  plan.forEach(function(o){
+    h+='<tr><td><b>'+esc(pname(o.partnerId))+'</b></td>'+
+      '<td class="num">'+pct(o.rate)+'</td>'+
+      '<td class="num">'+n2(newFee)+' × '+pct(o.rate)+' = <b>'+n2(o.due)+'</b></td>'+
+      '<td class="num">'+n2(o.paid)+'<span class="muted"> （'+o.n+' 条）</span></td>'+
+      '<td class="num '+amtCls(o.diff)+'"><b>'+signed(o.diff)+'</b></td>'+
+      '<td class="small">'+(o.diff===0?'差额为 0，不产生记录':'追加 1 条 ADJUSTMENT')+'</td></tr>';
+  });
+  h+='</tbody></table>'+
+     '<div class="muted small" style="margin-top:6px">注意：这里用的是<b>快照比例</b>，不是合作伙伴现在最新的返佣比例——'+
+     '即使运营刚刚改过配置，这笔订单的调整依然按下单那一刻的比例算。</div></div></div>';
+  /* 步骤5 预览 */
+  var will=plan.filter(function(o){ return o.diff!==0; });
+  h+='<div class="step"><div class="st">步骤 5 · 将要追加的调整记录（点击下方按钮执行；原始记录永不修改）</div><div class="sb">';
+  if(!will.length){
+    h+='<span class="muted">差额全为 0，无需追加任何记录。</span>';
+  }else{
+    h+='<table class="bal-table"><thead><tr><th>合作伙伴</th><th class="num">手续费快照</th><th class="num">比例快照</th>'+
+       '<th class="num">金额</th><th>类型</th><th>调整来源</th><th>状态</th></tr></thead><tbody>';
+    will.forEach(function(o){
+      h+='<tr><td>'+esc(pname(o.partnerId))+'</td><td class="num">'+n2(newFee)+'</td>'+
+        '<td class="num">'+pct(o.rate)+'</td>'+
+        '<td class="num '+amtCls(o.diff)+'"><b>'+signed(o.diff)+'</b></td>'+
+        '<td><span class="el-tag warning sm">ADJUSTMENT</span></td>'+
+        '<td class="mono small">RFD-（本次退款事件）</td>'+
+        '<td><span class="el-tag warning sm">待处理</span></td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  h+='</div></div>';
+  /* 步骤6 before/after */
+  h+='<div class="step"><div class="st">步骤 6 · 运营在佣金界面看到的是净额，不需要心算历次调整</div><div class="sb">'+
+     '<table class="bal-table"><thead><tr><th>合作伙伴</th><th class="num">调整前净额</th>'+
+     '<th class="num">本次差额</th><th class="num">调整后净额</th></tr></thead><tbody>';
+  plan.forEach(function(o){
+    h+='<tr><td>'+esc(pname(o.partnerId))+'</td>'+
+      '<td class="num">'+n2(o.paid)+'</td>'+
+      '<td class="num '+amtCls(o.diff)+'">'+signed(o.diff)+'</td>'+
+      '<td class="num"><b>'+n2(o.due)+'</b></td></tr>';
+  });
+  h+='</tbody></table></div></div>';
+  return h;
+}
+function refundApply(orderId){
+  var ord=orderById(orderId);
+  var newFee=Number($('rfFee')?$('rfFee').value:NaN);
+  if(!isFinite(newFee)||newFee<0){ toast('请输入合法的新手续费金额','warning'); return; }
+  if(newFee>ord.origFee){
+    toast('新手续费不能高于首次扣费金额 '+n2(ord.origFee)+'（退款只会让手续费变少）','warning');
+    return;
+  }
+  var refId='RFD-'+nowStr().slice(0,10).replace(/-/g,'')+'-'+pad(++REFUND_SEQ,4);
+  var added=applyAdjust(orderId,newFee,refId,nowStr());
+  closeDialog();
+  render();
+  if(!added.length){
+    toast('差额为 0，未产生任何调整记录（原始记录保持不变）','info');
+  }else{
+    toast('退款事件 '+refId+' 已处理：手续费 '+n2(ord.origFee)+' → '+n2(newFee)+
+      '，自动追加 '+added.length+' 条 ADJUSTMENT 记录（'+
+      added.map(function(e){ return pname(e.partnerId)+' '+signed(e.amount); }).join('，')+
+      '）；原始记录及其已处理状态均未改动');
+  }
+}
+
+/* =========================================================================
    13. PAGE — stub modules (real in prod, out of scope for this prototype)
    ========================================================================= */
 function pageStub(){
@@ -3837,7 +4749,71 @@ var ACT={
   'reassign-leg':function(el,d){ dlgReassignLeg(d.id,d.leg); },
   'do-reassign':function(el,d){ doReassignLeg(d.id,d.leg); },
   'dlg-close':function(){ closeDialog(); },
-  'drawer-close':function(){ closeDrawer(); }
+  'drawer-close':function(){ closeDrawer(); },
+  /* ---- 渠道 / 合作伙伴 / 商户渠道配置 / 佣金记录（合并自 commission-admin.html） ---- */
+  'reset-filter':function(el,d){ state.f[d.k]={}; render(); },
+  'new-channel':function(){ dlgChannel(''); },
+  'edit-channel':function(el,d){ dlgChannel(d.id); },
+  'save-channel':function(el,d){ saveChannel(d.id||''); },
+  'toggle-channel':function(el,d){
+    var c=channel(d.id);
+    c.status=(c.status==='enable')?'disable':'enable';
+    render();
+    toast('渠道「'+c.name+'」已'+(c.status==='enable'?'启用':'停用（已有配置与历史佣金不变，但不能再被选进新配置）'));
+  },
+  'go-partner':function(el,d){ state.partnerTab=d.k; go('comm-partner',null); },
+  'partner-tab':function(el,d){ state.partnerTab=d.k; render(); },
+  'new-partner':function(){ dlgPartner(''); },
+  'edit-partner':function(el,d){ dlgPartner(d.id); },
+  'save-partner':function(el,d){ savePartner(d.id||''); },
+  'toggle-partner':function(el,d){
+    var p=partner(d.id);
+    p.status=(p.status==='enable')?'disable':'enable';
+    render();
+    toast('合作伙伴「'+p.name+'」已'+(p.status==='enable'?'启用':'停用（历史佣金记录不受影响）'));
+  },
+  'cfg-merchant':function(el){ state.cfg=draftFor(el.value); render(); },
+  'cfg-channel':function(el){
+    var d=state.cfg;
+    if(el.value!==d.channelId){ d.channelId=el.value; d.picks={}; }
+    render();
+  },
+  'cfg-pick':function(el,d){
+    var dr=state.cfg;
+    if(dr.picks[d.id]!=null) delete dr.picks[d.id];
+    else dr.picks[d.id]=r2(Math.max(0,100-draftSum(dr)));
+    render();
+  },
+  'save-cfg':function(){ saveCfg(); },
+  'reload-cfg':function(){ state.cfg=draftFor(state.cfg.mid); render(); toast('已放弃未保存的修改','info'); },
+  'mark-entry':function(el,d){
+    var e=null;
+    LEDGER.forEach(function(x){ if(x.id===d.id) e=x; });
+    if(!e||e.status==='PROCESSED') return;
+    e.status='PROCESSED'; e.processedBy='ops.amos'; e.processedAt=nowStr();
+    render();
+    toast('佣金记录 '+e.id+' 已标记为已处理（仅流程追溯，未触发任何打款）；该订单的其他记录状态不受影响');
+  },
+  'mark-partner':function(el,d){
+    var ids=netByPartner(visibleLedger()).filter(function(o){ return o.partnerId===d.id; })
+      .reduce(function(a,o){ return a.concat(o.pendingIds); },[]);
+    if(!ids.length) return;
+    var t=nowStr(), n=0;
+    LEDGER.forEach(function(e){
+      if(ids.indexOf(e.id)<0||e.status==='PROCESSED') return;
+      e.status='PROCESSED'; e.processedBy='ops.amos'; e.processedAt=t; n++;
+    });
+    render();
+    toast('已把「'+pname(d.id)+'」当前筛选范围内 '+n+' 条待处理记录标记为已处理（不触发任何打款）；'+
+      '若之后该订单再产生调整，会作为新的待处理记录出现，不会改动这些记录');
+  },
+  'sim-refund':function(el,d){ dlgRefund(d.id); },
+  'refund-calc':function(el,d){
+    var v=$('rfFee')?$('rfFee').value:'';
+    $('rfPreview').innerHTML=refundPreview(d.id,v);
+    toast('已按快照比例重算差额，确认无误后点「执行步骤5」','info');
+  },
+  'refund-apply':function(el,d){ refundApply(d.id); }
 };
 
 /* =========================================================================
@@ -3880,6 +4856,22 @@ $('drawerMask').addEventListener('click',function(ev){ if(ev.target===this) clos
 document.addEventListener('keydown',function(ev){
   if(ev.key==='Escape'){ closeDialog(); closeDrawer(); }
 });
+/* 渠道/合作伙伴/佣金记录的筛选下拉（filterBar 生成，data-flt 标记），与上面基于
+   state.listCfg 的列表筛选是两套独立机制，互不干扰 */
+document.addEventListener('change',function(ev){
+  var el=ev.target;
+  if(!el.dataset||!el.dataset.flt) return;
+  F(el.dataset.flt)[el.dataset.fk]=el.value;
+  render();
+});
+/* 商户渠道配置：返佣比例输入框，只就地刷新分配指示器与折算示例，不整页重渲染（避免输入框失焦） */
+document.addEventListener('input',function(ev){
+  var el=ev.target;
+  if(!el.dataset||!el.dataset.rate||!state.cfg) return;
+  var v=el.value.trim();
+  state.cfg.picks[el.dataset.rate]=(v===''?0:Number(v));
+  updateAlloc();
+});
 
 /* =========================================================================
    17. router + boot + registry self-check
@@ -3897,6 +4889,10 @@ var PAGES={
   'cardm-list':pageCardMerchant,
   'cardm-ledger':pageCardLedger,
   'token':pageToken,
+  'comm-channel':pageChannel,
+  'comm-partner':pagePartner,
+  'comm-mcfg':pageMerchantCfg,
+  'comm-ledger':pageCommission,
   'risk':pageStub,
   'system':pageStub
 };
@@ -3983,7 +4979,56 @@ function verifyRegistry(){
   }
   return problems;
 }
+/* 业务规则自检（渠道/合作伙伴/佣金）：种子数据与佣金算法必须满足设计文档的三条硬约束 */
+function verifyData(){
+  var bad=[];
+  /* 1) 任一商户下各合作伙伴返佣比例之和 <= 100%（渠道手续费的全额） */
+  Object.keys(MCFG).forEach(function(mid){
+    var c=MCFG[mid];
+    var s=r2(c.picks.reduce(function(a,p){ return a+p.rate; },0));
+    if(s>100) bad.push(bname(mid)+' 返佣比例合计 '+s+'% > 100%');
+    c.picks.forEach(function(p){
+      var pt=partner(p.partnerId);
+      if(!pt) bad.push(bname(mid)+' 引用了不存在的合作伙伴 '+p.partnerId);
+      else if(pt.channelId!==c.channelId) bad.push(bname(mid)+' 的合作伙伴 '+pt.name+' 不属于所配渠道');
+    });
+  });
+  /* 2) 每条佣金记录的引用都必须存在，且金额 = 手续费快照 × 比例快照（调整记录为差额，单独校验） */
+  LEDGER.forEach(function(e){
+    if(!broker(e.merchantId)||!channel(e.channelId)||!partner(e.partnerId))
+      bad.push(e.id+' 引用了不存在的商户/渠道/合作伙伴');
+    if(e.entryType==='ORIGINAL'&&e.amount!==r2(e.feeAmount*e.rebateRate/100))
+      bad.push(e.id+' 原始金额与快照不一致');
+    if(e.entryType==='ADJUSTMENT'&&!e.adjustRefOrderId)
+      bad.push(e.id+' 调整记录缺少 adjustRefOrderId');
+  });
+  /* 3) 调整算法的不变式：每个订单每个合作伙伴的净额 === 当前手续费 × 快照比例 */
+  ORDERS.forEach(function(o){
+    var byP=entriesOfOrder(o.orderId).reduce(function(m,e){
+      if(!m[e.partnerId]) m[e.partnerId]={rate:null,net:0};
+      if(e.entryType==='ORIGINAL') m[e.partnerId].rate=e.rebateRate;
+      m[e.partnerId].net=r2(m[e.partnerId].net+e.amount);
+      return m;
+    },{});
+    Object.keys(byP).forEach(function(pid){
+      var want=r2(o.feeAmount*byP[pid].rate/100);
+      if(byP[pid].net!==want)
+        bad.push(o.orderId+' / '+pname(pid)+' 净额 '+byP[pid].net+' ≠ 当前手续费×快照比例 '+want);
+    });
+  });
+  if(bad.length){
+    console.error('[data check] 发现问题:',bad);
+    toast('业务数据自检异常: '+bad[0],'warning');
+  }else{
+    console.log('[data check] OK — '+Object.keys(MCFG).length+' 份商户渠道配置比例合计均 ≤100%；'+
+      LEDGER.length+' 条佣金记录快照一致；'+ORDERS.length+
+      ' 笔订单的「原始+调整」净额均等于 当前手续费 × 快照返佣比例');
+  }
+  return bad;
+}
+
 verifyRegistry();
+verifyData();
 render();
 </script>
 </body>
