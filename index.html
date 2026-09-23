@@ -10,10 +10,13 @@
   h1{font-size:22px;font-weight:600;margin:0 0 8px;}
   p.desc{color:#999;font-size:13px;margin:0 0 28px;}
   ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;}
-  a{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px;background:#fff;border:1px solid #eef0f4;border-radius:12px;text-decoration:none;color:#222;font-size:15px;font-weight:500;transition:all .15s;}
+  a{display:flex;align-items:center;gap:14px;padding:18px 20px;background:#fff;border:1px solid #eef0f4;border-radius:12px;text-decoration:none;color:#222;font-size:15px;font-weight:500;transition:all .15s;}
   a:hover{border-color:#435ddd;box-shadow:0 4px 14px #435ddd1a;}
+  a .t{flex:1;min-width:0;}
   a span{display:block;margin-top:4px;font-size:12px;color:#999;font-weight:400;}
   a code{flex:none;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;color:#435ddd;background:#435ddd14;padding:4px 8px;border-radius:6px;}
+  .ico{flex:none;width:40px;height:40px;border-radius:10px;background:#435ddd14;display:flex;align-items:center;justify-content:center;}
+  .ico svg{width:20px;height:20px;stroke:#435ddd;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
 </style>
 </head>
 <body>
@@ -21,9 +24,15 @@
   <h1>PayPaz OTC 原型</h1>
   <p class="desc">卡商本地代收代付业务原型 · 三端入口</p>
   <ul>
-    <li><a href="/broker-portal"><span class="t">商户后台<span>下单、报价锁价、订单历史</span></span><code>broker-portal.html</code></a></li>
-    <li><a href="/card-merchant-portal"><span class="t">卡商后台<span>收放款队列、凭证核验、质押管理</span></span><code>card-merchant-portal.html</code></a></li>
-    <li><a href="/admin-console"><span class="t">运营管理后台<span>商户/卡商管理、交易管理、风控</span></span><code>admin-console.html</code></a></li>
+    <li><a href="/broker-portal">
+      <span class="ico"><svg viewBox="0 0 24 24"><path d="M3 9l1.6-5h14.8L21 9M3 9h18v11H3zM9 20v-6h6v6"/></svg></span>
+      <span class="t">商户后台<span>下单、报价锁价、订单历史</span></span><code>broker-portal.html</code></a></li>
+    <li><a href="/card-merchant-portal">
+      <span class="ico"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg></span>
+      <span class="t">卡商后台<span>收放款队列、凭证核验、质押管理</span></span><code>card-merchant-portal.html</code></a></li>
+    <li><a href="/admin-console">
+      <span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+      <span class="t">运营管理后台<span>商户/卡商管理、交易管理、风控</span></span><code>admin-console.html</code></a></li>
   </ul>
 </div>
 </body>
