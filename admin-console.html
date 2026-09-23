@@ -353,6 +353,14 @@ a{color:var(--el-primary);text-decoration:none}
   font-size:12px;color:var(--t-secondary);background:#f8f9fb;border-left:3px solid #c8d3e0;
   padding:7px 12px;border-radius:0 3px 3px 0;margin-top:10px;line-height:1.6;
 }
+/* 纯解释性文字默认收起，需要时点开——不删内容，只降低默认可见的信息量 */
+.hint-toggle{
+  font-size:12px;color:var(--el-primary);cursor:pointer;display:inline-flex;align-items:center;
+  gap:3px;margin:2px 0 8px;user-select:none;font-weight:600;
+}
+.hint-toggle .car{display:inline-block;transition:transform .15s;font-size:10px}
+.hint-toggle.open .car{transform:rotate(90deg)}
+.hint.block{margin-top:0}
 
 /* ---- 质押额度使用率进度条（卡商法币信用额度） ---- */
 .util-bar{
@@ -621,6 +629,13 @@ function toast(msg,type){
   d.innerHTML='<span>'+esc(msg)+'</span>';
   w.appendChild(d);
   setTimeout(function(){ d.remove(); },2600);
+}
+/* 纯解释性说明默认收起，点「▸ 说明」展开——不删内容，只是不默认占地方 */
+function toggleHint(el){
+  var box=el.nextElementSibling;
+  var open=box.style.display!=='none';
+  box.style.display=open?'none':'block';
+  el.classList.toggle('open',!open);
 }
 var ICONS={
   dash:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
@@ -4039,7 +4054,8 @@ function merchantPartnerTab(b){
   var d=state.cfg;
   var saved=mcfg(b.id);
   var ch=channel(d.channelId);
-  var h=feeRuleMarker('mcfg');
+  var h='<div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span> 说明</div>'+
+    '<div class="hint block" style="display:none">'+feeRuleMarker('mcfg')+'</div>';
   h+='<div class="el-card"><div class="el-card__body tight"><div class="el-form-inline" style="margin-bottom:-4px">'+
      '<div class="el-form-item"><label class="el-form-item__label">渠道</label>'+
      '<select class="el-select" data-chg="cfg-channel">'+
@@ -4075,10 +4091,11 @@ function merchantPartnerTab(b){
        '<div class="desc-cell"><div class="k">专属充值地址</div><div class="v mono">'+esc(saved.addr)+
          ' <span class="el-tag primary sm">已生成</span></div></div>'+
        '</div>'+
-       '<div class="hint-note">该商户名下由此渠道来源产生的客户，使用上面这个<b>专属充值地址</b>；'+
+       '<div class="hint-toggle" onclick="toggleHint(this)"><span class="car">▸</span> 说明</div>'+
+       '<div class="hint block" style="display:none"><div class="hint-note">该商户名下由此渠道来源产生的客户，使用上面这个<b>专属充值地址</b>；'+
        '自然流量客户仍使用系统默认地址。系统靠到账地址不同区分资金来源，据此决定按哪套费率收费、要不要产生佣金——'+
        '同一个客户如果两条路都走过，会对应两个不同地址。<br>'+
-       '<span class="muted">原型说明：上面的「已开通」与地址串均为演示用的系统状态展示，未接真实 OpenAPI 与地址分配服务。</span></div>'+
+       '<span class="muted">原型说明：上面的「已开通」与地址串均为演示用的系统状态展示，未接真实 OpenAPI 与地址分配服务。</span></div></div>'+
        '</div></div>';
   }else{
     h+='<div class="el-card"><div class="el-card__body"><div class="hint-note" style="margin:0">'+
